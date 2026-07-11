@@ -1,36 +1,8 @@
 import 'dotenv/config';
-import express from 'express';
-import cors from 'cors';
+import { createApp } from './app.js';
 
-import authRoutes from './routes/auth.js';
-import userRoutes from './routes/users.js';
-import addressRoutes from './routes/addresses.js';
-import { notFound, errorHandler } from './middleware/errorHandler.js';
-
-const app = express();
+const app = createApp();
 const PORT = process.env.PORT || 4000;
-
-// CORS — allow the frontend origin (comma-separated list supported).
-const origins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
-  .split(',')
-  .map((o) => o.trim());
-
-app.use(cors({ origin: origins, credentials: true }));
-app.use(express.json());
-
-// Health check.
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', service: 'ohnyk-backend', time: new Date().toISOString() });
-});
-
-// Routes.
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/addresses', addressRoutes);
-
-// 404 + error handling.
-app.use(notFound);
-app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`🔥 Ohnyk backend listening on http://localhost:${PORT}`);

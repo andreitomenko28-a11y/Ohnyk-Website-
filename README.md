@@ -104,6 +104,41 @@ curl http://localhost:4000/api/auth/me \
   -H "Authorization: Bearer <ACCESS_TOKEN>"
 ```
 
+## Тести
+
+Проєкт має автоматичні тести: інтеграційні для API (Vitest + Supertest) і
+компонентні для UI (Vitest + React Testing Library). Вони ганяються автоматично
+на кожен push через GitHub Actions (`.github/workflows/ci.yml`).
+
+### Backend (28 тестів)
+
+Потрібна тестова база `ohnyk_test` (окрема від dev, дані затираються між тестами):
+
+```bash
+cd backend
+# один раз створити тестову БД:
+docker exec ohnyk-db createdb -U ohnyk ohnyk_test
+npm test              # прогнати всі тести
+npm run test:watch    # watch-режим
+```
+
+За замовчуванням тести беруть URL з `DATABASE_URL` і додають суфікс `_test`.
+Можна задати явно через `TEST_DATABASE_URL`.
+
+Покриває: register/login (email і телефон)/refresh/me, помилки валідації,
+дублікати, заборону self-register як ADMIN, CRUD адрес із перевіркою прав,
+редагування профілю лише власником.
+
+### Frontend (13 тестів)
+
+```bash
+cd frontend
+npm test              # компонентні тести (jsdom)
+```
+
+Покриває: рендер форм входу/реєстрації, перемикання вкладок і ролі, вибір мови,
+відправку форм і показ помилок, логіку токен-стору та обробку помилок API.
+
 ## Дизайн-система
 
 | Токен | Значення |
@@ -123,6 +158,7 @@ curl http://localhost:4000/api/auth/me \
 - [x] Захищений endpoint `/api/auth/me` працює з токеном
 - [x] Frontend має Login/Register форми у дизайн-системі Ohnyk
 - [x] Локально піднімається (`docker compose up` + `npm run dev`)
+- [x] Автоматичні тести (backend + frontend) і CI на GitHub Actions
 
 ## Що далі
 
