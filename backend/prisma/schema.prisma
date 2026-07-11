@@ -1,0 +1,50 @@
+// Ohnyk — Prisma schema (Phase 1)
+// Minimal set of tables to cover authentication and the base data model.
+// Dish, Order, OrderItem, Payment, Review are added in Phases 2-4.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  COOK
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  phone        String?  @unique
+  passwordHash String
+  role         Role     @default(CUSTOMER)
+  fullName     String
+  createdAt    DateTime @default(now())
+
+  cookProfile Cook?
+  addresses   Address[]
+}
+
+model Cook {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio        String?
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model Address {
+  id        String  @id @default(uuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  city      String
+  street    String
+  building  String
+  isDefault Boolean @default(false)
+}
