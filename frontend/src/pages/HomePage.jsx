@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useI18n } from '../i18n/index.jsx';
 import api from '../api/client.js';
-import BottomNav from '../components/BottomNav.jsx';
 import CookCard from '../components/CookCard.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import { Star, SearchIcon, MapPinIcon, ChevronDownIcon } from '../components/icons.jsx';
@@ -42,7 +41,7 @@ export default function HomePage() {
   const rest = cooks.slice(0, 6);
 
   return (
-    <div className="relative mx-auto min-h-screen w-full max-w-[420px] bg-canvas pb-24">
+    <div className="relative">
       <header className="sticky top-0 z-10 bg-canvas px-5 pb-4 pt-5">
         <div className="mb-4 flex items-center justify-between">
           <div>
@@ -126,9 +125,9 @@ export default function HomePage() {
             </div>
           </Section>
 
-          {/* Cooking today — vertical list */}
+          {/* Cooking today — vertical list (grid on desktop) */}
           <Section title={t('cookingToday')}>
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
               {rest.map((c) => (
                 <CookCard key={c.id} cook={c} />
               ))}
@@ -137,7 +136,6 @@ export default function HomePage() {
         </>
       )}
 
-      <BottomNav />
     </div>
   );
 }

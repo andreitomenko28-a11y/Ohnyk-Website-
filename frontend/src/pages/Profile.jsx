@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n/index.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
-import BottomNav from '../components/BottomNav.jsx';
 import ProfileForm from '../components/ProfileForm.jsx';
 import LangSwitch from '../components/LangSwitch.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
@@ -25,7 +24,7 @@ export default function Profile() {
   const initial = (user?.fullName || '?').trim().charAt(0).toUpperCase();
 
   return (
-    <div className="relative mx-auto min-h-screen w-full max-w-[420px] bg-canvas pb-24">
+    <div className="relative lg:mx-auto lg:max-w-[760px]">
       <header className="px-5 pb-3 pt-5">
         <div className="font-display text-xl font-bold">{t('profileTitle')}</div>
       </header>
@@ -83,7 +82,6 @@ export default function Profile() {
         <LangSwitch />
       </div>
 
-      <BottomNav />
     </div>
   );
 }

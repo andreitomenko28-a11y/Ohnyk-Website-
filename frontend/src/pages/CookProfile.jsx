@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n/index.jsx';
 import api from '../api/client.js';
 import Menu from '../components/Menu.jsx';
-import BottomNav from '../components/BottomNav.jsx';
 import FavoriteButton from '../components/FavoriteButton.jsx';
 import { VerifiedBadge, Star, MapPinIcon } from '../components/icons.jsx';
 import { useCart } from '../context/CartContext.jsx';
@@ -63,7 +62,7 @@ export default function CookProfile() {
   }
 
   return (
-    <div className="relative mx-auto min-h-screen w-full max-w-[420px] bg-canvas pb-24">
+    <div className="relative lg:mx-auto lg:max-w-[760px]">
       {/* Hero */}
       <div
         className="relative flex h-40 items-end p-5"
@@ -132,7 +131,6 @@ export default function CookProfile() {
         </div>
       )}
 
-      <BottomNav />
     </div>
   );
 }

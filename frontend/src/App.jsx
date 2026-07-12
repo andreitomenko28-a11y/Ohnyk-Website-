@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import { CartProvider } from './context/CartContext.jsx';
 import { I18nProvider } from './i18n/index.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import AppLayout from './components/AppLayout.jsx';
 import AuthPage from './pages/AuthPage.jsx';
 import PasswordResetPage from './pages/PasswordResetPage.jsx';
 import HomePage from './pages/HomePage.jsx';
@@ -14,9 +15,13 @@ import Profile from './pages/Profile.jsx';
 import Addresses from './pages/Addresses.jsx';
 import Favorites from './pages/Favorites.jsx';
 
-// Wraps a page in the auth guard.
+// Wraps a page in the auth guard + the responsive app shell (sidebar/bottom nav).
 function Protected({ children }) {
-  return <ProtectedRoute>{children}</ProtectedRoute>;
+  return (
+    <ProtectedRoute>
+      <AppLayout>{children}</AppLayout>
+    </ProtectedRoute>
+  );
 }
 
 export default function App() {

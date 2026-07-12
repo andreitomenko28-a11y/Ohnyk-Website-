@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n/index.jsx';
 import api, { apiError } from '../api/client.js';
-import BottomNav from '../components/BottomNav.jsx';
 import AddressCard from '../components/AddressCard.jsx';
 
 const BLANK = { city: '', street: '', building: '', apartment: '', postalCode: '' };
@@ -72,7 +71,7 @@ export default function Addresses() {
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   return (
-    <div className="relative mx-auto min-h-screen w-full max-w-[420px] bg-canvas pb-24">
+    <div className="relative lg:mx-auto lg:max-w-[760px]">
       <header className="flex items-center gap-3 px-5 pb-3 pt-5">
         <button onClick={() => navigate('/profile')} className="text-2xl leading-none">
           ‹
@@ -153,7 +152,6 @@ export default function Addresses() {
         )}
       </div>
 
-      <BottomNav />
     </div>
   );
 }

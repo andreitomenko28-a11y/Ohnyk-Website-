@@ -21,7 +21,7 @@ export default function BottomNav() {
     path === '/' ? pathname === '/' : pathname.startsWith(path);
 
   return (
-    <div className="fixed bottom-0 left-1/2 z-20 w-full max-w-[420px] -translate-x-1/2 px-4 pb-[max(14px,env(safe-area-inset-bottom))] pt-2">
+    <div className="fixed bottom-0 left-1/2 z-20 w-full max-w-[440px] -translate-x-1/2 px-4 pb-[max(14px,env(safe-area-inset-bottom))] pt-2 lg:hidden">
       <nav className="flex items-center justify-around rounded-[22px] border border-line bg-surface px-3 py-2.5 shadow-nav">
         {items.map(({ Icon, label, path, badge }) => {
           const active = isActive(path);

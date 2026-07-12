@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n/index.jsx';
 import { useCart } from '../context/CartContext.jsx';
-import BottomNav from '../components/BottomNav.jsx';
 import CartItem from '../components/CartItem.jsx';
 import CartSummary from '../components/CartSummary.jsx';
 import { CartIcon } from '../components/icons.jsx';
@@ -14,7 +13,7 @@ export default function Cart() {
   const empty = cart.items.length === 0;
 
   return (
-    <div className="relative mx-auto min-h-screen w-full max-w-[420px] bg-canvas pb-24">
+    <div className="relative lg:mx-auto lg:max-w-[760px]">
       <header className="sticky top-0 z-10 flex items-center justify-between bg-canvas px-5 pb-3 pt-5">
         <div className="font-display text-xl font-bold">{t('cartTitle')}</div>
         {!empty && (
@@ -50,7 +49,6 @@ export default function Cart() {
         </div>
       )}
 
-      <BottomNav />
     </div>
   );
 }
