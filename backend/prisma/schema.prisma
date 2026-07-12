@@ -1,6 +1,7 @@
-// Ohnyk — Prisma schema (Phase 1)
-// Minimal set of tables to cover authentication and the base data model.
-// Dish, Order, OrderItem, Payment, Review are added in Phases 2-4.
+// Ohnyk — Prisma schema
+// Phase 1: authentication + base data model.
+// Phase 2: profiles/addresses, discovery (cooks, categories, dishes), cart.
+// Order, OrderItem, Payment, Review arrive in Phases 4+.
 
 generator client {
   provider = "prisma-client-js"
@@ -24,27 +25,97 @@ model User {
   passwordHash String
   role         Role     @default(CUSTOMER)
   fullName     String
+  avatar       String? // URL or base64 (Phase 2 — profile management)
+  // Favourite cook ids. Kept on User to avoid an extra join for a simple list.
+  favoriteCookIds String[] @default([])
   createdAt    DateTime @default(now())
 
-  cookProfile Cook?
-  addresses   Address[]
+  cookProfile    Cook?
+  addresses      Address[]
+  cart           Cart?
+  passwordResets PasswordReset[]
 }
 
 model Cook {
-  id         String   @id @default(uuid())
-  userId     String   @unique
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bio        String?
-  isVerified Boolean  @default(false)
-  createdAt  DateTime @default(now())
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio         String?
+  avatar      String? // URL or base64
+  isVerified  Boolean  @default(false)
+  rating      Float    @default(0) // average review score
+  reviewCount Int      @default(0)
+  latitude    Float? // for distance calculation
+  longitude   Float?
+  city        String   @default("Черкаси")
+  createdAt   DateTime @default(now())
+
+  dishes Dish[]
 }
 
 model Address {
-  id        String  @id @default(uuid())
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  city       String
+  street     String
+  building   String
+  apartment  String?
+  postalCode String?
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model Category {
+  id     String @id @default(uuid())
+  name   String @unique
+  slug   String @unique
+  emoji  String // 🥣 Борщ
+  dishes Dish[]
+}
+
+model Dish {
+  id          String    @id @default(uuid())
+  cookId      String
+  cook        Cook      @relation(fields: [cookId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  price       Float
+  image       String? // URL or base64
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  isAvailable Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  cartItems CartItem[]
+}
+
+model Cart {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cookId    String? // one cart = one cook at a time
+  items     CartItem[]
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
+
+model CartItem {
+  id       String @id @default(uuid())
+  cartId   String
+  cart     Cart   @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  dishId   String
+  dish     Dish   @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  quantity Int    @default(1)
+
+  @@unique([cartId, dishId])
+}
+
+model PasswordReset {
+  id        String   @id @default(uuid())
   userId    String
-  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  city      String
-  street    String
-  building  String
-  isDefault Boolean @default(false)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useI18n } from '../i18n/index.jsx';
 import { apiError } from '../api/client.js';
@@ -107,9 +107,12 @@ function LoginForm() {
       <button className="btn-primary mt-6" disabled={busy}>
         {busy ? t('loading') : t('loginBtn')}
       </button>
-      <a href="#" className="mt-4 block text-center text-[13px] font-semibold text-ember">
+      <Link
+        to="/reset-password"
+        className="mt-4 block text-center text-[13px] font-semibold text-ember"
+      >
         {t('forgot')}
-      </a>
+      </Link>
     </form>
   );
 }

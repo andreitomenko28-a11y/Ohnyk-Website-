@@ -1,14 +1,23 @@
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useI18n } from '../i18n/index.jsx';
+import { useCart } from '../context/CartContext.jsx';
 
-// Fixed bottom navigation — Phase 1 only "Home" is active/wired.
+// Fixed bottom navigation, wired to routes with an active-state highlight.
 export default function BottomNav() {
   const { t } = useI18n();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const { cart } = useCart();
+
   const items = [
-    { icon: '🏠', label: t('navHome'), active: true },
-    { icon: '🔍', label: t('navSearch') },
-    { icon: '🛒', label: t('navCart') },
-    { icon: '👤', label: t('navProfile') },
+    { icon: '🏠', label: t('navHome'), path: '/' },
+    { icon: '🔍', label: t('navSearch'), path: '/discovery' },
+    { icon: '🛒', label: t('navCart'), path: '/cart', badge: cart.itemCount },
+    { icon: '👤', label: t('navProfile'), path: '/profile' },
   ];
+
+  const isActive = (path) =>
+    path === '/' ? pathname === '/' : pathname.startsWith(path);
 
   return (
     <nav
@@ -18,11 +27,19 @@ export default function BottomNav() {
       {items.map((it) => (
         <button
           key={it.label}
-          className={`flex-1 text-center text-[10px] font-semibold ${
-            it.active ? 'text-ember' : 'text-[color:var(--muted)]'
+          onClick={() => navigate(it.path)}
+          className={`relative flex-1 text-center text-[10px] font-semibold ${
+            isActive(it.path) ? 'text-ember' : 'text-[color:var(--muted)]'
           }`}
         >
-          <span className="mb-0.5 block text-[19px]">{it.icon}</span>
+          <span className="relative mb-0.5 block text-[19px]">
+            {it.icon}
+            {it.badge > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-ember px-1 text-[9px] font-bold text-white">
+                {it.badge}
+              </span>
+            )}
+          </span>
           {it.label}
         </button>
       ))}

@@ -32,12 +32,88 @@ export const updateUserSchema = z.object({
     .min(6)
     .optional()
     .or(z.literal('').transform(() => undefined)),
+  avatar: z.string().trim().max(500_000).optional(), // URL or base64
   bio: z.string().trim().max(500).optional(),
+  city: z.string().trim().min(1).optional(), // cook city
 });
 
 export const createAddressSchema = z.object({
   city: z.string().trim().min(1, 'Вкажіть місто'),
   street: z.string().trim().min(1, 'Вкажіть вулицю'),
   building: z.string().trim().min(1, 'Вкажіть будинок'),
+  apartment: z.string().trim().optional(),
+  postalCode: z.string().trim().optional(),
   isDefault: z.boolean().optional().default(false),
+});
+
+// All fields optional for PATCH; at least one must be present.
+export const updateAddressSchema = z
+  .object({
+    city: z.string().trim().min(1).optional(),
+    street: z.string().trim().min(1).optional(),
+    building: z.string().trim().min(1).optional(),
+    apartment: z.string().trim().optional(),
+    postalCode: z.string().trim().optional(),
+    isDefault: z.boolean().optional(),
+  })
+  .refine((d) => Object.keys(d).length > 0, {
+    message: 'Немає полів для оновлення',
+  });
+
+export const passwordResetSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Некоректний email'),
+});
+
+export const passwordResetConfirmSchema = z.object({
+  token: z.string().trim().min(1, 'Відсутній код скидання'),
+  password: z.string().min(8, 'Пароль має містити щонайменше 8 символів'),
+});
+
+// --- Discovery / Search ------------------------------------------------------
+
+// Coerce query-string params (all strings) to the right types.
+export const listCooksSchema = z.object({
+  limit: z.coerce.number().int().min(1).max(50).default(10),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+export const searchCooksSchema = z.object({
+  q: z.string().trim().default(''),
+  limit: z.coerce.number().int().min(1).max(50).default(10),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+export const filterCooksSchema = z.object({
+  category: z.string().trim().optional(), // category slug
+  minPrice: z.coerce.number().min(0).optional(),
+  maxPrice: z.coerce.number().min(0).optional(),
+  minRating: z.coerce.number().min(0).max(5).optional(),
+  city: z.string().trim().optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(10),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+export const listDishesSchema = z.object({
+  category: z.string().trim().optional(), // category slug
+  available: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((v) => (v === undefined ? undefined : v === 'true')),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+// --- Cart --------------------------------------------------------------------
+
+export const addToCartSchema = z.object({
+  dishId: z.string().trim().min(1, 'Відсутній ідентифікатор страви'),
+  quantity: z.coerce.number().int().min(1).max(99).default(1),
+});
+
+export const updateCartItemSchema = z.object({
+  quantity: z.coerce.number().int().min(0).max(99),
+});
+
+export const cartTotalSchema = z.object({
+  deliveryFee: z.coerce.number().min(0).optional().default(0),
 });
