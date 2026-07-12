@@ -1,7 +1,7 @@
 import { FlameMark } from './Logo.jsx';
 import Wordmark from './Wordmark.jsx';
 
-// Ohnyk brand lockup: flame emblem + wordmark (custom open-O + Poiret One).
+// Ohnyk brand lockup: flame emblem + fully-vector wordmark (custom open-O).
 // `stacked` renders the emblem above the wordmark (used on the auth screen).
 export default function BrandMark({
   className = '',
