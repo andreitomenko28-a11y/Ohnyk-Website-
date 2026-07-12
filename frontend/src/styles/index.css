@@ -67,34 +67,6 @@ body {
   }
 }
 
-/* Brand wordmark lockup: custom open "O" + Poiret One "hnyk" + orange "y" accent. */
-.brand-lockup {
-  position: relative;
-  display: inline-flex;
-  align-items: baseline;
-  font-family: 'Poiret One', sans-serif;
-  line-height: 1;
-}
-.brand-lockup .brand-o {
-  height: 0.72em;
-  width: 0.72em;
-  align-self: center;
-  margin-right: 0.03em;
-}
-.brand-lockup .brand-hnyk {
-  letter-spacing: 0.005em;
-}
-.brand-lockup .brand-yacc {
-  position: absolute;
-  top: 0.15em;
-  left: 2.19em;
-  width: 0.07em;
-  height: 0.26em;
-  border-radius: 0.05em;
-  transform: rotate(11deg);
-  background: linear-gradient(180deg, #f5a11f 0%, #f6a82e 50%, rgba(245, 161, 31, 0) 100%);
-}
-
 @layer components {
   /* Primary CTA button — ember gradient. */
   .btn-primary {
