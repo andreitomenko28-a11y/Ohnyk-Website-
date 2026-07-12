@@ -26,17 +26,21 @@ export default function Wordmark({ className = '' }) {
       </defs>
       <path transform="translate(12 3) scale(1.66)" d={O_PATH} fill="currentColor" />
       <g fill="none" stroke="currentColor" strokeWidth="13" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M178 12 L178 150" />
-        <path d="M178 86 C180 66 196 57 216 57 C236 57 246 70 246 90 L246 150" />
-        <path d="M286 57 L286 150" />
-        <path d="M286 80 C288 64 303 57 321 57 C340 57 353 68 353 88 L353 150" />
-        <path d="M386 57 L422 128" />
-        <path d="M458 57 C455 92 447 120 436 141 C427 157 417 165 407 167" />
-        <path d="M494 12 L494 150" />
-        <path d="M552 57 L502 104" />
-        <path d="M508 100 L560 150" />
+        {/* h — a hair thinner, smoother shoulder */}
+        <path d="M178 12 L178 150" strokeWidth="12" />
+        <path d="M178 86 C180 66 196 57 216 57 C236 57 246 70 246 90 L246 150" strokeWidth="12" />
+        {/* n — narrower, tucked in closer */}
+        <path d="M280 57 L280 150" />
+        <path d="M280 80 C282 64 296 57 313 57 C331 57 341 68 341 88 L341 150" />
+        {/* y — longer, more calligraphic descender */}
+        <path d="M374 57 L410 128" />
+        <path d="M446 57 C443 92 435 122 423 143 C414 160 403 169 392 173" />
+        {/* k — thinner arm, longer softer leg */}
+        <path d="M478 12 L478 150" />
+        <path d="M536 57 L486 104" strokeWidth="11" />
+        <path d="M492 100 L546 152" />
       </g>
-      <path d="M458 57 C456 78 453 92 451 101" fill="none" stroke={`url(#${acc})`} strokeWidth="13" strokeLinecap="round" />
+      <path d="M446 57 C444 78 441 92 439 101" fill="none" stroke={`url(#${acc})`} strokeWidth="12" strokeLinecap="round" />
     </svg>
   );
 }
