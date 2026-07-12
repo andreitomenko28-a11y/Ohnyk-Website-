@@ -95,6 +95,10 @@ export const dict = {
     addFavorite: 'Додати в обране',
     removeFavorite: 'Прибрати з обраного',
     noFavorites: 'Ще немає обраних кухарів',
+    // Appearance / theme
+    appearance: 'Оформлення',
+    themeLight: 'Світла',
+    themeDark: 'Темна',
     // common
     back: 'Назад',
     error: 'Сталася помилка',
@@ -192,6 +196,10 @@ export const dict = {
     addFavorite: 'Add to favourites',
     removeFavorite: 'Remove from favourites',
     noFavorites: 'No favourite cooks yet',
+    // Appearance / theme
+    appearance: 'Appearance',
+    themeLight: 'Light',
+    themeDark: 'Dark',
     // common
     back: 'Back',
     error: 'Something went wrong',

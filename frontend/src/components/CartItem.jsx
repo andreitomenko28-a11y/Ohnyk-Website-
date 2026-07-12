@@ -16,7 +16,7 @@ export default function CartItem({ item }) {
   }
 
   return (
-    <div className="flex items-center gap-3.5 rounded-2xl border border-[color:var(--line)] bg-white p-3">
+    <div className="flex items-center gap-3.5 rounded-2xl border border-[color:var(--line)] bg-surface p-3">
       <div
         className="flex h-14 w-14 flex-none items-center justify-center overflow-hidden rounded-[12px] text-[22px]"
         style={{ background: 'linear-gradient(135deg, var(--glow), var(--ember))' }}

@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { CartProvider } from './context/CartContext.jsx';
 import { I18nProvider } from './i18n/index.jsx';
@@ -20,28 +21,30 @@ function Protected({ children }) {
 
 export default function App() {
   return (
-    <I18nProvider>
-      <AuthProvider>
-        <CartProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<AuthPage initialTab="login" />} />
-              <Route path="/register" element={<AuthPage initialTab="register" />} />
-              <Route path="/reset-password" element={<PasswordResetPage />} />
+    <ThemeProvider>
+      <I18nProvider>
+        <AuthProvider>
+          <CartProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/login" element={<AuthPage initialTab="login" />} />
+                <Route path="/register" element={<AuthPage initialTab="register" />} />
+                <Route path="/reset-password" element={<PasswordResetPage />} />
 
-              <Route path="/" element={<Protected><HomePage /></Protected>} />
-              <Route path="/discovery" element={<Protected><Discovery /></Protected>} />
-              <Route path="/cooks/:id" element={<Protected><CookProfile /></Protected>} />
-              <Route path="/cart" element={<Protected><Cart /></Protected>} />
-              <Route path="/profile" element={<Protected><Profile /></Protected>} />
-              <Route path="/addresses" element={<Protected><Addresses /></Protected>} />
-              <Route path="/favorites" element={<Protected><Favorites /></Protected>} />
+                <Route path="/" element={<Protected><HomePage /></Protected>} />
+                <Route path="/discovery" element={<Protected><Discovery /></Protected>} />
+                <Route path="/cooks/:id" element={<Protected><CookProfile /></Protected>} />
+                <Route path="/cart" element={<Protected><Cart /></Protected>} />
+                <Route path="/profile" element={<Protected><Profile /></Protected>} />
+                <Route path="/addresses" element={<Protected><Addresses /></Protected>} />
+                <Route path="/favorites" element={<Protected><Favorites /></Protected>} />
 
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </BrowserRouter>
-        </CartProvider>
-      </AuthProvider>
-    </I18nProvider>
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </BrowserRouter>
+          </CartProvider>
+        </AuthProvider>
+      </I18nProvider>
+    </ThemeProvider>
   );
 }

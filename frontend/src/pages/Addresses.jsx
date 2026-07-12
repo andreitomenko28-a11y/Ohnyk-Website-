@@ -72,7 +72,7 @@ export default function Addresses() {
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
   return (
-    <div className="relative mx-auto min-h-screen w-full max-w-[420px] bg-linen pb-24">
+    <div className="relative mx-auto min-h-screen w-full max-w-[420px] bg-canvas pb-24">
       <header className="flex items-center gap-3 px-5 pb-3 pt-5">
         <button onClick={() => navigate('/profile')} className="text-2xl leading-none">
           ‹
@@ -102,7 +102,7 @@ export default function Addresses() {
         {adding ? (
           <form
             onSubmit={create}
-            className="rounded-card border border-[color:var(--line)] bg-white p-4 shadow-card"
+            className="rounded-card border border-[color:var(--line)] bg-surface p-4 shadow-card"
           >
             <label className="field-label">{t('cityLabel')}</label>
             <input className="field-input" value={form.city} onChange={set('city')} required />

@@ -31,7 +31,7 @@ export default function Favorites() {
   }, [favKey]);
 
   return (
-    <div className="relative mx-auto min-h-screen w-full max-w-[420px] bg-linen pb-24">
+    <div className="relative mx-auto min-h-screen w-full max-w-[420px] bg-canvas pb-24">
       <header className="flex items-center gap-3 px-5 pb-3 pt-5">
         <button onClick={() => navigate('/profile')} className="text-2xl leading-none">
           ‹

@@ -11,7 +11,7 @@ export default function AddressCard({ address, onMakeDefault, onDelete, busy }) 
     .join(', ');
 
   return (
-    <div className="rounded-2xl border border-[color:var(--line)] bg-white p-4">
+    <div className="rounded-2xl border border-[color:var(--line)] bg-surface p-4">
       <div className="flex items-start justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-sm font-bold">

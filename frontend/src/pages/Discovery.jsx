@@ -14,6 +14,7 @@ export default function Discovery() {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState(null);
   const [filters, setFilters] = useState({});
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const [cooks, setCooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -56,8 +57,8 @@ export default function Discovery() {
   }, [load, query]);
 
   return (
-    <div className="relative mx-auto min-h-screen w-full max-w-[420px] bg-linen pb-24">
-      <header className="sticky top-0 z-10 bg-linen px-5 pb-3 pt-5">
+    <div className="relative mx-auto min-h-screen w-full max-w-[420px] bg-canvas pb-24">
+      <header className="sticky top-0 z-10 bg-canvas px-5 pb-3 pt-5">
         <div className="mb-4 font-display text-xl font-bold">{t('discoveryTitle')}</div>
         <SearchBar
           value={query}
@@ -68,9 +69,12 @@ export default function Discovery() {
             setCategory(c);
             setQuery('');
           }}
+          onFilter={() => setFiltersOpen((o) => !o)}
         />
         <FilterPanel
           value={filters}
+          open={filtersOpen}
+          onToggle={() => setFiltersOpen((o) => !o)}
           onApply={(f) => setFilters(f)}
           onReset={() => setFilters({})}
         />

@@ -13,8 +13,8 @@ export default function Cart() {
   const empty = cart.items.length === 0;
 
   return (
-    <div className="relative mx-auto min-h-screen w-full max-w-[420px] bg-linen pb-24">
-      <header className="sticky top-0 z-10 flex items-center justify-between bg-linen px-5 pb-3 pt-5">
+    <div className="relative mx-auto min-h-screen w-full max-w-[420px] bg-canvas pb-24">
+      <header className="sticky top-0 z-10 flex items-center justify-between bg-canvas px-5 pb-3 pt-5">
         <div className="font-display text-xl font-bold">{t('cartTitle')}</div>
         {!empty && (
           <button onClick={clear} className="text-[13px] font-semibold text-[color:var(--muted)]">

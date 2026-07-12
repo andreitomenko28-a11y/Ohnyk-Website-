@@ -5,6 +5,8 @@ import { useI18n } from '../i18n/index.jsx';
 import api from '../api/client.js';
 import BottomNav from '../components/BottomNav.jsx';
 import CookCard from '../components/CookCard.jsx';
+import ThemeToggle from '../components/ThemeToggle.jsx';
+import { Star } from '../components/icons.jsx';
 
 const EMOJI = ['🥣', '🍢', '🍰', '🍞', '🥘', '🥟'];
 
@@ -38,37 +40,41 @@ export default function HomePage() {
   const rest = cooks.slice(0, 6);
 
   return (
-    <div className="relative mx-auto min-h-screen w-full max-w-[420px] bg-linen pb-24">
-      <header className="sticky top-0 z-10 bg-linen px-5 pb-4 pt-5">
+    <div className="relative mx-auto min-h-screen w-full max-w-[420px] bg-canvas pb-24">
+      <header className="sticky top-0 z-10 bg-canvas px-5 pb-4 pt-5">
         <div className="mb-4 flex items-center justify-between">
           <div>
             <div className="text-xs text-[color:var(--muted)]">
               {t('hi')}, {user?.fullName?.split(' ')[0] || '👋'} 👋
             </div>
             <div className="flex items-center gap-1 font-display text-base font-bold">
-              📍 {user?.cook?.city || 'Черкаси'}
+              <span className="text-ember">📍</span> {user?.cook?.city || 'Черкаси'}
+              <span className="text-[color:var(--muted)]">⌄</span>
             </div>
           </div>
-          <button
-            onClick={() => navigate('/profile')}
-            title={t('profileTitle')}
-            className="flex h-[38px] w-[38px] items-center justify-center overflow-hidden rounded-full font-display text-sm font-bold text-white"
-            style={{ background: 'linear-gradient(135deg, var(--glow), var(--ember))' }}
-          >
-            {user?.avatar ? (
-              <img src={user.avatar} alt="" className="h-full w-full object-cover" />
-            ) : (
-              initial
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <button
+              onClick={() => navigate('/profile')}
+              title={t('profileTitle')}
+              className="flex h-[38px] w-[38px] items-center justify-center overflow-hidden rounded-full font-display text-sm font-bold text-on-accent"
+              style={{ background: 'linear-gradient(135deg, var(--glow), var(--ember))' }}
+            >
+              {user?.avatar ? (
+                <img src={user.avatar} alt="" className="h-full w-full object-cover" />
+              ) : (
+                initial
+              )}
+            </button>
+          </div>
         </div>
 
         <button
           onClick={() => navigate('/discovery')}
-          className="flex w-full items-center gap-2.5 rounded-2xl border-[1.5px] border-[color:var(--line)] bg-white px-4 py-3 text-left"
+          className="flex w-full items-center gap-2.5 rounded-2xl border-[1.5px] border-[color:var(--line)] bg-surface px-4 py-3 text-left"
         >
           <span className="text-[15px] opacity-50">🔍</span>
-          <span className="text-sm text-[color:rgba(36,30,27,0.4)]">{t('searchPlaceholder')}</span>
+          <span className="text-sm text-[color:var(--muted)]">{t('searchPlaceholder')}</span>
         </button>
       </header>
 
@@ -93,7 +99,7 @@ export default function HomePage() {
                 <button
                   key={f.id}
                   onClick={() => navigate(`/cooks/${f.id}`)}
-                  className="w-[210px] flex-none overflow-hidden rounded-card border border-[color:var(--line)] bg-white text-left shadow-[0_14px_30px_-22px_rgba(36,30,27,0.4)]"
+                  className="w-[210px] flex-none overflow-hidden rounded-card border border-line bg-surface text-left shadow-card"
                 >
                   <div
                     className="flex h-[120px] items-center justify-center text-[34px]"
@@ -105,7 +111,9 @@ export default function HomePage() {
                     <div className="mb-0.5 truncate text-sm font-bold">{f.name}</div>
                     <div className="truncate text-xs text-[color:var(--muted)]">{f.bio}</div>
                     <div className="mt-2.5 flex items-center justify-between text-xs">
-                      <span className="font-bold text-ember-dark">★ {f.rating.toFixed(1)}</span>
+                      <span className="flex items-center gap-1 font-bold">
+                        <Star className="h-3.5 w-3.5 text-star" /> {f.rating.toFixed(1)}
+                      </span>
                       <span className="text-[color:var(--muted)]">
                         {f.priceFrom != null ? `${t('from')} ${f.priceFrom}₴` : ''}
                       </span>
@@ -136,7 +144,7 @@ function Chip({ onClick, children }) {
   return (
     <button
       onClick={onClick}
-      className="flex flex-none items-center gap-1.5 whitespace-nowrap rounded-full border-[1.5px] border-[color:var(--line)] bg-white px-4 py-2.5 text-[13px] font-semibold text-soot"
+      className="flex flex-none items-center gap-1.5 whitespace-nowrap rounded-full border-[1.5px] border-[color:var(--line)] bg-surface px-4 py-2.5 text-[13px] font-semibold text-fg"
     >
       {children}
     </button>

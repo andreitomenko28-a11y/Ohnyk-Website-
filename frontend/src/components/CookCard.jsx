@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n/index.jsx';
 import FavoriteButton from './FavoriteButton.jsx';
+import { VerifiedBadge, Star } from './icons.jsx';
 
 // A cook summary card used in Discovery and Home lists.
 // Navigation is a full-card overlay button sitting *under* pointer-events-none
@@ -10,7 +11,7 @@ export default function CookCard({ cook, emoji = '🍲' }) {
   const navigate = useNavigate();
 
   return (
-    <div className="relative rounded-2xl border border-[color:var(--line)] bg-white transition-transform active:scale-[0.99]">
+    <div className="relative rounded-2xl border border-[color:var(--line)] bg-surface transition-transform active:scale-[0.99]">
       {/* Clickable overlay (behind content) */}
       <button
         type="button"
@@ -38,14 +39,14 @@ export default function CookCard({ cook, emoji = '🍲' }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1 text-sm font-bold">
             <span className="truncate">{cook.name}</span>
-            {cook.isVerified && <span title={t('verified')}>✅</span>}
+            {cook.isVerified && <VerifiedBadge className="h-[15px] w-[15px] flex-none" title={t('verified')} />}
           </div>
           {cook.bio && (
             <div className="mt-0.5 truncate text-xs text-[color:var(--muted)]">{cook.bio}</div>
           )}
           <div className="mt-1.5 flex flex-wrap gap-1.5 text-[10px] font-semibold text-[color:var(--muted)]">
-            <span className="rounded-full bg-linen px-2 py-0.5">📍 {cook.city}</span>
-            <span className="rounded-full bg-linen px-2 py-0.5">
+            <span className="rounded-full bg-elevated px-2 py-0.5">📍 {cook.city}</span>
+            <span className="rounded-full bg-elevated px-2 py-0.5">
               {cook.dishCount} {t('dishesCount')}
             </span>
           </div>
@@ -57,8 +58,9 @@ export default function CookCard({ cook, emoji = '🍲' }) {
               {t('from')} {cook.priceFrom}₴
             </div>
           )}
-          <div className="mt-1 text-[11px] font-bold text-ember-dark">
-            ★ {cook.rating.toFixed(1)}
+          <div className="mt-1 flex items-center justify-end gap-1 text-[12px] font-bold">
+            <Star className="h-3.5 w-3.5 text-star" />
+            {cook.rating.toFixed(1)}
           </div>
         </div>
       </div>

@@ -30,7 +30,7 @@ export default function DishCard({ dish, onConflict }) {
   }
 
   return (
-    <div className="flex items-center gap-3.5 rounded-2xl border border-[color:var(--line)] bg-white p-3">
+    <div className="flex items-center gap-3.5 rounded-2xl border border-[color:var(--line)] bg-surface p-3">
       <div
         className="flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-[14px] text-[24px]"
         style={{ background: 'linear-gradient(135deg, var(--glow), var(--ember))' }}

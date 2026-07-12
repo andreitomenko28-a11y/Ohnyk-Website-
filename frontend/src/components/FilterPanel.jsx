@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { useI18n } from '../i18n/index.jsx';
+import { SlidersIcon } from './icons.jsx';
 
-// Collapsible filter panel: price range + minimum rating.
-export default function FilterPanel({ value, onApply, onReset }) {
+// Filter panel: price range + minimum rating.
+// `open`/`onToggle` are optional — when omitted the panel manages its own state.
+export default function FilterPanel({ value, onApply, onReset, open, onToggle, showToggle = true }) {
   const { t } = useI18n();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = open ?? internalOpen;
+  const toggle = onToggle ?? (() => setInternalOpen((o) => !o));
   const [draft, setDraft] = useState(value);
 
   const activeCount =
@@ -12,20 +16,22 @@ export default function FilterPanel({ value, onApply, onReset }) {
 
   return (
     <div className="mt-3">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 rounded-full border-[1.5px] border-[color:var(--line)] bg-white px-4 py-2 text-[13px] font-semibold text-soot"
-      >
-        ⚙️ {t('filters')}
-        {activeCount > 0 && (
-          <span className="ml-1 rounded-full bg-ember px-1.5 text-[11px] font-bold text-white">
-            {activeCount}
-          </span>
-        )}
-      </button>
+      {showToggle && (
+        <button
+          onClick={toggle}
+          className="flex items-center gap-1.5 rounded-full border-[1.5px] border-line bg-surface px-4 py-2 text-[13px] font-semibold text-fg"
+        >
+          <SlidersIcon className="h-4 w-4" /> {t('filters')}
+          {activeCount > 0 && (
+            <span className="ml-1 rounded-full bg-ember px-1.5 text-[11px] font-bold text-on-accent">
+              {activeCount}
+            </span>
+          )}
+        </button>
+      )}
 
-      {open && (
-        <div className="mt-3 rounded-2xl border border-[color:var(--line)] bg-white p-4">
+      {isOpen && (
+        <div className="mt-3 rounded-2xl border border-line bg-surface p-4">
           <div className="mb-1.5 text-[13px] font-semibold">{t('priceRange')}</div>
           <div className="mb-4 flex items-center gap-2">
             <input
@@ -55,8 +61,8 @@ export default function FilterPanel({ value, onApply, onReset }) {
                 onClick={() => setDraft({ ...draft, minRating: r || undefined })}
                 className={`flex-1 rounded-xl border-[1.5px] py-2 text-[13px] font-semibold transition-all ${
                   (draft.minRating ?? 0) === r
-                    ? 'border-ember bg-ember/[0.06] text-ember-dark'
-                    : 'border-[color:var(--line)]'
+                    ? 'border-ember bg-ember/[0.1] text-ember-dark'
+                    : 'border-line'
                 }`}
               >
                 {r ? `★ ${r}+` : t('allCategories')}
@@ -71,16 +77,16 @@ export default function FilterPanel({ value, onApply, onReset }) {
                 setDraft(cleared);
                 onReset?.();
               }}
-              className="flex-1 rounded-xl border-[1.5px] border-[color:var(--line)] py-2.5 text-sm font-semibold"
+              className="flex-1 rounded-xl border-[1.5px] border-line py-2.5 text-sm font-semibold"
             >
               {t('reset')}
             </button>
             <button
               onClick={() => {
                 onApply?.(draft);
-                setOpen(false);
+                toggle();
               }}
-              className="flex-1 rounded-xl py-2.5 text-sm font-bold text-white"
+              className="flex-1 rounded-xl py-2.5 text-sm font-bold text-on-accent"
               style={{ background: 'linear-gradient(135deg, var(--ember), var(--ember-dark))' }}
             >
               {t('apply')}

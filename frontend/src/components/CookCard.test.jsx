@@ -52,7 +52,7 @@ describe('CookCard', () => {
     renderCard();
     expect(screen.getByText('Оксана Ковальчук')).toBeInTheDocument();
     expect(screen.getByText('Домашній борщ')).toBeInTheDocument();
-    expect(screen.getByText('★ 4.9')).toBeInTheDocument();
+    expect(screen.getByText(/4\.9/)).toBeInTheDocument(); // rating (star is an icon)
     expect(screen.getByText('від 85₴')).toBeInTheDocument();
   });
 

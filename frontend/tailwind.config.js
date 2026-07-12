@@ -1,26 +1,36 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
+  darkMode: ['selector', '[data-theme="dark"]'],
   theme: {
     extend: {
-      // Ohnyk design system.
+      // Ohnyk design system — all colours are theme-driven CSS variables.
       colors: {
-        soot: '#241E1B',
-        linen: '#FAF3EA',
-        ember: '#D46A3B',
-        'ember-dark': '#B8532A',
-        glow: '#F2A65A',
+        // Semantic surfaces / text
+        canvas: 'var(--bg)',
+        surface: 'var(--surface)',
+        elevated: 'var(--elevated)',
+        fg: 'var(--fg)',
+        line: 'var(--line)',
+        star: 'var(--star)',
+        'on-accent': 'var(--on-accent)',
+        // Accent + legacy aliases (kept so existing classes stay themed)
+        ember: 'var(--ember)',
+        'ember-dark': 'var(--ember-dark)',
+        glow: 'var(--glow)',
+        soot: 'var(--fg)', // legacy alias → foreground
+        linen: 'var(--bg)', // legacy alias → page background
       },
       fontFamily: {
         display: ['Comfortaa', 'sans-serif'],
         sans: ['Manrope', 'sans-serif'],
       },
       borderRadius: {
-        card: '18px',
+        card: '20px',
       },
       boxShadow: {
-        card: '0 20px 50px -30px rgba(36,30,27,0.35)',
-        nav: '0 -10px 30px -20px rgba(36,30,27,0.3)',
+        card: 'var(--card-shadow)',
+        nav: 'var(--nav-shadow)',
       },
     },
   },

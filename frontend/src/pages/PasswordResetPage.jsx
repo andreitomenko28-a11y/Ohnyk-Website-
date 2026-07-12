@@ -14,7 +14,7 @@ export default function PasswordResetPage() {
           <div className="mt-1 text-[13px] text-[color:var(--muted)]">{t('tag')}</div>
         </div>
 
-        <div className="rounded-card border border-[color:var(--line)] bg-white p-6 shadow-card">
+        <div className="rounded-card border border-[color:var(--line)] bg-surface p-6 shadow-card">
           <PasswordReset />
         </div>
 

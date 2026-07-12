@@ -35,7 +35,7 @@ export default function FavoriteButton({ cookId, className = '', size = 'md' }) 
       aria-pressed={isFav}
       aria-label={isFav ? t('removeFavorite') : t('addFavorite')}
       title={isFav ? t('removeFavorite') : t('addFavorite')}
-      className={`flex flex-none items-center justify-center rounded-full bg-white/90 shadow-sm transition-transform active:scale-90 disabled:opacity-60 ${dims} ${className}`}
+      className={`flex flex-none items-center justify-center rounded-full border border-line bg-surface/85 shadow-sm backdrop-blur-sm transition-transform active:scale-90 disabled:opacity-60 ${dims} ${className}`}
     >
       <span className={isFav ? '' : 'grayscale'}>{isFav ? '❤️' : '🤍'}</span>
     </button>

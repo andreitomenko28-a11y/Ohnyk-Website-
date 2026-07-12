@@ -5,6 +5,7 @@ import { useI18n } from '../i18n/index.jsx';
 import { apiError } from '../api/client.js';
 import BrandMark from '../components/BrandMark.jsx';
 import LangSwitch from '../components/LangSwitch.jsx';
+import ThemeToggle from '../components/ThemeToggle.jsx';
 
 // Combined Login / Register screen with tab switching — mirrors the mockup.
 export default function AuthPage({ initialTab = 'login' }) {
@@ -14,12 +15,15 @@ export default function AuthPage({ initialTab = 'login' }) {
   return (
     <div className="flex min-h-screen items-center justify-center p-6">
       <div className="w-full max-w-[420px]">
+        <div className="mb-4 flex justify-end">
+          <ThemeToggle />
+        </div>
         <div className="mb-7 text-center">
           <BrandMark className="text-[28px]" />
           <div className="mt-1 text-[13px] text-[color:var(--muted)]">{t('tag')}</div>
         </div>
 
-        <div className="overflow-hidden rounded-card border border-[color:var(--line)] bg-white shadow-card">
+        <div className="overflow-hidden rounded-card border border-[color:var(--line)] bg-surface shadow-card">
           <div className="flex border-b border-[color:var(--line)]">
             <TabButton active={tab === 'login'} onClick={() => setTab('login')}>
               {t('tabLogin')}
@@ -45,7 +49,7 @@ function TabButton({ active, onClick, children }) {
     <button
       onClick={onClick}
       className={`relative flex-1 py-[18px] font-display text-[15px] font-bold transition-colors ${
-        active ? 'text-soot' : 'text-[color:var(--muted)]'
+        active ? 'text-fg' : 'text-[color:var(--muted)]'
       }`}
     >
       {children}

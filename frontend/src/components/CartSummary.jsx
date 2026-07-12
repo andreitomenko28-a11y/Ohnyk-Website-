@@ -6,7 +6,7 @@ export default function CartSummary({ subtotal, deliveryFee = 0, onCheckout }) {
   const total = Number((subtotal + deliveryFee).toFixed(2));
 
   return (
-    <div className="rounded-card border border-[color:var(--line)] bg-white p-4 shadow-card">
+    <div className="rounded-card border border-[color:var(--line)] bg-surface p-4 shadow-card">
       <Row label={t('subtotal')} value={`${subtotal}₴`} />
       <Row label={t('delivery')} value={deliveryFee ? `${deliveryFee}₴` : '—'} />
       <div className="my-3 border-t border-[color:var(--line)]" />
@@ -27,7 +27,7 @@ function Row({ label, value, strong }) {
       }`}
     >
       <span>{label}</span>
-      <span className={strong ? 'text-soot' : 'font-semibold text-soot'}>{value}</span>
+      <span className={strong ? 'text-fg' : 'font-semibold text-fg'}>{value}</span>
     </div>
   );
 }

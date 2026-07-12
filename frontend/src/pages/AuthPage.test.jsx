@@ -21,17 +21,20 @@ vi.mock('../api/client.js', () => {
 import api from '../api/client.js';
 import AuthPage from './AuthPage.jsx';
 import { AuthProvider } from '../context/AuthContext.jsx';
+import { ThemeProvider } from '../context/ThemeContext.jsx';
 import { I18nProvider } from '../i18n/index.jsx';
 
 function renderAuth(initialTab = 'login') {
   return render(
-    <I18nProvider>
-      <AuthProvider>
-        <MemoryRouter initialEntries={['/login']}>
-          <AuthPage initialTab={initialTab} />
-        </MemoryRouter>
-      </AuthProvider>
-    </I18nProvider>
+    <ThemeProvider>
+      <I18nProvider>
+        <AuthProvider>
+          <MemoryRouter initialEntries={['/login']}>
+            <AuthPage initialTab={initialTab} />
+          </MemoryRouter>
+        </AuthProvider>
+      </I18nProvider>
+    </ThemeProvider>
   );
 }
 
