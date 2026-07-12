@@ -48,6 +48,7 @@ export default function Profile() {
         ) : (
           <div className="mt-4 space-y-2.5">
             <MenuRow icon="✏️" label={t('editProfile')} onClick={() => setEditing(true)} />
+            <MenuRow icon="❤️" label={t('favorites')} onClick={() => navigate('/favorites')} />
             <MenuRow icon="📍" label={t('myAddresses')} onClick={() => navigate('/addresses')} />
             <MenuRow icon="🚪" label={t('logout')} onClick={logout} danger />
           </div>

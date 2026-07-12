@@ -4,6 +4,7 @@ import { useI18n } from '../i18n/index.jsx';
 import api from '../api/client.js';
 import Menu from '../components/Menu.jsx';
 import BottomNav from '../components/BottomNav.jsx';
+import FavoriteButton from '../components/FavoriteButton.jsx';
 import { useCart } from '../context/CartContext.jsx';
 
 // Cook detail: header card + grouped menu.
@@ -73,6 +74,7 @@ export default function CookProfile() {
         >
           ‹
         </button>
+        <FavoriteButton cookId={cook.id} size="lg" className="absolute right-4 top-4" />
         <div className="text-4xl">{cook.avatar ? '' : '🍲'}</div>
       </div>
 

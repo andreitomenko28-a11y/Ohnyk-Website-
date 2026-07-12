@@ -4,6 +4,9 @@ import {
   updateUser,
   getProfile,
   updateProfile,
+  listFavorites,
+  addFavorite,
+  removeFavorite,
 } from '../controllers/userController.js';
 import { authGuard } from '../middleware/authGuard.js';
 import addressRoutes from './addresses.js';
@@ -17,6 +20,11 @@ router.use('/addresses', addressRoutes);
 // Current user's own profile.
 router.get('/profile', authGuard, getProfile);
 router.patch('/profile', authGuard, updateProfile);
+
+// Favourite cooks.
+router.get('/favorites', authGuard, listFavorites);
+router.put('/favorites/:cookId', authGuard, addFavorite);
+router.delete('/favorites/:cookId', authGuard, removeFavorite);
 
 // Public profile by id + owner/admin edit.
 router.get('/:id', getUser);

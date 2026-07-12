@@ -11,6 +11,7 @@ import CookProfile from './pages/CookProfile.jsx';
 import Cart from './pages/Cart.jsx';
 import Profile from './pages/Profile.jsx';
 import Addresses from './pages/Addresses.jsx';
+import Favorites from './pages/Favorites.jsx';
 
 // Wraps a page in the auth guard.
 function Protected({ children }) {
@@ -34,6 +35,7 @@ export default function App() {
               <Route path="/cart" element={<Protected><Cart /></Protected>} />
               <Route path="/profile" element={<Protected><Profile /></Protected>} />
               <Route path="/addresses" element={<Protected><Addresses /></Protected>} />
+              <Route path="/favorites" element={<Protected><Favorites /></Protected>} />
 
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

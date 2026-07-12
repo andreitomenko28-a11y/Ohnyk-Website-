@@ -57,8 +57,23 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
+  // Add/remove a cook from the current user's favourites.
+  const toggleFavorite = useCallback(
+    async (cookId) => {
+      const isFav = user?.favoriteCookIds?.includes(cookId);
+      const { data } = isFav
+        ? await api.delete(`/users/favorites/${cookId}`)
+        : await api.put(`/users/favorites/${cookId}`);
+      setUser(data.user);
+      return data.user;
+    },
+    [user]
+  );
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, setUser }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, register, logout, setUser, toggleFavorite }}
+    >
       {children}
     </AuthContext.Provider>
   );

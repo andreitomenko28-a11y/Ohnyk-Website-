@@ -90,6 +90,11 @@ export const dict = {
     newPassword: 'Новий пароль',
     resetDone: 'Пароль змінено. Тепер увійдіть.',
     backToLogin: 'Повернутись до входу',
+    // Favorites
+    favorites: 'Обране',
+    addFavorite: 'Додати в обране',
+    removeFavorite: 'Прибрати з обраного',
+    noFavorites: 'Ще немає обраних кухарів',
     // common
     back: 'Назад',
     error: 'Сталася помилка',
@@ -182,6 +187,11 @@ export const dict = {
     newPassword: 'New password',
     resetDone: 'Password changed. You can log in now.',
     backToLogin: 'Back to login',
+    // Favorites
+    favorites: 'Favourites',
+    addFavorite: 'Add to favourites',
+    removeFavorite: 'Remove from favourites',
+    noFavorites: 'No favourite cooks yet',
     // common
     back: 'Back',
     error: 'Something went wrong',

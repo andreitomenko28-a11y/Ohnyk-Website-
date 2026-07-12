@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { request, registerUser, authHeader } from './helpers.js';
+import { request, registerUser, authHeader, createCookWithDishes } from './helpers.js';
 
 describe('User profile', () => {
   it('returns the current user profile', async () => {
@@ -126,6 +126,41 @@ describe('Addresses', () => {
       .delete(`/api/users/addresses/${a.body.address.id}`)
       .set(authHeader(other.accessToken));
     expect(del.status).toBe(404);
+  });
+});
+
+describe('Favourite cooks', () => {
+  it('requires auth', async () => {
+    const res = await request.get('/api/users/favorites');
+    expect(res.status).toBe(401);
+  });
+
+  it('adds, lists and removes a favourite cook', async () => {
+    const { accessToken } = await registerUser();
+    const { cook } = await createCookWithDishes({ fullName: 'Оксана', dishes: [{ name: 'Борщ', price: 90 }] });
+
+    // Add (idempotent).
+    const add = await request.put(`/api/users/favorites/${cook.id}`).set(authHeader(accessToken));
+    expect(add.status).toBe(200);
+    expect(add.body.user.favoriteCookIds).toContain(cook.id);
+    await request.put(`/api/users/favorites/${cook.id}`).set(authHeader(accessToken)); // again
+
+    const list = await request.get('/api/users/favorites').set(authHeader(accessToken));
+    expect(list.body.cooks).toHaveLength(1);
+    expect(list.body.cooks[0].name).toBe('Оксана');
+
+    // Remove.
+    const del = await request.delete(`/api/users/favorites/${cook.id}`).set(authHeader(accessToken));
+    expect(del.body.user.favoriteCookIds).not.toContain(cook.id);
+
+    const empty = await request.get('/api/users/favorites').set(authHeader(accessToken));
+    expect(empty.body.cooks).toHaveLength(0);
+  });
+
+  it('404s when favouriting a missing cook', async () => {
+    const { accessToken } = await registerUser();
+    const res = await request.put('/api/users/favorites/nope').set(authHeader(accessToken));
+    expect(res.status).toBe(404);
   });
 });
 

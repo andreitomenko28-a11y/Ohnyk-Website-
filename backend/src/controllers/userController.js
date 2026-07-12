@@ -2,6 +2,7 @@ import { prisma } from '../lib/prisma.js';
 import { httpError } from '../middleware/errorHandler.js';
 import { updateUserSchema } from '../validation/schemas.js';
 import { publicUser } from './authController.js';
+import { publicCook } from './cookController.js';
 
 // Splits validated body into User columns and Cook columns.
 function splitProfileData(data) {
@@ -46,6 +47,70 @@ export async function updateProfile(req, res, next) {
     });
 
     res.json({ user: publicUser(user) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// GET /api/users/favorites  (protected) — the current user's favourite cooks.
+export async function listFavorites(req, res, next) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { favoriteCookIds: true },
+    });
+    const ids = user?.favoriteCookIds ?? [];
+    const cooks = ids.length
+      ? await prisma.cook.findMany({
+          where: { id: { in: ids } },
+          include: { user: { select: { fullName: true } }, dishes: { where: { isAvailable: true }, select: { price: true } } },
+        })
+      : [];
+    res.json({ cooks: cooks.map(publicCook) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PUT /api/users/favorites/:cookId  (protected) — add to favourites (idempotent).
+export async function addFavorite(req, res, next) {
+  try {
+    const { cookId } = req.params;
+    const cook = await prisma.cook.findUnique({ where: { id: cookId } });
+    if (!cook) throw httpError(404, 'Кухаря не знайдено');
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: { cookProfile: true },
+    });
+    if (!user.favoriteCookIds.includes(cookId)) {
+      const updated = await prisma.user.update({
+        where: { id: req.user.id },
+        data: { favoriteCookIds: { set: [...user.favoriteCookIds, cookId] } },
+        include: { cookProfile: true },
+      });
+      return res.json({ user: publicUser(updated) });
+    }
+    res.json({ user: publicUser(user) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// DELETE /api/users/favorites/:cookId  (protected) — remove from favourites.
+export async function removeFavorite(req, res, next) {
+  try {
+    const { cookId } = req.params;
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: { cookProfile: true },
+    });
+    const updated = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { favoriteCookIds: { set: user.favoriteCookIds.filter((id) => id !== cookId) } },
+      include: { cookProfile: true },
+    });
+    res.json({ user: publicUser(updated) });
   } catch (err) {
     next(err);
   }
