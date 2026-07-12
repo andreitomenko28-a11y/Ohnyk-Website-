@@ -1,6 +1,6 @@
 <!doctype html>
 <!--
-  Ohnyk — відтворення логотипа 1:1 (HTML/CSS + inline SVG).
+  Ohnyk — відтворення логотипа (HTML/CSS + inline SVG).
   Шрифт напису: Forum (Google Fonts). Полум'я/дуга — векторний SVG.
   Блок .stage масштабується без втрати якості (одиниці cqw прив'язані до ширини).
 -->
@@ -23,7 +23,7 @@
     background:radial-gradient(circle at 50% 50%, rgba(244,150,48,.30), rgba(244,150,48,.10) 42%, transparent 66%);
     filter:blur(1cqw);
   }
-  .flame{ position:absolute; left:50%; top:21%; width:42%; transform:translateX(-50%); }
+  .flame{ position:absolute; left:50%; top:23%; width:35%; transform:translateX(-50%); }
   .word{
     position:absolute; left:0; right:0; top:57.2%; text-align:center;
     color:#f5ead6; font-size:18.39cqw; line-height:1; letter-spacing:.075em;
@@ -41,7 +41,7 @@
 <body>
   <div class="stage">
     <div class="glow"></div>
-    <svg class="flame" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <svg class="flame" viewBox="0 0 350 340" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="fg" x1="50%" y1="0%" x2="50%" y2="100%">
           <stop offset="0%" stop-color="#FAC24E"/>
@@ -50,11 +50,11 @@
         </linearGradient>
       </defs>
       <g fill="url(#fg)">
-        <path d="M50 58 Q71 104 50 150 Q29 104 50 58 Z" transform="rotate(-11 50 104)"/>
-        <path d="M150 58 Q171 104 150 150 Q129 104 150 58 Z" transform="rotate(11 150 104)"/>
-        <path d="M100 8 Q128 79 100 150 Q72 79 100 8 Z"/>
+        <path d="M76 145 C95 175 106 200 106 230 C106 255 93 270 76 280 C59 270 46 255 46 230 C46 200 57 175 76 145 Z"/>
+        <path d="M274 145 C293 175 304 200 304 230 C304 255 291 270 274 280 C257 270 244 255 244 230 C244 200 255 175 274 145 Z"/>
+        <path d="M175 0 C210 40 228 95 228 150 C228 205 205 250 175 275 C145 250 122 205 122 150 C122 95 140 40 175 0 Z"/>
       </g>
-      <path d="M40 158 Q100 180 160 158" fill="none" stroke="#7a4e24" stroke-width="3" stroke-linecap="round"/>
+      <path d="M8 316 Q175 342 342 316" fill="none" stroke="#7a4e24" stroke-width="4" stroke-linecap="round"/>
     </svg>
     <div class="word">Ohnyk</div>
     <div class="slogan"><span class="dash"></span>Домашнє тепло у кожній страві<span class="dash r"></span></div>
