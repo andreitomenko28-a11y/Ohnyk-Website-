@@ -1,0 +1,63 @@
+<!doctype html>
+<!--
+  Ohnyk — відтворення логотипа 1:1 (HTML/CSS + inline SVG).
+  Шрифт напису: Forum (Google Fonts). Полум'я/дуга — векторний SVG.
+  Блок .stage масштабується без втрати якості (одиниці cqw прив'язані до ширини).
+-->
+<html lang="uk">
+<head>
+<meta charset="utf-8" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Forum&display=swap" rel="stylesheet" />
+<style>
+  html,body{margin:0;background:#130a06}
+  .stage{
+    position:relative; width:min(620px,100vw); aspect-ratio:1/1; margin:0 auto;
+    container-type:inline-size;
+    background:radial-gradient(60% 55% at 52% 42%, #3a2410 0%, #241408 38%, #180d07 72%, #130a06 100%);
+    overflow:hidden; font-family:'Forum', serif;
+  }
+  .glow{
+    position:absolute; left:50%; top:38%; width:52%; height:46%; transform:translate(-50%,-50%);
+    background:radial-gradient(circle at 50% 50%, rgba(244,150,48,.30), rgba(244,150,48,.10) 42%, transparent 66%);
+    filter:blur(1cqw);
+  }
+  .flame{ position:absolute; left:50%; top:21%; width:42%; transform:translateX(-50%); }
+  .word{
+    position:absolute; left:0; right:0; top:57.2%; text-align:center;
+    color:#f5ead6; font-size:18.39cqw; line-height:1; letter-spacing:.075em;
+    text-shadow:0 .16cqw 2.9cqw rgba(0,0,0,.35);
+  }
+  .slogan{
+    position:absolute; left:0; right:0; top:78.3%; text-align:center;
+    display:flex; align-items:center; justify-content:center; gap:2.58cqw;
+    color:#e0a03c; font-size:2.74cqw; letter-spacing:.28em; text-transform:uppercase;
+  }
+  .slogan .dash{ display:inline-block; width:4.19cqw; height:1px; background:linear-gradient(90deg,transparent,#c9862f); }
+  .slogan .dash.r{ background:linear-gradient(90deg,#c9862f,transparent); }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="glow"></div>
+    <svg class="flame" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="fg" x1="50%" y1="0%" x2="50%" y2="100%">
+          <stop offset="0%" stop-color="#FAC24E"/>
+          <stop offset="45%" stop-color="#F0902A"/>
+          <stop offset="100%" stop-color="#DF6A14"/>
+        </linearGradient>
+      </defs>
+      <g fill="url(#fg)">
+        <path d="M50 58 Q71 104 50 150 Q29 104 50 58 Z" transform="rotate(-11 50 104)"/>
+        <path d="M150 58 Q171 104 150 150 Q129 104 150 58 Z" transform="rotate(11 150 104)"/>
+        <path d="M100 8 Q128 79 100 150 Q72 79 100 8 Z"/>
+      </g>
+      <path d="M40 158 Q100 180 160 158" fill="none" stroke="#7a4e24" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+    <div class="word">Ohnyk</div>
+    <div class="slogan"><span class="dash"></span>Домашнє тепло у кожній страві<span class="dash r"></span></div>
+  </div>
+</body>
+</html>

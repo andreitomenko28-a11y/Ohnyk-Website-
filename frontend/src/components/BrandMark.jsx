@@ -8,7 +8,7 @@ export default function BrandMark({
   stacked = false,
   markClassName = '',
 }) {
-  const word = <span className="font-brand font-semibold tracking-[0.01em]">Ohnyk</span>;
+  const word = <span className="font-brand tracking-[0.01em]">Ohnyk</span>;
 
   if (stacked) {
     return (

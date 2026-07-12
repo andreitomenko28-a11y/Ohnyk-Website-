@@ -10,9 +10,9 @@ export function FlameMark({ className = 'h-8 w-8' }) {
     <svg viewBox="0 0 100 108" className={className} role="img" aria-label="Ohnyk">
       <defs>
         <linearGradient id={g} x1="50%" y1="0%" x2="50%" y2="100%">
-          <stop offset="0%" stopColor="#F8BC63" />
-          <stop offset="52%" stopColor="#F0913F" />
-          <stop offset="100%" stopColor="#DD5F27" />
+          <stop offset="0%" stopColor="#FAC24E" />
+          <stop offset="45%" stopColor="#F0902A" />
+          <stop offset="100%" stopColor="#DF6A14" />
         </linearGradient>
       </defs>
       <g fill={`url(#${g})`}>

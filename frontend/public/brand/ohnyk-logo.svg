@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1254 1254" width="1254" height="1254" role="img" aria-label="Ohnyk — домашнє тепло у кожній страві">
+  <!-- Напис використовує шрифт Forum (Google Fonts). У браузері/інструменті шрифт має бути доступний. -->
+  <defs>
+    <style>@import url('https://fonts.googleapis.com/css2?family=Forum&amp;display=swap');</style>
+    <radialGradient id="bg" cx="52%" cy="42%" r="60%">
+      <stop offset="0%" stop-color="#3a2410"/>
+      <stop offset="38%" stop-color="#241408"/>
+      <stop offset="72%" stop-color="#180d07"/>
+      <stop offset="100%" stop-color="#130a06"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#F49630" stop-opacity="0.30"/>
+      <stop offset="42%" stop-color="#F49630" stop-opacity="0.10"/>
+      <stop offset="66%" stop-color="#F49630" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="fg" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#FAC24E"/>
+      <stop offset="45%" stop-color="#F0902A"/>
+      <stop offset="100%" stop-color="#DF6A14"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1254" height="1254" fill="url(#bg)"/>
+  <ellipse cx="652" cy="477" rx="326" ry="288" fill="url(#glow)"/>
+
+  <!-- Полум'я + дуга (векторні криві) -->
+  <g transform="translate(363.7 263.3) scale(2.6335)">
+    <g fill="url(#fg)">
+      <path d="M50 58 Q71 104 50 150 Q29 104 50 58 Z" transform="rotate(-11 50 104)"/>
+      <path d="M150 58 Q171 104 150 150 Q129 104 150 58 Z" transform="rotate(11 150 104)"/>
+      <path d="M100 8 Q128 79 100 150 Q72 79 100 8 Z"/>
+    </g>
+    <path d="M40 158 Q100 180 160 158" fill="none" stroke="#7a4e24" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- Напис -->
+  <text x="627" y="918" text-anchor="middle" font-family="Forum, serif" font-size="230"
+        letter-spacing="17.3" fill="#f5ead6">Ohnyk</text>
+
+  <!-- Слоган -->
+  <line x1="150" y1="1000" x2="203" y2="1000" stroke="#c9862f" stroke-width="2"/>
+  <line x1="1051" y1="1000" x2="1104" y2="1000" stroke="#c9862f" stroke-width="2"/>
+  <text x="627" y="1010" text-anchor="middle" font-family="Forum, serif" font-size="34"
+        letter-spacing="9.6" fill="#e0a03c">ДОМАШНЄ ТЕПЛО У КОЖНІЙ СТРАВІ</text>
+</svg>
