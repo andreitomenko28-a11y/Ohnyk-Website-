@@ -16,20 +16,20 @@ export function FlameMark({ className = 'h-8 w-8' }) {
         </linearGradient>
       </defs>
       <g fill={`url(#${g})`}>
-        {/* side flames */}
-        <path d="M76 145 C95 175 106 200 106 230 C106 255 93 270 76 280 C59 270 46 255 46 230 C46 200 57 175 76 145 Z" />
-        <path d="M274 145 C293 175 304 200 304 230 C304 255 291 270 274 280 C257 270 244 255 244 230 C244 200 255 175 274 145 Z" />
-        {/* center flame */}
-        <path d="M175 0 C210 40 228 95 228 150 C228 205 205 250 175 275 C145 250 122 205 122 150 C122 95 140 40 175 0 Z" />
+        {/* side flames — smaller, set lower */}
+        <path d="M80 165 C94 189 103 210 103 233 C103 254 92 267 80 275 C68 267 57 254 57 233 C57 210 66 189 80 165 Z" />
+        <path d="M270 165 C284 189 293 210 293 233 C293 254 282 267 270 275 C258 267 247 254 247 233 C247 210 256 189 270 165 Z" />
+        {/* center flame — taller, slender */}
+        <path d="M175 2 C206 44 223 100 223 156 C223 214 201 262 175 292 C149 262 127 214 127 156 C127 100 144 44 175 2 Z" />
       </g>
-      {/* cradle arc */}
+      {/* cradle arc — thin, hugging the base */}
       <path
-        d="M8 316 Q175 342 342 316"
+        d="M46 302 Q175 322 304 302"
         fill="none"
         stroke={`url(#${g})`}
-        strokeWidth="4"
+        strokeWidth="3"
         strokeLinecap="round"
-        opacity="0.92"
+        opacity="0.9"
       />
     </svg>
   );

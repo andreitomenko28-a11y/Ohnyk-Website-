@@ -1,46 +1,46 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1254 1254" width="1254" height="1254" role="img" aria-label="Ohnyk — домашнє тепло у кожній страві">
   <defs>
-    <radialGradient id="bg" cx="52%" cy="42%" r="60%">
-      <stop offset="0%" stop-color="#3a2410"/><stop offset="38%" stop-color="#241408"/><stop offset="72%" stop-color="#180d07"/><stop offset="100%" stop-color="#130a06"/>
+    <radialGradient id="bg" cx="50%" cy="40%" r="58%">
+      <stop offset="0%" stop-color="#35200e"/><stop offset="40%" stop-color="#20130a"/><stop offset="72%" stop-color="#170d07"/><stop offset="100%" stop-color="#120a06"/>
     </radialGradient>
-    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#F49630" stop-opacity="0.30"/><stop offset="42%" stop-color="#F49630" stop-opacity="0.10"/><stop offset="66%" stop-color="#F49630" stop-opacity="0"/>
+    <radialGradient id="glow" cx="50%" cy="48%" r="50%">
+      <stop offset="0%" stop-color="#F6A03C" stop-opacity="0.26"/><stop offset="46%" stop-color="#F08C2D" stop-opacity="0.10"/><stop offset="68%" stop-color="#F08C2D" stop-opacity="0"/>
     </radialGradient>
     <linearGradient id="fg" x1="50%" y1="0%" x2="50%" y2="100%">
       <stop offset="0%" stop-color="#FAC24E"/><stop offset="45%" stop-color="#F0902A"/><stop offset="100%" stop-color="#DF6A14"/>
     </linearGradient>
     <linearGradient id="acc" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#F5A11F"/><stop offset="42%" stop-color="#F6A82E"/><stop offset="100%" stop-color="#f5ead6"/>
+      <stop offset="0%" stop-color="#F5A11F"/><stop offset="42%" stop-color="#F6A82E"/><stop offset="100%" stop-color="#f1e6d0"/>
     </linearGradient>
   </defs>
 
   <rect width="1254" height="1254" fill="url(#bg)"/>
-  <ellipse cx="652" cy="477" rx="326" ry="288" fill="url(#glow)"/>
+  <ellipse cx="627" cy="470" rx="300" ry="300" fill="url(#glow)"/>
 
   <!-- Полум'я -->
-  <g transform="translate(407.5 288) scale(1.2543)">
+  <g transform="translate(413.8 257) scale(1.218)">
     <g fill="url(#fg)">
-      <path d="M76 145 C95 175 106 200 106 230 C106 255 93 270 76 280 C59 270 46 255 46 230 C46 200 57 175 76 145 Z"/>
-      <path d="M274 145 C293 175 304 200 304 230 C304 255 291 270 274 280 C257 270 244 255 244 230 C244 200 255 175 274 145 Z"/>
-      <path d="M175 0 C210 40 228 95 228 150 C228 205 205 250 175 275 C145 250 122 205 122 150 C122 95 140 40 175 0 Z"/>
+      <path d="M80 165 C94 189 103 210 103 233 C103 254 92 267 80 275 C68 267 57 254 57 233 C57 210 66 189 80 165 Z"/>
+      <path d="M270 165 C284 189 293 210 293 233 C293 254 282 267 270 275 C258 267 247 254 247 233 C247 210 256 189 270 165 Z"/>
+      <path d="M175 2 C206 44 223 100 223 156 C223 214 201 262 175 292 C149 262 127 214 127 156 C127 100 144 44 175 2 Z"/>
     </g>
-    <path d="M8 316 Q175 342 342 316" fill="none" stroke="#7a4e24" stroke-width="4" stroke-linecap="round"/>
+    <path d="M46 302 Q175 322 304 302" fill="none" stroke="#7a4e24" stroke-width="3" stroke-linecap="round"/>
   </g>
 
-  <!-- Напис (повністю векторний): гостра O + h n y k + акцент -->
-  <g transform="translate(218.9 726) scale(1.406)">
-    <path transform="translate(12 3) scale(1.66)" d="M 46.0 87.8 L 45.3 94.3 L 40.4 93.5 L 35.6 92.1 L 31.0 90.2 L 26.6 87.8 L 22.5 85.0 L 18.7 81.6 L 15.4 77.9 L 12.4 73.9 L 10.0 69.5 L 8.1 64.9 L 6.7 60.1 L 5.8 55.2 L 5.5 50.2 L 5.8 45.2 L 6.6 40.2 L 8.0 35.4 L 9.9 30.8 L 12.3 26.4 L 15.1 22.3 L 18.5 18.6 L 22.2 15.3 L 26.3 12.4 L 30.6 9.9 L 35.3 8.0 L 40.1 6.6 L 45.0 5.8 L 50.0 5.5 L 55.0 5.8 L 59.9 6.6 L 64.7 8.0 L 69.4 9.9 L 73.7 12.4 L 77.8 15.3 L 81.5 18.6 L 84.9 22.3 L 87.7 26.4 L 90.1 30.8 L 92.0 35.4 L 93.4 40.2 L 94.2 45.2 L 94.5 50.2 L 94.2 55.2 L 93.3 60.1 L 91.9 64.9 L 90.0 69.5 L 87.6 73.9 L 84.6 77.9 L 81.3 81.6 L 77.5 85.0 L 73.4 87.8 L 69.0 90.2 L 64.4 92.1 L 59.6 93.5 L 54.7 94.3 L 54.0 87.8 L 53.3 81.3 L 56.8 80.8 L 60.2 79.8 L 63.5 78.5 L 66.6 76.8 L 69.5 74.7 L 72.1 72.4 L 74.5 69.8 L 76.6 66.9 L 78.3 63.8 L 79.7 60.5 L 80.7 57.1 L 81.3 53.7 L 81.5 50.1 L 81.3 46.6 L 80.7 43.1 L 79.8 39.7 L 78.4 36.4 L 76.7 33.3 L 74.7 30.4 L 72.3 27.8 L 69.7 25.4 L 66.8 23.4 L 63.7 21.6 L 60.4 20.3 L 57.0 19.3 L 53.5 18.7 L 50.0 18.5 L 46.5 18.7 L 43.0 19.3 L 39.6 20.3 L 36.3 21.6 L 33.2 23.4 L 30.3 25.4 L 27.7 27.8 L 25.3 30.4 L 23.3 33.3 L 21.6 36.4 L 20.2 39.7 L 19.3 43.1 L 18.7 46.6 L 18.5 50.1 L 18.7 53.7 L 19.3 57.1 L 20.3 60.5 L 21.7 63.8 L 23.4 66.9 L 25.5 69.8 L 27.9 72.4 L 30.5 74.7 L 33.4 76.8 L 36.5 78.5 L 39.8 79.8 L 43.2 80.8 L 46.7 81.3 Z" fill="#f5ead6"/>
-    <g fill="none" stroke="#f5ead6" stroke-width="15" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M180 12 L180 150"/><path d="M180 86 C182 66 198 57 218 57 C238 57 248 70 248 90 L248 150"/>
-      <path d="M283 57 L283 150"/><path d="M283 80 C285 64 300 57 318 57 C337 57 350 68 350 88 L350 150"/>
-      <path d="M380 57 L416 128"/><path d="M452 57 C449 92 441 120 430 141 C421 157 411 165 401 167"/>
-      <path d="M486 12 L486 150"/><path d="M544 57 L494 104"/><path d="M500 100 L552 150"/>
+  <!-- Напис (векторний): гостра O + h n y k + акцент -->
+  <g transform="translate(240.8 742.4) scale(1.335)">
+    <path transform="translate(12 3) scale(1.66)" d="M 46.0 87.8 L 45.3 94.3 L 40.4 93.5 L 35.6 92.1 L 31.0 90.2 L 26.6 87.8 L 22.5 85.0 L 18.7 81.6 L 15.4 77.9 L 12.4 73.9 L 10.0 69.5 L 8.1 64.9 L 6.7 60.1 L 5.8 55.2 L 5.5 50.2 L 5.8 45.2 L 6.6 40.2 L 8.0 35.4 L 9.9 30.8 L 12.3 26.4 L 15.1 22.3 L 18.5 18.6 L 22.2 15.3 L 26.3 12.4 L 30.6 9.9 L 35.3 8.0 L 40.1 6.6 L 45.0 5.8 L 50.0 5.5 L 55.0 5.8 L 59.9 6.6 L 64.7 8.0 L 69.4 9.9 L 73.7 12.4 L 77.8 15.3 L 81.5 18.6 L 84.9 22.3 L 87.7 26.4 L 90.1 30.8 L 92.0 35.4 L 93.4 40.2 L 94.2 45.2 L 94.5 50.2 L 94.2 55.2 L 93.3 60.1 L 91.9 64.9 L 90.0 69.5 L 87.6 73.9 L 84.6 77.9 L 81.3 81.6 L 77.5 85.0 L 73.4 87.8 L 69.0 90.2 L 64.4 92.1 L 59.6 93.5 L 54.7 94.3 L 54.0 87.8 L 53.3 81.3 L 56.8 80.8 L 60.2 79.8 L 63.5 78.5 L 66.6 76.8 L 69.5 74.7 L 72.1 72.4 L 74.5 69.8 L 76.6 66.9 L 78.3 63.8 L 79.7 60.5 L 80.7 57.1 L 81.3 53.7 L 81.5 50.1 L 81.3 46.6 L 80.7 43.1 L 79.8 39.7 L 78.4 36.4 L 76.7 33.3 L 74.7 30.4 L 72.3 27.8 L 69.7 25.4 L 66.8 23.4 L 63.7 21.6 L 60.4 20.3 L 57.0 19.3 L 53.5 18.7 L 50.0 18.5 L 46.5 18.7 L 43.0 19.3 L 39.6 20.3 L 36.3 21.6 L 33.2 23.4 L 30.3 25.4 L 27.7 27.8 L 25.3 30.4 L 23.3 33.3 L 21.6 36.4 L 20.2 39.7 L 19.3 43.1 L 18.7 46.6 L 18.5 50.1 L 18.7 53.7 L 19.3 57.1 L 20.3 60.5 L 21.7 63.8 L 23.4 66.9 L 25.5 69.8 L 27.9 72.4 L 30.5 74.7 L 33.4 76.8 L 36.5 78.5 L 39.8 79.8 L 43.2 80.8 L 46.7 81.3 Z" fill="#f1e6d0"/>
+    <g fill="none" stroke="#f1e6d0" stroke-width="13" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M178 12 L178 150"/><path d="M178 86 C180 66 196 57 216 57 C236 57 246 70 246 90 L246 150"/>
+      <path d="M286 57 L286 150"/><path d="M286 80 C288 64 303 57 321 57 C340 57 353 68 353 88 L353 150"/>
+      <path d="M386 57 L422 128"/><path d="M458 57 C455 92 447 120 436 141 C427 157 417 165 407 167"/>
+      <path d="M494 12 L494 150"/><path d="M552 57 L502 104"/><path d="M508 100 L560 150"/>
     </g>
-    <path d="M452 57 C450 78 447 92 445 101" fill="none" stroke="url(#acc)" stroke-width="15" stroke-linecap="round"/>
+    <path d="M458 57 C456 78 453 92 451 101" fill="none" stroke="url(#acc)" stroke-width="13" stroke-linecap="round"/>
   </g>
 
   <!-- Слоган -->
-  <line x1="150" y1="1000" x2="203" y2="1000" stroke="#c9862f" stroke-width="2"/>
-  <line x1="1051" y1="1000" x2="1104" y2="1000" stroke="#c9862f" stroke-width="2"/>
-  <text x="627" y="1010" text-anchor="middle" font-family="Arial, sans-serif" font-size="33" letter-spacing="9" fill="#e0a03c">ДОМАШНЄ ТЕПЛО У КОЖНІЙ СТРАВІ</text>
+  <line x1="150" y1="994" x2="205" y2="994" stroke="#b98536" stroke-width="2"/>
+  <line x1="1049" y1="994" x2="1104" y2="994" stroke="#b98536" stroke-width="2"/>
+  <text x="627" y="1004" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" letter-spacing="11" fill="#cf9a45">ДОМАШНЄ ТЕПЛО У КОЖНІЙ СТРАВІ</text>
 </svg>

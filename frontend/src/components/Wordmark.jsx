@@ -15,7 +15,7 @@ export default function Wordmark({ className = '' }) {
       className={className}
       role="img"
       aria-label="Ohnyk"
-      style={{ height: '1.12em', width: 'auto', display: 'inline-block' }}
+      style={{ height: '1.12em', width: 'auto', display: 'inline-block', color: 'var(--brand-ink)' }}
     >
       <defs>
         <linearGradient id={acc} x1="0" y1="0" x2="0" y2="1">
@@ -25,18 +25,18 @@ export default function Wordmark({ className = '' }) {
         </linearGradient>
       </defs>
       <path transform="translate(12 3) scale(1.66)" d={O_PATH} fill="currentColor" />
-      <g fill="none" stroke="currentColor" strokeWidth="15" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M180 12 L180 150" />
-        <path d="M180 86 C182 66 198 57 218 57 C238 57 248 70 248 90 L248 150" />
-        <path d="M283 57 L283 150" />
-        <path d="M283 80 C285 64 300 57 318 57 C337 57 350 68 350 88 L350 150" />
-        <path d="M380 57 L416 128" />
-        <path d="M452 57 C449 92 441 120 430 141 C421 157 411 165 401 167" />
-        <path d="M486 12 L486 150" />
-        <path d="M544 57 L494 104" />
-        <path d="M500 100 L552 150" />
+      <g fill="none" stroke="currentColor" strokeWidth="13" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M178 12 L178 150" />
+        <path d="M178 86 C180 66 196 57 216 57 C236 57 246 70 246 90 L246 150" />
+        <path d="M286 57 L286 150" />
+        <path d="M286 80 C288 64 303 57 321 57 C340 57 353 68 353 88 L353 150" />
+        <path d="M386 57 L422 128" />
+        <path d="M458 57 C455 92 447 120 436 141 C427 157 417 165 407 167" />
+        <path d="M494 12 L494 150" />
+        <path d="M552 57 L502 104" />
+        <path d="M508 100 L560 150" />
       </g>
-      <path d="M452 57 C450 78 447 92 445 101" fill="none" stroke={`url(#${acc})`} strokeWidth="15" strokeLinecap="round" />
+      <path d="M458 57 C456 78 453 92 451 101" fill="none" stroke={`url(#${acc})`} strokeWidth="13" strokeLinecap="round" />
     </svg>
   );
 }

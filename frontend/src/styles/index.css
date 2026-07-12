@@ -19,6 +19,7 @@
   --glow: #f2a65a;
   --star: #f5a623; /* rating star */
   --on-accent: #ffffff; /* text on accent */
+  --brand-ink: #f1e6d0; /* warm ivory wordmark (dark theme) */
   --card-shadow: 0 24px 50px -32px rgba(0, 0, 0, 0.75);
   --nav-shadow: 0 -8px 30px -18px rgba(0, 0, 0, 0.6);
   color-scheme: dark;
@@ -36,6 +37,7 @@
   --glow: #f2a65a;
   --star: #e8912b;
   --on-accent: #ffffff;
+  --brand-ink: #2a211c; /* warm soot wordmark (light theme) */
   --card-shadow: 0 20px 50px -30px rgba(36, 30, 27, 0.35);
   --nav-shadow: 0 -10px 30px -20px rgba(36, 30, 27, 0.3);
   color-scheme: light;
