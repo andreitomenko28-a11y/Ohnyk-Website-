@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useI18n } from '../i18n/index.jsx';
 import { apiError } from '../api/client.js';
 import { useCart } from '../context/CartContext.jsx';
+import { FoodIcon } from './icons.jsx';
 
 // A single dish row with an add-to-cart action.
 export default function DishCard({ dish, onConflict }) {
@@ -38,7 +39,7 @@ export default function DishCard({ dish, onConflict }) {
         {dish.image ? (
           <img src={dish.image} alt={dish.name} className="h-full w-full object-cover" />
         ) : (
-          dish.category?.emoji || '🍽️'
+          <FoodIcon className="h-7 w-7 text-on-accent" />
         )}
       </div>
 

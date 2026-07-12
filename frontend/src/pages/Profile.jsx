@@ -6,6 +6,15 @@ import BottomNav from '../components/BottomNav.jsx';
 import ProfileForm from '../components/ProfileForm.jsx';
 import LangSwitch from '../components/LangSwitch.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
+import {
+  EditIcon,
+  HeartIcon,
+  MapPinIcon,
+  LogoutIcon,
+  ThemeIcon,
+  BagIcon,
+  ChefHatIcon,
+} from '../components/icons.jsx';
 
 export default function Profile() {
   const { t } = useI18n();
@@ -36,8 +45,16 @@ export default function Profile() {
           <div className="min-w-0">
             <div className="truncate text-lg font-bold">{user.fullName}</div>
             <div className="truncate text-sm text-[color:var(--muted)]">{user.email}</div>
-            <div className="mt-1 inline-block rounded-full bg-elevated px-2 py-0.5 text-[11px] font-semibold text-ember-dark">
-              {user.role === 'COOK' ? `👩‍🍳 ${t('roleCook')}` : `🛒 ${t('roleBuyer')}`}
+            <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-elevated px-2.5 py-1 text-[11px] font-semibold text-ember-dark">
+              {user.role === 'COOK' ? (
+                <>
+                  <ChefHatIcon className="h-3.5 w-3.5" /> {t('roleCook')}
+                </>
+              ) : (
+                <>
+                  <BagIcon className="h-3.5 w-3.5" /> {t('roleBuyer')}
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -48,17 +65,17 @@ export default function Profile() {
           </div>
         ) : (
           <div className="mt-4 space-y-2.5">
-            <MenuRow icon="✏️" label={t('editProfile')} onClick={() => setEditing(true)} />
-            <MenuRow icon="❤️" label={t('favorites')} onClick={() => navigate('/favorites')} />
-            <MenuRow icon="📍" label={t('myAddresses')} onClick={() => navigate('/addresses')} />
-            <MenuRow icon="🚪" label={t('logout')} onClick={logout} danger />
+            <MenuRow Icon={EditIcon} label={t('editProfile')} onClick={() => setEditing(true)} />
+            <MenuRow Icon={HeartIcon} label={t('favorites')} onClick={() => navigate('/favorites')} />
+            <MenuRow Icon={MapPinIcon} label={t('myAddresses')} onClick={() => navigate('/addresses')} />
+            <MenuRow Icon={LogoutIcon} label={t('logout')} onClick={logout} danger />
           </div>
         )}
 
         {/* Appearance — theme switch */}
         <div className="mt-4 flex items-center justify-between rounded-2xl border border-line bg-surface px-4 py-3">
           <span className="flex items-center gap-3 text-sm font-semibold">
-            <span className="text-lg">🎨</span> {t('appearance')}
+            <ThemeIcon className="h-5 w-5 text-[color:var(--muted)]" /> {t('appearance')}
           </span>
           <ThemeToggle variant="segmented" />
         </div>
@@ -71,13 +88,13 @@ export default function Profile() {
   );
 }
 
-function MenuRow({ icon, label, onClick, danger }) {
+function MenuRow({ Icon, label, onClick, danger }) {
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-2xl border border-[color:var(--line)] bg-surface px-4 py-3.5 text-left"
+      className="flex w-full items-center gap-3 rounded-2xl border border-line bg-surface px-4 py-3.5 text-left"
     >
-      <span className="text-lg">{icon}</span>
+      <Icon className={`h-5 w-5 ${danger ? 'text-ember-dark' : 'text-[color:var(--muted)]'}`} />
       <span className={`text-sm font-semibold ${danger ? 'text-ember-dark' : 'text-fg'}`}>
         {label}
       </span>

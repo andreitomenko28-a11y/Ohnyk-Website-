@@ -6,6 +6,7 @@ import { apiError } from '../api/client.js';
 import BrandMark from '../components/BrandMark.jsx';
 import LangSwitch from '../components/LangSwitch.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
+import { BagIcon, ChefHatIcon } from '../components/icons.jsx';
 
 // Combined Login / Register screen with tab switching — mirrors the mockup.
 export default function AuthPage({ initialTab = 'login' }) {
@@ -151,14 +152,14 @@ function RegisterForm() {
         <RoleOption
           selected={role === 'CUSTOMER'}
           onClick={() => setRole('CUSTOMER')}
-          icon="🛒"
+          Icon={BagIcon}
           label={t('roleBuyer')}
           sub={t('roleBuyerSub')}
         />
         <RoleOption
           selected={role === 'COOK'}
           onClick={() => setRole('COOK')}
-          icon="👩‍🍳"
+          Icon={ChefHatIcon}
           label={t('roleCook')}
           sub={t('roleCookSub')}
         />
@@ -216,17 +217,17 @@ function RegisterForm() {
   );
 }
 
-function RoleOption({ selected, onClick, icon, label, sub }) {
+function RoleOption({ selected, onClick, Icon, label, sub }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={`flex-1 rounded-xl border-[1.5px] px-2.5 py-3 text-center transition-all ${
-        selected ? 'border-ember bg-ember/[0.06]' : 'border-[color:var(--line)]'
+        selected ? 'border-ember bg-ember/[0.06] text-ember-dark' : 'border-line text-[color:var(--muted)]'
       }`}
     >
-      <span className="mb-1 block text-xl">{icon}</span>
-      <span className="block text-[13px] font-semibold">{label}</span>
+      <Icon className="mx-auto mb-1.5 h-6 w-6" />
+      <span className="block text-[13px] font-semibold text-fg">{label}</span>
       <span className="mt-0.5 block text-[11px] text-[color:var(--muted)]">{sub}</span>
     </button>
   );

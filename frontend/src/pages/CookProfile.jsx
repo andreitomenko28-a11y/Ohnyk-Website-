@@ -5,7 +5,7 @@ import api from '../api/client.js';
 import Menu from '../components/Menu.jsx';
 import BottomNav from '../components/BottomNav.jsx';
 import FavoriteButton from '../components/FavoriteButton.jsx';
-import { VerifiedBadge, Star } from '../components/icons.jsx';
+import { VerifiedBadge, Star, MapPinIcon } from '../components/icons.jsx';
 import { useCart } from '../context/CartContext.jsx';
 
 // Cook detail: header card + grouped menu.
@@ -76,7 +76,9 @@ export default function CookProfile() {
           ‹
         </button>
         <FavoriteButton cookId={cook.id} size="lg" className="absolute right-4 top-4" />
-        <div className="text-4xl">{cook.avatar ? '' : '🍲'}</div>
+        <div className="font-display text-5xl font-bold text-on-accent/90">
+          {(cook.name || '?').trim().charAt(0).toUpperCase()}
+        </div>
       </div>
 
       <div className="px-5">
@@ -90,8 +92,8 @@ export default function CookProfile() {
             <span className="flex items-center gap-1 rounded-full bg-elevated px-2.5 py-1">
               <Star className="h-3.5 w-3.5 text-star" /> {cook.rating.toFixed(1)} ({cook.reviewCount})
             </span>
-            <span className="rounded-full bg-elevated px-2.5 py-1 text-[color:var(--muted)]">
-              📍 {cook.city}
+            <span className="flex items-center gap-1 rounded-full bg-elevated px-2.5 py-1 text-[color:var(--muted)]">
+              <MapPinIcon className="h-3.5 w-3.5" /> {cook.city}
             </span>
             <span className="rounded-full bg-elevated px-2.5 py-1 text-[color:var(--muted)]">
               {cook.dishCount} {t('dishesCount')}

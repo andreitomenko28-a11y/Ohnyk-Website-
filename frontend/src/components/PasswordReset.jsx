@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../i18n/index.jsx';
 import api, { apiError } from '../api/client.js';
+import { VerifiedBadge } from './icons.jsx';
 
 // Two-step password reset: request a code, then set a new password.
 // The dev backend returns the token in the response so the code is prefilled.
@@ -97,7 +98,9 @@ export default function PasswordReset() {
 
       {step === 'done' && (
         <div className="animate-[fade_.3s_ease] text-center">
-          <div className="mb-4 text-4xl">✅</div>
+          <div className="mb-4 flex justify-center">
+            <VerifiedBadge className="h-12 w-12" title="" />
+          </div>
           <div className="mb-6 text-sm text-[color:var(--muted)]">{t('resetDone')}</div>
         </div>
       )}

@@ -6,8 +6,6 @@ import SearchBar from '../components/SearchBar.jsx';
 import FilterPanel from '../components/FilterPanel.jsx';
 import CookCard from '../components/CookCard.jsx';
 
-const EMOJI = ['🥣', '🍢', '🍰', '🍞', '🥘', '🥟'];
-
 // Discovery — browse, search and filter cooks.
 export default function Discovery() {
   const { t } = useI18n();
@@ -86,9 +84,7 @@ export default function Discovery() {
         ) : cooks.length === 0 ? (
           <div className="py-16 text-center text-sm text-[color:var(--muted)]">{t('noResults')}</div>
         ) : (
-          cooks.map((cook, i) => (
-            <CookCard key={cook.id} cook={cook} emoji={EMOJI[i % EMOJI.length]} />
-          ))
+          cooks.map((cook) => <CookCard key={cook.id} cook={cook} />)
         )}
       </div>
 

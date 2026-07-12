@@ -22,6 +22,7 @@ export const dict = {
     terms: 'Реєструючись, ти приймаєш умови користування',
     // Home
     hi: 'Привіт',
+    friend: 'друже',
     searchPlaceholder: 'Борщ, варенички, кухар...',
     popularCooks: 'Популярні кухарі',
     cookingToday: 'Готують сьогодні',
@@ -123,6 +124,7 @@ export const dict = {
     terms: 'By signing up, you agree to the terms of service',
     // Home
     hi: 'Hi',
+    friend: 'there',
     searchPlaceholder: 'Borshch, dumplings, cook...',
     popularCooks: 'Popular cooks',
     cookingToday: 'Cooking today',

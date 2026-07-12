@@ -5,8 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import api from '../api/client.js';
 import BottomNav from '../components/BottomNav.jsx';
 import CookCard from '../components/CookCard.jsx';
-
-const EMOJI = ['🥣', '🍢', '🍰', '🍞', '🥘', '🥟'];
+import { HeartIcon } from '../components/icons.jsx';
 
 export default function Favorites() {
   const { t } = useI18n();
@@ -36,7 +35,7 @@ export default function Favorites() {
         <button onClick={() => navigate('/profile')} className="text-2xl leading-none">
           ‹
         </button>
-        <div className="font-display text-xl font-bold">❤️ {t('favorites')}</div>
+        <div className="font-display text-xl font-bold">{t('favorites')}</div>
       </header>
 
       <div className="space-y-3 px-5 pt-1">
@@ -44,16 +43,14 @@ export default function Favorites() {
           <div className="py-16 text-center text-sm text-[color:var(--muted)]">{t('loading')}</div>
         ) : cooks.length === 0 ? (
           <div className="flex flex-col items-center py-16 text-center">
-            <div className="mb-3 text-4xl">🤍</div>
+            <HeartIcon className="mb-3 h-12 w-12 text-[color:var(--muted)]" />
             <div className="mb-5 text-sm text-[color:var(--muted)]">{t('noFavorites')}</div>
             <button onClick={() => navigate('/discovery')} className="btn-primary max-w-[220px]">
               {t('browseCooks')}
             </button>
           </div>
         ) : (
-          cooks.map((cook, i) => (
-            <CookCard key={cook.id} cook={cook} emoji={EMOJI[i % EMOJI.length]} />
-          ))
+          cooks.map((cook) => <CookCard key={cook.id} cook={cook} />)
         )}
       </div>
 

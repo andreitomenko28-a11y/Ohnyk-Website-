@@ -1,17 +1,21 @@
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n/index.jsx';
 import FavoriteButton from './FavoriteButton.jsx';
-import { VerifiedBadge, Star } from './icons.jsx';
+import { VerifiedBadge, Star, MapPinIcon } from './icons.jsx';
+
+function initialOf(name) {
+  return (name || '?').trim().charAt(0).toUpperCase();
+}
 
 // A cook summary card used in Discovery and Home lists.
 // Navigation is a full-card overlay button sitting *under* pointer-events-none
 // content, so the favourite heart (a separate sibling on top) never triggers it.
-export default function CookCard({ cook, emoji = '🍲' }) {
+export default function CookCard({ cook }) {
   const { t } = useI18n();
   const navigate = useNavigate();
 
   return (
-    <div className="relative rounded-2xl border border-[color:var(--line)] bg-surface transition-transform active:scale-[0.99]">
+    <div className="relative rounded-2xl border border-line bg-surface transition-transform active:scale-[0.99]">
       {/* Clickable overlay (behind content) */}
       <button
         type="button"
@@ -26,13 +30,13 @@ export default function CookCard({ cook, emoji = '🍲' }) {
       {/* Content — transparent to clicks so they reach the overlay */}
       <div className="pointer-events-none relative z-10 flex items-center gap-3.5 p-3">
         <div
-          className="flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-[14px] text-[26px]"
+          className="flex h-16 w-16 flex-none items-center justify-center overflow-hidden rounded-[14px] font-display text-2xl font-bold text-on-accent"
           style={{ background: 'linear-gradient(135deg, var(--glow), var(--ember))' }}
         >
           {cook.avatar ? (
             <img src={cook.avatar} alt={cook.name} className="h-full w-full object-cover" />
           ) : (
-            emoji
+            initialOf(cook.name)
           )}
         </div>
 
@@ -44,8 +48,10 @@ export default function CookCard({ cook, emoji = '🍲' }) {
           {cook.bio && (
             <div className="mt-0.5 truncate text-xs text-[color:var(--muted)]">{cook.bio}</div>
           )}
-          <div className="mt-1.5 flex flex-wrap gap-1.5 text-[10px] font-semibold text-[color:var(--muted)]">
-            <span className="rounded-full bg-elevated px-2 py-0.5">📍 {cook.city}</span>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] font-semibold text-[color:var(--muted)]">
+            <span className="flex items-center gap-1 rounded-full bg-elevated px-2 py-0.5">
+              <MapPinIcon className="h-3 w-3" /> {cook.city}
+            </span>
             <span className="rounded-full bg-elevated px-2 py-0.5">
               {cook.dishCount} {t('dishesCount')}
             </span>

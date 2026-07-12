@@ -6,9 +6,11 @@ import api from '../api/client.js';
 import BottomNav from '../components/BottomNav.jsx';
 import CookCard from '../components/CookCard.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
-import { Star } from '../components/icons.jsx';
+import { Star, SearchIcon, MapPinIcon, ChevronDownIcon } from '../components/icons.jsx';
 
-const EMOJI = ['🥣', '🍢', '🍰', '🍞', '🥘', '🥟'];
+function initialOf(name) {
+  return (name || '?').trim().charAt(0).toUpperCase();
+}
 
 // Home screen — now backed by real cooks/categories (Phase 2).
 export default function HomePage() {
@@ -45,11 +47,11 @@ export default function HomePage() {
         <div className="mb-4 flex items-center justify-between">
           <div>
             <div className="text-xs text-[color:var(--muted)]">
-              {t('hi')}, {user?.fullName?.split(' ')[0] || '👋'} 👋
+              {t('hi')}, {user?.fullName?.split(' ')[0] || t('friend')}
             </div>
             <div className="flex items-center gap-1 font-display text-base font-bold">
-              <span className="text-ember">📍</span> {user?.cook?.city || 'Черкаси'}
-              <span className="text-[color:var(--muted)]">⌄</span>
+              <MapPinIcon className="h-4 w-4 text-ember" /> {user?.cook?.city || 'Черкаси'}
+              <ChevronDownIcon className="h-4 w-4 text-[color:var(--muted)]" />
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -71,19 +73,19 @@ export default function HomePage() {
 
         <button
           onClick={() => navigate('/discovery')}
-          className="flex w-full items-center gap-2.5 rounded-2xl border-[1.5px] border-[color:var(--line)] bg-surface px-4 py-3 text-left"
+          className="flex w-full items-center gap-2.5 rounded-2xl border-[1.5px] border-line bg-surface px-4 py-3 text-left"
         >
-          <span className="text-[15px] opacity-50">🔍</span>
+          <SearchIcon className="h-[18px] w-[18px] text-[color:var(--muted)]" />
           <span className="text-sm text-[color:var(--muted)]">{t('searchPlaceholder')}</span>
         </button>
       </header>
 
       {/* Category chips → Discovery */}
       <div className="flex gap-2.5 overflow-x-auto px-5 pb-1 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <Chip onClick={() => navigate('/discovery')}>🍲 {t('allCategories')}</Chip>
+        <Chip onClick={() => navigate('/discovery')}>{t('allCategories')}</Chip>
         {categories.map((c) => (
           <Chip key={c.slug} onClick={() => navigate('/discovery')}>
-            {c.emoji} {c.name}
+            {c.name}
           </Chip>
         ))}
       </div>
@@ -95,17 +97,17 @@ export default function HomePage() {
           {/* Popular cooks — horizontal scroll */}
           <Section title={t('popularCooks')} link={t('seeAll')} onLink={() => navigate('/discovery')}>
             <div className="-mx-5 flex gap-3.5 overflow-x-auto px-5 pb-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {featured.map((f, i) => (
+              {featured.map((f) => (
                 <button
                   key={f.id}
                   onClick={() => navigate(`/cooks/${f.id}`)}
                   className="w-[210px] flex-none overflow-hidden rounded-card border border-line bg-surface text-left shadow-card"
                 >
                   <div
-                    className="flex h-[120px] items-center justify-center text-[34px]"
+                    className="flex h-[120px] items-center justify-center font-display text-4xl font-bold text-on-accent"
                     style={{ background: 'linear-gradient(135deg, var(--glow), var(--ember-dark))' }}
                   >
-                    {EMOJI[i % EMOJI.length]}
+                    {initialOf(f.name)}
                   </div>
                   <div className="px-3.5 pb-3.5 pt-3">
                     <div className="mb-0.5 truncate text-sm font-bold">{f.name}</div>
@@ -127,8 +129,8 @@ export default function HomePage() {
           {/* Cooking today — vertical list */}
           <Section title={t('cookingToday')}>
             <div className="space-y-3">
-              {rest.map((c, i) => (
-                <CookCard key={c.id} cook={c} emoji={EMOJI[i % EMOJI.length]} />
+              {rest.map((c) => (
+                <CookCard key={c.id} cook={c} />
               ))}
             </div>
           </Section>

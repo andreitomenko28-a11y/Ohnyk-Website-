@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useI18n } from '../i18n/index.jsx';
-import { SlidersIcon } from './icons.jsx';
+import { SlidersIcon, Star } from './icons.jsx';
 
 // Filter panel: price range + minimum rating.
 // `open`/`onToggle` are optional — when omitted the panel manages its own state.
@@ -59,13 +59,19 @@ export default function FilterPanel({ value, onApply, onReset, open, onToggle, s
               <button
                 key={r}
                 onClick={() => setDraft({ ...draft, minRating: r || undefined })}
-                className={`flex-1 rounded-xl border-[1.5px] py-2 text-[13px] font-semibold transition-all ${
+                className={`flex flex-1 items-center justify-center gap-1 rounded-xl border-[1.5px] py-2 text-[13px] font-semibold transition-all ${
                   (draft.minRating ?? 0) === r
                     ? 'border-ember bg-ember/[0.1] text-ember-dark'
                     : 'border-line'
                 }`}
               >
-                {r ? `★ ${r}+` : t('allCategories')}
+                {r ? (
+                  <>
+                    <Star className="h-3.5 w-3.5 text-star" /> {r}+
+                  </>
+                ) : (
+                  t('allCategories')
+                )}
               </button>
             ))}
           </div>

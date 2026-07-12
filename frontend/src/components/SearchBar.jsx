@@ -47,7 +47,7 @@ export default function SearchBar({
       {categories.length > 0 && (
         <div className="mt-3 flex gap-2.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <Chip active={!activeCategory} onClick={() => onCategory?.(null)}>
-            🍲 {t('allCategories')}
+            {t('allCategories')}
           </Chip>
           {categories.map((c) => (
             <Chip
@@ -55,7 +55,7 @@ export default function SearchBar({
               active={activeCategory === c.slug}
               onClick={() => onCategory?.(c.slug)}
             >
-              {c.emoji} {c.name}
+              {c.name}
             </Chip>
           ))}
         </div>

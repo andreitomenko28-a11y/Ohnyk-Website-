@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useCart } from '../context/CartContext.jsx';
+import { FoodIcon } from './icons.jsx';
 
 // A single line in the cart with quantity stepper + remove.
 export default function CartItem({ item }) {
@@ -24,7 +25,7 @@ export default function CartItem({ item }) {
         {item.dish.image ? (
           <img src={item.dish.image} alt={item.dish.name} className="h-full w-full object-cover" />
         ) : (
-          item.dish.category?.emoji || '🍽️'
+          <FoodIcon className="h-6 w-6 text-on-accent" />
         )}
       </div>
 

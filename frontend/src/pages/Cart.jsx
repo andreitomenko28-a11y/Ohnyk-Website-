@@ -4,6 +4,7 @@ import { useCart } from '../context/CartContext.jsx';
 import BottomNav from '../components/BottomNav.jsx';
 import CartItem from '../components/CartItem.jsx';
 import CartSummary from '../components/CartSummary.jsx';
+import { CartIcon } from '../components/icons.jsx';
 
 export default function Cart() {
   const { t } = useI18n();
@@ -27,7 +28,7 @@ export default function Cart() {
         <div className="py-16 text-center text-sm text-[color:var(--muted)]">{t('loading')}</div>
       ) : empty ? (
         <div className="flex flex-col items-center justify-center px-8 py-24 text-center">
-          <div className="mb-4 text-5xl">🛒</div>
+          <CartIcon className="mb-4 h-14 w-14 text-[color:var(--muted)]" />
           <div className="mb-1 font-display text-lg font-bold">{t('cartEmpty')}</div>
           <div className="mb-6 text-sm text-[color:var(--muted)]">{t('cartEmptyHint')}</div>
           <button onClick={() => navigate('/discovery')} className="btn-primary max-w-[220px]">
