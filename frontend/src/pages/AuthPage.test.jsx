@@ -45,7 +45,7 @@ beforeEach(() => {
 describe('AuthPage', () => {
   it('shows the brand and the login tab by default', () => {
     renderAuth();
-    expect(screen.getByText('Домашня кухня твого району')).toBeInTheDocument();
+    expect(screen.getByText('Домашнє тепло у кожній страві')).toBeInTheDocument();
     expect(screen.getByText('Email або телефон')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Увійти' })).toBeInTheDocument();
   });
@@ -125,8 +125,6 @@ describe('AuthPage', () => {
     const user = userEvent.setup();
     renderAuth();
     await user.click(screen.getByRole('button', { name: 'ENG' }));
-    expect(
-      screen.getByText('Home cooking from your neighbourhood')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Home warmth in every dish')).toBeInTheDocument();
   });
 });

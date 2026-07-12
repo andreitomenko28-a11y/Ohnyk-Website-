@@ -29,7 +29,7 @@ export default function Sidebar() {
   return (
     <aside className="sticky top-0 hidden h-screen w-[248px] flex-none flex-col border-r border-line bg-surface px-4 py-6 lg:flex">
       <button onClick={() => navigate('/')} className="mb-8 px-2 text-left">
-        <BrandMark className="text-[24px]" />
+        <BrandMark className="text-[26px]" markClassName="h-8 w-8" />
       </button>
 
       <nav className="flex flex-col gap-1">

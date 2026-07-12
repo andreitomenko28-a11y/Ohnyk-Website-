@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useCallback } from 'react';
 // Ukrainian / English dictionary for Phase 1 screens.
 export const dict = {
   uk: {
-    tag: 'Домашня кухня твого району',
+    tag: 'Домашнє тепло у кожній страві',
     tabLogin: 'Вхід',
     tabRegister: 'Реєстрація',
     emailOrPhone: 'Email або телефон',
@@ -105,7 +105,7 @@ export const dict = {
     error: 'Сталася помилка',
   },
   en: {
-    tag: 'Home cooking from your neighbourhood',
+    tag: 'Home warmth in every dish',
     tabLogin: 'Login',
     tabRegister: 'Sign up',
     emailOrPhone: 'Email or phone',

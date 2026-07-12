@@ -16,12 +16,16 @@ export default function AuthPage({ initialTab = 'login' }) {
   return (
     <div className="flex min-h-screen items-center justify-center p-6">
       <div className="w-full max-w-[420px]">
-        <div className="mb-4 flex justify-end">
+        <div className="mb-2 flex justify-end">
           <ThemeToggle />
         </div>
-        <div className="mb-7 text-center">
-          <BrandMark className="text-[28px]" />
-          <div className="mt-1 text-[13px] text-[color:var(--muted)]">{t('tag')}</div>
+        <div className="mb-8 flex flex-col items-center text-center">
+          <BrandMark stacked markClassName="h-[72px] w-[72px]" className="text-[34px]" />
+          <div className="mt-3 flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-ember">
+            <span className="h-px w-6 bg-ember/50" />
+            {t('tag')}
+            <span className="h-px w-6 bg-ember/50" />
+          </div>
         </div>
 
         <div className="overflow-hidden rounded-card border border-[color:var(--line)] bg-surface shadow-card">

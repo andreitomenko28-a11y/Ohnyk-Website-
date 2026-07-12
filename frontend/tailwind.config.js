@@ -22,6 +22,7 @@ export default {
         linen: 'var(--bg)', // legacy alias → page background
       },
       fontFamily: {
+        brand: ['Josefin Sans', 'sans-serif'],
         display: ['Comfortaa', 'sans-serif'],
         sans: ['Manrope', 'sans-serif'],
       },

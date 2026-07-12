@@ -5,6 +5,7 @@ import { useI18n } from '../i18n/index.jsx';
 import api from '../api/client.js';
 import CookCard from '../components/CookCard.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
+import BrandMark from '../components/BrandMark.jsx';
 import { Star, SearchIcon, MapPinIcon, ChevronDownIcon } from '../components/icons.jsx';
 
 function initialOf(name) {
@@ -43,16 +44,9 @@ export default function HomePage() {
   return (
     <div className="relative">
       <header className="sticky top-0 z-10 bg-canvas px-5 pb-4 pt-5">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <div className="text-xs text-[color:var(--muted)]">
-              {t('hi')}, {user?.fullName?.split(' ')[0] || t('friend')}
-            </div>
-            <div className="flex items-center gap-1 font-display text-base font-bold">
-              <MapPinIcon className="h-4 w-4 text-ember" /> {user?.cook?.city || 'Черкаси'}
-              <ChevronDownIcon className="h-4 w-4 text-[color:var(--muted)]" />
-            </div>
-          </div>
+        {/* Top navbar with brand (mobile — desktop has the sidebar brand) */}
+        <div className="mb-4 flex items-center justify-between lg:hidden">
+          <BrandMark className="text-[22px]" markClassName="h-7 w-7" />
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <button
@@ -67,6 +61,18 @@ export default function HomePage() {
                 initial
               )}
             </button>
+          </div>
+        </div>
+
+        <div className="mb-4 flex items-end justify-between">
+          <div>
+            <div className="text-xs text-[color:var(--muted)]">
+              {t('hi')}, {user?.fullName?.split(' ')[0] || t('friend')}
+            </div>
+            <div className="flex items-center gap-1 font-display text-lg font-bold">
+              <MapPinIcon className="h-4 w-4 text-ember" /> {user?.cook?.city || 'Черкаси'}
+              <ChevronDownIcon className="h-4 w-4 text-[color:var(--muted)]" />
+            </div>
           </div>
         </div>
 
