@@ -22,7 +22,7 @@ export default {
         linen: 'var(--bg)', // legacy alias → page background
       },
       fontFamily: {
-        brand: ['Forum', 'serif'],
+        brand: ['Poiret One', 'sans-serif'],
         display: ['Comfortaa', 'sans-serif'],
         sans: ['Manrope', 'sans-serif'],
       },
