@@ -1,7 +1,7 @@
 import { useI18n } from '../i18n/index.jsx';
 
 // Totals block with checkout CTA. Delivery is a flat placeholder until Phase 5.
-export default function CartSummary({ subtotal, deliveryFee = 0, onCheckout }) {
+export default function CartSummary({ subtotal, deliveryFee = 0, onCheckout, busy = false }) {
   const { t } = useI18n();
   const total = Number((subtotal + deliveryFee).toFixed(2));
 
@@ -12,8 +12,8 @@ export default function CartSummary({ subtotal, deliveryFee = 0, onCheckout }) {
       <div className="my-3 border-t border-[color:var(--line)]" />
       <Row label={t('total')} value={`${total}₴`} strong />
 
-      <button onClick={onCheckout} className="btn-primary mt-4">
-        {t('checkout')}
+      <button onClick={onCheckout} className="btn-primary mt-4" disabled={busy}>
+        {busy ? t('loading') : t('checkout')}
       </button>
     </div>
   );

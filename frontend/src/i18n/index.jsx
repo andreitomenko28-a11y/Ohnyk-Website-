@@ -62,6 +62,10 @@ export const dict = {
     total: 'Разом',
     checkout: 'Оформити замовлення',
     checkoutSoon: 'Оформлення замовлення — у Фазі 4',
+    notePlaceholder: 'Коментар для кухаря (необов’язково)',
+    orderPlaced: 'Замовлення оформлено!',
+    orderPlacedHint: 'Кухар отримав ваше замовлення й скоро почне готувати.',
+    keepShopping: 'Продовжити',
     clearCart: 'Очистити',
     remove: 'Видалити',
     // Profile
@@ -258,6 +262,10 @@ export const dict = {
     total: 'Total',
     checkout: 'Checkout',
     checkoutSoon: 'Checkout arrives in Phase 4',
+    notePlaceholder: 'Note for the cook (optional)',
+    orderPlaced: 'Order placed!',
+    orderPlacedHint: 'The cook received your order and will start cooking soon.',
+    keepShopping: 'Keep browsing',
     clearCart: 'Clear',
     remove: 'Remove',
     // Profile

@@ -56,6 +56,15 @@ export async function checkout(req, res, next) {
       throw httpError(403, 'Цей кухар зараз не приймає замовлення');
     }
 
+    // Reject if any dish went out of stock while it sat in the cart.
+    const unavailable = cart.items.filter((it) => !it.dish.isAvailable);
+    if (unavailable.length) {
+      throw httpError(
+        409,
+        `Деякі страви вже недоступні: ${unavailable.map((it) => it.dish.name).join(', ')}`,
+      );
+    }
+
     // Resolve the delivery address (explicit id → text → user default).
     let address = addressText;
     if (addressId) {

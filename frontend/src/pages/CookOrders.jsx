@@ -53,8 +53,11 @@ export default function CookOrders() {
         if (active) setLoading(false);
       }
     })();
+    // Light polling so new orders surface without a manual refresh.
+    const id = setInterval(() => load().catch(() => {}), 20000);
     return () => {
       active = false;
+      clearInterval(id);
     };
   }, [verified, load]);
 
@@ -163,6 +166,9 @@ function OrderCard({ order, t, lang, onChanged }) {
       await onChanged();
     } catch (e) {
       setErr(apiError(e));
+    } finally {
+      // Always clear busy: the card keeps its identity (keyed by order id)
+      // after a reload, so leaving busy=true would freeze its buttons.
       setBusy(false);
     }
   }

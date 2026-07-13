@@ -49,6 +49,19 @@ describe('Orders & cook dashboard (Module 3.3)', () => {
     expect(res.status).toBe(400);
   });
 
+  it('blocks checkout when a dish went out of stock after being added', async () => {
+    const { cookToken, dishId } = await cookWithDish();
+    const buyerToken = await buyerWithCart(dishId);
+    // Cook marks it unavailable while it sits in the buyer's cart.
+    await request.put(`/api/cook/dishes/${dishId}`).set(authHeader(cookToken)).send({ isAvailable: false });
+
+    const res = await request
+      .post('/api/orders')
+      .set(authHeader(buyerToken))
+      .send({ addressText: 'Черкаси' });
+    expect(res.status).toBe(409);
+  });
+
   it('requires a delivery address', async () => {
     const { dishId } = await cookWithDish();
     const buyerToken = await buyerWithCart(dishId);
