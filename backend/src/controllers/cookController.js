@@ -145,7 +145,10 @@ async function loadDishes(cookId, { category, available, limit, offset }) {
 
   const dishes = await prisma.dish.findMany({
     where,
-    include: { category: { select: { id: true, name: true, slug: true, emoji: true } } },
+    include: {
+      category: { select: { id: true, name: true, slug: true, emoji: true } },
+      photos: { orderBy: { sortOrder: 'asc' }, select: { id: true, url: true, sortOrder: true } },
+    },
     orderBy: { createdAt: 'asc' },
     take: limit,
     skip: offset,

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authGuard, requireRole } from '../middleware/authGuard.js';
-import { loadCook } from '../middleware/cookGuard.js';
+import { loadCook, requireActiveCook } from '../middleware/cookGuard.js';
 import { imageUpload, docUpload, handleUploadError } from '../lib/upload.js';
 import {
   getMyCookProfile,
@@ -10,6 +10,14 @@ import {
   confirmPhoneVerification,
   uploadVerificationDocument,
 } from '../controllers/cookAccountController.js';
+import {
+  listMyDishes,
+  createDish,
+  updateDish,
+  deleteDish,
+  addDishPhotos,
+  deleteDishPhoto,
+} from '../controllers/cookMenuController.js';
 
 // All routes here operate on the *authenticated* cook's own account.
 // (Public discovery lives under /api/cooks — plural.)
@@ -32,5 +40,21 @@ router.post(
   handleUploadError,
   uploadVerificationDocument,
 );
+
+// --- Menu management (Module 3.2) ------------------------------------------
+// Viewing the own menu is allowed while pending; publishing/editing requires a
+// verified + active cook (requireActiveCook gate).
+router.get('/dishes', listMyDishes);
+router.post('/dishes', requireActiveCook, createDish);
+router.put('/dishes/:id', requireActiveCook, updateDish);
+router.delete('/dishes/:id', requireActiveCook, deleteDish);
+router.post(
+  '/dishes/:id/photos',
+  requireActiveCook,
+  imageUpload.array('photos', 8),
+  handleUploadError,
+  addDishPhotos,
+);
+router.delete('/dishes/:id/photos/:photoId', requireActiveCook, deleteDishPhoto);
 
 export default router;

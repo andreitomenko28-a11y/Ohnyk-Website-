@@ -9,6 +9,7 @@ import AuthPage from './pages/AuthPage.jsx';
 import PasswordResetPage from './pages/PasswordResetPage.jsx';
 import HomePage from './pages/HomePage.jsx';
 import CookOnboarding from './pages/CookOnboarding.jsx';
+import CookMenu from './pages/CookMenu.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 import Discovery from './pages/Discovery.jsx';
 import CookProfile from './pages/CookProfile.jsx';
@@ -63,6 +64,7 @@ export default function App() {
                 <Route path="/reset-password" element={<PasswordResetPage />} />
 
                 <Route path="/cook" element={<CookProtected><CookOnboarding /></CookProtected>} />
+                <Route path="/cook/menu" element={<CookProtected><CookMenu /></CookProtected>} />
 
                 <Route path="/" element={<Protected><HomePage /></Protected>} />
                 <Route path="/discovery" element={<Protected><Discovery /></Protected>} />

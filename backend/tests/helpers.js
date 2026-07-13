@@ -41,6 +41,17 @@ export async function registerCook(overrides = {}) {
   return { ...res.body, cook: res.body.user?.cook };
 }
 
+// Registers a cook and marks them VERIFIED + ACTIVE (skips the admin step).
+// Returns { user, accessToken, refreshToken, cook }.
+export async function registerActiveCook(overrides = {}) {
+  const body = await registerCook(overrides);
+  await prisma.cook.update({
+    where: { id: body.cook.id },
+    data: { verificationStatus: 'VERIFIED', status: 'ACTIVE', isVerified: true, phoneVerified: true },
+  });
+  return body;
+}
+
 // Creates an ADMIN and returns a token whose payload carries the ADMIN role
 // (role is promoted in the DB, then a fresh login re-issues the token).
 export async function createAdmin() {

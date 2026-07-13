@@ -16,6 +16,11 @@ const CATEGORIES = [
 async function main() {
   const passwordHash = await bcrypt.hash('password123', 10);
 
+  // Clear orders first: OrderItem → Dish is a restrict FK, so leftover orders
+  // would block the per-cook dish reset below on a re-seed.
+  await prisma.orderItem.deleteMany();
+  await prisma.order.deleteMany();
+
   // --- Categories ------------------------------------------------------------
   const categories = {};
   for (const c of CATEGORIES) {

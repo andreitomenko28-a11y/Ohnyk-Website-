@@ -1,19 +1,11 @@
 import { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useI18n } from '../i18n/index.jsx';
 import api, { apiError } from '../api/client.js';
-import { FlameMark } from '../components/Logo.jsx';
-import Wordmark from '../components/Wordmark.jsx';
-import ThemeToggle from '../components/ThemeToggle.jsx';
+import CookShell from '../components/CookShell.jsx';
 import LangSwitch from '../components/LangSwitch.jsx';
-import {
-  ChefHatIcon,
-  VerifiedBadge,
-  MapPinIcon,
-  LogoutIcon,
-  FoodIcon,
-  CartIcon,
-} from '../components/icons.jsx';
+import { ChefHatIcon, VerifiedBadge, MapPinIcon, FoodIcon, CartIcon } from '../components/icons.jsx';
 
 // Small inline check for completed steps.
 function Check({ className = 'h-5 w-5' }) {
@@ -27,7 +19,7 @@ function Check({ className = 'h-5 w-5' }) {
 // Cook onboarding / verification hub (Module 3.1). Menu (3.2) and orders (3.3)
 // arrive as unlockable sections once verified.
 export default function CookOnboarding() {
-  const { user, refreshUser, logout } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { t } = useI18n();
   const cook = user.cook || {};
 
@@ -46,29 +38,7 @@ export default function CookOnboarding() {
   const verified = cook.verificationStatus === 'VERIFIED';
 
   return (
-    <div className="min-h-screen">
-      {/* Top bar — static (in flow) so it never overlaps content, incl. in
-          mobile in-app webviews where a translucent sticky header mispositions. */}
-      <header className="border-b border-[color:var(--line)] bg-surface">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-3.5">
-          <span className="inline-flex items-center gap-2 text-[20px]">
-            <FlameMark className="h-7 w-7" />
-            <Wordmark />
-          </span>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <button
-              onClick={logout}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[color:var(--line)] px-3 py-2 text-[13px] font-semibold text-[color:var(--muted)] transition-colors hover:text-fg"
-            >
-              <LogoutIcon className="h-4 w-4" />
-              {t('logout')}
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-3xl px-5 py-6">
+    <CookShell>
         {/* Title + status */}
         <div className="mb-5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -111,17 +81,16 @@ export default function CookOnboarding() {
         {/* Profile details */}
         <ProfileSection cook={cook} refreshUser={refreshUser} t={t} />
 
-        {/* Locked previews for upcoming modules */}
+        {/* Menu now lives in its own tab; orders arrive in Module 3.3 */}
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <LockedCard Icon={FoodIcon} label={t('menuSoon')} enabled={verified} />
-          <LockedCard Icon={CartIcon} label={t('ordersSoon')} enabled={verified} />
+          <LockedCard Icon={FoodIcon} label={verified ? t('menuOpenHint') : t('menuSoon')} enabled={verified} to={verified ? '/cook/menu' : undefined} />
+          <LockedCard Icon={CartIcon} label={t('ordersSoon')} enabled={false} />
         </div>
 
         <div className="mt-6">
           <LangSwitch />
         </div>
-      </main>
-    </div>
+    </CookShell>
   );
 }
 
@@ -396,17 +365,23 @@ function ProfileSection({ cook, refreshUser, t }) {
   );
 }
 
-function LockedCard({ Icon, label, enabled }) {
-  return (
-    <div
-      className={`flex items-center gap-3 rounded-card border border-dashed border-[color:var(--line)] p-4 ${
-        enabled ? '' : 'opacity-60'
-      }`}
-    >
+function LockedCard({ Icon, label, enabled, to }) {
+  const cls = `flex items-center gap-3 rounded-card border border-dashed border-[color:var(--line)] p-4 ${
+    enabled ? 'transition-colors hover:border-ember' : 'opacity-60'
+  }`;
+  const inner = (
+    <>
       <span className="grid h-10 w-10 place-items-center rounded-lg bg-elevated text-[color:var(--muted)]">
         <Icon className="h-5 w-5" />
       </span>
       <span className="text-[13.5px] font-medium text-[color:var(--muted)]">{label}</span>
-    </div>
+    </>
+  );
+  return to ? (
+    <Link to={to} className={cls}>
+      {inner}
+    </Link>
+  ) : (
+    <div className={cls}>{inner}</div>
   );
 }

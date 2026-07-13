@@ -147,3 +147,37 @@ export const phoneVerifyConfirmSchema = z.object({
 export const adminRejectSchema = z.object({
   reason: z.string().trim().max(300).optional(),
 });
+
+// --- Phase 3.2: menu management ---------------------------------------------
+
+const DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+const timeString = z
+  .string()
+  .trim()
+  .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Час у форматі ГГ:ХХ');
+
+// Shared dish fields — all optional (update uses these as-is; create re-requires
+// name + price below).
+const dishOptional = {
+  name: z.string().trim().min(2, 'Назва — щонайменше 2 символи').max(120).optional(),
+  description: z.string().trim().max(1000).optional().or(z.literal('')),
+  price: z.coerce.number().positive('Ціна має бути більшою за 0').optional(),
+  categoryId: z.string().trim().uuid('Некоректна категорія').optional().or(z.literal('')),
+  isAvailable: z.coerce.boolean().optional(),
+  availableDays: z.array(z.enum(DAYS)).max(7).optional(),
+  availableFrom: timeString.optional().or(z.literal('')),
+  availableUntil: timeString.optional().or(z.literal('')),
+};
+
+export const createDishSchema = z.object({
+  ...dishOptional,
+  name: z.string().trim().min(2, 'Назва — щонайменше 2 символи').max(120),
+  price: z.coerce.number({ invalid_type_error: 'Вкажіть ціну' }).positive('Ціна має бути більшою за 0'),
+  isAvailable: z.coerce.boolean().optional().default(true),
+  availableDays: z.array(z.enum(DAYS)).max(7).optional().default([]),
+});
+
+export const updateDishSchema = z
+  .object(dishOptional)
+  .refine((d) => Object.keys(d).length > 0, { message: 'Немає полів для оновлення' });
+
