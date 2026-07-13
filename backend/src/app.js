@@ -5,9 +5,12 @@ import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import addressRoutes from './routes/addresses.js';
 import cookRoutes from './routes/cooks.js';
+import cookAccountRoutes from './routes/cook.js';
+import adminRoutes from './routes/admin.js';
 import categoryRoutes from './routes/categories.js';
 import cartRoutes from './routes/cart.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
+import { UPLOAD_ROOT } from './lib/storage.js';
 
 // Builds the Express app. Kept separate from server.js so tests can import
 // the app (via supertest) without binding a port.
@@ -23,6 +26,9 @@ export function createApp() {
   // Larger limit accommodates base64 avatar/dish images.
   app.use(express.json({ limit: '2mb' }));
 
+  // Serve uploaded media (cook photos, dish photos, verification docs).
+  app.use('/uploads', express.static(UPLOAD_ROOT));
+
   // Health check.
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', service: 'ohnyk-backend', time: new Date().toISOString() });
@@ -32,7 +38,9 @@ export function createApp() {
   app.use('/api/auth', authRoutes);
   app.use('/api/users', userRoutes);
   app.use('/api/addresses', addressRoutes); // back-compat alias (Phase 1)
-  app.use('/api/cooks', cookRoutes);
+  app.use('/api/cooks', cookRoutes); // public discovery (plural)
+  app.use('/api/cook', cookAccountRoutes); // authenticated cook's own account
+  app.use('/api/admin', adminRoutes);
   app.use('/api/categories', categoryRoutes);
   app.use('/api/cart', cartRoutes);
 

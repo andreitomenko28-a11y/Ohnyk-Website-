@@ -1,0 +1,134 @@
+import { prisma } from '../lib/prisma.js';
+import { httpError } from '../middleware/errorHandler.js';
+import { saveImage, saveDocument, deleteByUrl } from '../lib/storage.js';
+import { sendVerificationCode, checkVerificationCode } from '../lib/sms.js';
+import {
+  cookProfileUpdateSchema,
+  phoneVerifyConfirmSchema,
+} from '../validation/schemas.js';
+
+// Full profile shape for the owner (includes verification internals).
+function cookAccount(cook, user) {
+  return {
+    id: cook.id,
+    displayName: cook.displayName,
+    fullName: user?.fullName,
+    phone: user?.phone,
+    bio: cook.bio,
+    avatar: cook.avatar,
+    city: cook.city,
+    kitchenAddress: cook.kitchenAddress,
+    deliveryZone: cook.deliveryZone,
+    rating: cook.rating,
+    reviewCount: cook.reviewCount,
+    isVerified: cook.isVerified,
+    phoneVerified: cook.phoneVerified,
+    verificationStatus: cook.verificationStatus,
+    verificationDocUrl: cook.verificationDocUrl,
+    verifiedAt: cook.verifiedAt,
+    status: cook.status,
+    // Convenience flag for the client: may the cook publish menu / take orders?
+    canOperate: cook.verificationStatus === 'VERIFIED' && cook.status === 'ACTIVE',
+    createdAt: cook.createdAt,
+    updatedAt: cook.updatedAt,
+  };
+}
+
+async function withUser(cook) {
+  const user = await prisma.user.findUnique({
+    where: { id: cook.userId },
+    select: { fullName: true, phone: true },
+  });
+  return cookAccount(cook, user);
+}
+
+// GET /api/cook/me
+export async function getMyCookProfile(req, res, next) {
+  try {
+    res.json({ cook: await withUser(req.cook) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// PUT /api/cook/profile
+export async function updateMyCookProfile(req, res, next) {
+  try {
+    const data = cookProfileUpdateSchema.parse(req.body);
+    if (data.deliveryZone === '') data.deliveryZone = null;
+    const cook = await prisma.cook.update({ where: { id: req.cook.id }, data });
+    res.json({ cook: await withUser(cook) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/cook/profile/photo  (multipart: field "photo")
+export async function uploadProfilePhoto(req, res, next) {
+  try {
+    if (!req.file) throw httpError(400, 'Файл фото не надано');
+    const url = await saveImage(req.file.buffer, 'cooks', { width: 512, quality: 82 });
+    const prev = req.cook.avatar;
+    const cook = await prisma.cook.update({ where: { id: req.cook.id }, data: { avatar: url } });
+    if (prev) await deleteByUrl(prev);
+    res.status(201).json({ cook: await withUser(cook) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/cook/verification/phone/request  — STUB (see lib/sms.js)
+export async function requestPhoneVerification(req, res, next) {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    if (!user?.phone) throw httpError(400, 'Спершу додайте номер телефону в профілі');
+    const result = await sendVerificationCode(user.phone);
+    res.json({
+      message: 'Код підтвердження надіслано на ваш номер.',
+      ...result, // includes devCode outside production
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/cook/verification/phone/confirm  — STUB accepts fixed code "0000"
+export async function confirmPhoneVerification(req, res, next) {
+  try {
+    const { code } = phoneVerifyConfirmSchema.parse(req.body);
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const ok = await checkVerificationCode(user?.phone, code);
+    if (!ok) throw httpError(400, 'Невірний код підтвердження');
+    const cook = await prisma.cook.update({
+      where: { id: req.cook.id },
+      data: { phoneVerified: true },
+    });
+    res.json({ cook: await withUser(cook), message: 'Телефон підтверджено.' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/cook/verification/document  (multipart: field "document")
+// Stores the permit; automatic checking is not implemented — an admin reviews
+// it manually (see adminController). Status stays PENDING.
+export async function uploadVerificationDocument(req, res, next) {
+  try {
+    if (!req.file) throw httpError(400, 'Файл документа не надано');
+    const url = await saveDocument(req.file.buffer, 'verification', req.file.originalname);
+    const prev = req.cook.verificationDocUrl;
+    const cook = await prisma.cook.update({
+      where: { id: req.cook.id },
+      data: { verificationDocUrl: url },
+    });
+    if (prev) await deleteByUrl(prev);
+    res.status(201).json({
+      cook: await withUser(cook),
+      message: 'Документ завантажено. Очікуйте на підтвердження адміністратором.',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export { cookAccount };

@@ -1,18 +1,27 @@
 import { z } from 'zod';
 
 // Only CUSTOMER and COOK can self-register; ADMIN is assigned manually.
-export const registerSchema = z.object({
-  fullName: z.string().trim().min(2, 'Ім’я має містити щонайменше 2 символи'),
-  email: z.string().trim().toLowerCase().email('Некоректний email'),
-  phone: z
-    .string()
-    .trim()
-    .min(6, 'Некоректний номер телефону')
-    .optional()
-    .or(z.literal('').transform(() => undefined)),
-  password: z.string().min(8, 'Пароль має містити щонайменше 8 символів'),
-  role: z.enum(['CUSTOMER', 'COOK']).default('CUSTOMER'),
-});
+export const registerSchema = z
+  .object({
+    fullName: z.string().trim().min(2, 'Ім’я має містити щонайменше 2 символи'),
+    email: z.string().trim().toLowerCase().email('Некоректний email'),
+    phone: z
+      .string()
+      .trim()
+      .min(6, 'Некоректний номер телефону')
+      .optional()
+      .or(z.literal('').transform(() => undefined)),
+    password: z.string().min(8, 'Пароль має містити щонайменше 8 символів'),
+    role: z.enum(['CUSTOMER', 'COOK']).default('CUSTOMER'),
+    // Optional cook-onboarding fields, applied only when role === 'COOK'.
+    // Kept optional so a cook profile can be completed progressively; the
+    // dedicated cook form collects them up front, and phone presence is
+    // enforced at the phone-verification step.
+    displayName: z.string().trim().min(2).max(80).optional(),
+    bio: z.string().trim().max(500).optional(),
+    kitchenAddress: z.string().trim().min(3).max(200).optional(),
+    deliveryZone: z.string().trim().max(200).optional(),
+  });
 
 export const loginSchema = z.object({
   // Accepts either an email or a phone number in the same field.
@@ -116,4 +125,25 @@ export const updateCartItemSchema = z.object({
 
 export const cartTotalSchema = z.object({
   deliveryFee: z.coerce.number().min(0).optional().default(0),
+});
+
+// --- Phase 3: cook account, verification, admin ------------------------------
+
+// PATCH the authenticated cook's own profile. At least one field required.
+export const cookProfileUpdateSchema = z
+  .object({
+    displayName: z.string().trim().min(2).max(80).optional(),
+    bio: z.string().trim().max(500).optional(),
+    kitchenAddress: z.string().trim().min(3).max(200).optional(),
+    deliveryZone: z.string().trim().max(200).optional().or(z.literal('')),
+    city: z.string().trim().min(1).max(80).optional(),
+  })
+  .refine((d) => Object.keys(d).length > 0, { message: 'Немає полів для оновлення' });
+
+export const phoneVerifyConfirmSchema = z.object({
+  code: z.string().trim().min(1, 'Введіть код підтвердження'),
+});
+
+export const adminRejectSchema = z.object({
+  reason: z.string().trim().max(300).optional(),
 });

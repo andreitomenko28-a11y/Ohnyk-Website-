@@ -110,13 +110,20 @@ describe('AuthPage', () => {
     await user.click(screen.getByText('Кухар'));
     await user.type(screen.getByPlaceholderText('Андрій'), 'Оксана');
     await user.type(screen.getByPlaceholderText('you@example.com'), 'oksana@example.com');
+    await user.type(screen.getByPlaceholderText('+380'), '+380671234567');
+    // Cook-specific required field.
+    await user.type(screen.getByPlaceholderText(/Смілянська/), 'вул. Тестова, 1');
     await user.type(screen.getByPlaceholderText('Мінімум 8 символів'), 'password123');
     await user.click(screen.getByRole('button', { name: 'Створити акаунт' }));
 
     await waitFor(() => {
       expect(api.post).toHaveBeenCalledWith(
         '/auth/register',
-        expect.objectContaining({ role: 'COOK', email: 'oksana@example.com' })
+        expect.objectContaining({
+          role: 'COOK',
+          email: 'oksana@example.com',
+          kitchenAddress: 'вул. Тестова, 1',
+        })
       );
     });
   });

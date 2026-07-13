@@ -78,8 +78,8 @@ function LoginForm() {
     setError('');
     setBusy(true);
     try {
-      await login(form.identifier, form.password);
-      navigate('/');
+      const u = await login(form.identifier, form.password);
+      navigate(u.role === 'COOK' ? '/cook' : '/');
     } catch (err) {
       setError(apiError(err));
     } finally {
@@ -131,17 +131,30 @@ function RegisterForm() {
   const { register } = useAuth();
   const navigate = useNavigate();
   const [role, setRole] = useState('CUSTOMER');
-  const [form, setForm] = useState({ fullName: '', email: '', phone: '', password: '' });
+  const [form, setForm] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    password: '',
+    kitchenAddress: '',
+    deliveryZone: '',
+    bio: '',
+  });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const isCook = role === 'COOK';
 
   async function onSubmit(e) {
     e.preventDefault();
     setError('');
     setBusy(true);
     try {
-      await register({ ...form, role });
-      navigate('/');
+      // Only send cook fields for cooks.
+      const payload = isCook
+        ? { ...form, role }
+        : { fullName: form.fullName, email: form.email, phone: form.phone, password: form.password, role };
+      const u = await register(payload);
+      navigate(u.role === 'COOK' ? '/cook' : '/');
     } catch (err) {
       setError(apiError(err));
     } finally {
@@ -196,7 +209,40 @@ function RegisterForm() {
         placeholder="+380"
         value={form.phone}
         onChange={(e) => setForm({ ...form, phone: e.target.value })}
+        required={isCook}
       />
+
+      {isCook && (
+        <div className="animate-[fade_.25s_ease]">
+          <label className="field-label">{t('cookKitchenAddress')}</label>
+          <input
+            className="field-input"
+            type="text"
+            placeholder={t('cookKitchenPlaceholder')}
+            value={form.kitchenAddress}
+            onChange={(e) => setForm({ ...form, kitchenAddress: e.target.value })}
+            required
+          />
+
+          <label className="field-label">{t('cookDeliveryZone')}</label>
+          <input
+            className="field-input"
+            type="text"
+            placeholder={t('cookDeliveryPlaceholder')}
+            value={form.deliveryZone}
+            onChange={(e) => setForm({ ...form, deliveryZone: e.target.value })}
+          />
+
+          <label className="field-label">{t('cookBioLabel')}</label>
+          <textarea
+            className="field-input min-h-[76px] resize-y"
+            placeholder={t('cookBioPlaceholder')}
+            value={form.bio}
+            onChange={(e) => setForm({ ...form, bio: e.target.value })}
+            maxLength={500}
+          />
+        </div>
+      )}
 
       <label className="field-label">{t('password')}</label>
       <input

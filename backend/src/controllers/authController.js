@@ -32,12 +32,20 @@ function publicUser(user) {
     cook: user.cookProfile
       ? {
           id: user.cookProfile.id,
+          displayName: user.cookProfile.displayName,
           bio: user.cookProfile.bio,
           avatar: user.cookProfile.avatar,
           isVerified: user.cookProfile.isVerified,
           rating: user.cookProfile.rating,
           reviewCount: user.cookProfile.reviewCount,
           city: user.cookProfile.city,
+          kitchenAddress: user.cookProfile.kitchenAddress,
+          deliveryZone: user.cookProfile.deliveryZone,
+          phoneVerified: user.cookProfile.phoneVerified,
+          verificationStatus: user.cookProfile.verificationStatus,
+          verificationDocUrl: user.cookProfile.verificationDocUrl,
+          verifiedAt: user.cookProfile.verifiedAt,
+          status: user.cookProfile.status,
         }
       : null,
     // Back-compat flat fields (Phase 1 clients).
@@ -67,8 +75,18 @@ export async function register(req, res, next) {
         passwordHash,
         fullName: data.fullName,
         role: data.role,
-        // Automatically create a cook profile for cooks.
-        ...(data.role === 'COOK' && { cookProfile: { create: {} } }),
+        // Automatically create a cook profile for cooks, seeding onboarding
+        // fields from the registration form. Verification stays PENDING.
+        ...(data.role === 'COOK' && {
+          cookProfile: {
+            create: {
+              displayName: data.displayName ?? data.fullName,
+              bio: data.bio,
+              kitchenAddress: data.kitchenAddress ?? '',
+              deliveryZone: data.deliveryZone,
+            },
+          },
+        }),
       },
       include: { cookProfile: true },
     });

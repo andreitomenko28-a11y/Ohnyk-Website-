@@ -22,6 +22,37 @@ export function authHeader(token) {
   return { Authorization: `Bearer ${token}` };
 }
 
+// Registers a cook through the real onboarding endpoint (phone + kitchen
+// address required). Returns { user, accessToken, refreshToken, cook }.
+export async function registerCook(overrides = {}) {
+  const payload = {
+    fullName: 'Кухар Тест',
+    email: `cook${Date.now()}${Math.random().toString(36).slice(2, 7)}@example.com`,
+    phone: `+38063${Math.floor(1000000 + Math.random() * 8999999)}`,
+    password: 'password123',
+    role: 'COOK',
+    kitchenAddress: 'вул. Тестова, 1, Черкаси',
+    deliveryZone: 'Центр',
+    bio: 'Смачно готую',
+    ...overrides,
+  };
+  const res = await request.post('/api/auth/register').send(payload);
+  // Surface the cook profile at the top level for convenience.
+  return { ...res.body, cook: res.body.user?.cook };
+}
+
+// Creates an ADMIN and returns a token whose payload carries the ADMIN role
+// (role is promoted in the DB, then a fresh login re-issues the token).
+export async function createAdmin() {
+  const email = `admin${Date.now()}${Math.random().toString(36).slice(2, 7)}@example.com`;
+  const reg = await registerUser({ email, role: 'CUSTOMER' });
+  await prisma.user.update({ where: { id: reg.user.id }, data: { role: 'ADMIN' } });
+  const login = await request
+    .post('/api/auth/login')
+    .send({ identifier: email, password: reg.password });
+  return login.body; // { user, accessToken, refreshToken }
+}
+
 // Creates a category (idempotent by slug).
 export async function createCategory({ name = 'Борщ', slug = 'borshch', emoji = '🥣' } = {}) {
   return prisma.category.upsert({

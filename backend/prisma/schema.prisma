@@ -1,7 +1,9 @@
 // Ohnyk — Prisma schema
 // Phase 1: authentication + base data model.
 // Phase 2: profiles/addresses, discovery (cooks, categories, dishes), cart.
-// Order, OrderItem, Payment, Review arrive in Phases 4+.
+// Phase 3: cook onboarding + verification, menu management (multi-photo,
+//          availability schedule), orders (checkout) + cook dashboard.
+// Payment, Review arrive in Phases 4+.
 
 generator client {
   provider = "prisma-client-js"
@@ -16,6 +18,30 @@ enum Role {
   CUSTOMER
   COOK
   ADMIN
+}
+
+// Outcome of the (stubbed) cook verification review.
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+// Operational state of a cook account.
+enum CookStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+// Lifecycle of an order, from placement to hand-off.
+enum OrderStatus {
+  NEW
+  PREPARING
+  READY
+  HANDED_OVER
+  COMPLETED
+  CANCELLED
 }
 
 model User {
@@ -34,23 +60,38 @@ model User {
   addresses      Address[]
   cart           Cart?
   passwordResets PasswordReset[]
+  orders         Order[] // orders placed as a buyer
 }
 
 model Cook {
   id          String   @id @default(uuid())
   userId      String   @unique
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bio         String?
-  avatar      String? // URL or base64
-  isVerified  Boolean  @default(false)
+  displayName String? // public kitchen name; falls back to user.fullName
+  bio         String? // "про себе" / description
+  avatar      String? // profile photo — URL or base64
+  isVerified  Boolean  @default(false) // kept in sync with verificationStatus (Phase 2 badge)
   rating      Float    @default(0) // average review score
   reviewCount Int      @default(0)
   latitude    Float? // for distance calculation
   longitude   Float?
   city        String   @default("Черкаси")
-  createdAt   DateTime @default(now())
+
+  // --- Phase 3: onboarding & verification -----------------------------------
+  kitchenAddress     String             @default("") // kitchen / pickup address
+  deliveryZone       String? // free-text delivery area
+  phoneVerified      Boolean            @default(false)
+  verificationStatus VerificationStatus @default(PENDING)
+  verificationDocUrl String? // uploaded permit/document
+  verifiedAt         DateTime?
+  verifiedByAdminId  String? // admin user id who approved
+  status             CookStatus         @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   dishes Dish[]
+  orders Order[] // incoming orders for this cook
 }
 
 model Address {
@@ -81,13 +122,34 @@ model Dish {
   name        String
   description String?
   price       Float
-  image       String? // URL or base64
+  image       String? // cover image (URL or base64) — kept for back-compat
   categoryId  String?
   category    Category? @relation(fields: [categoryId], references: [id])
   isAvailable Boolean   @default(true)
-  createdAt   DateTime  @default(now())
 
-  cartItems CartItem[]
+  // --- Phase 3: availability schedule ---------------------------------------
+  availableDays  String[] @default([]) // e.g. ["MON","TUE"], empty = every day
+  availableFrom  String? // "HH:mm"
+  availableUntil String? // "HH:mm"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  cartItems  CartItem[]
+  photos     DishPhoto[]
+  orderItems OrderItem[]
+}
+
+// Additional dish photos (beyond the cover `Dish.image`).
+model DishPhoto {
+  id        String   @id @default(uuid())
+  dishId    String
+  dish      Dish     @relation(fields: [dishId], references: [id], onDelete: Cascade)
+  url       String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([dishId])
 }
 
 model Cart {
@@ -109,6 +171,36 @@ model CartItem {
   quantity Int    @default(1)
 
   @@unique([cartId, dishId])
+}
+
+model Order {
+  id        String      @id @default(uuid())
+  buyerId   String
+  buyer     User        @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  cookId    String
+  cook      Cook        @relation(fields: [cookId], references: [id], onDelete: Cascade)
+  status    OrderStatus @default(NEW)
+  total     Float       @default(0)
+  addressText String    @default("") // delivery/pickup address snapshot
+  note      String? // buyer comment
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @default(now()) @updatedAt
+
+  items OrderItem[]
+
+  @@index([cookId, status])
+  @@index([buyerId])
+}
+
+model OrderItem {
+  id            String @id @default(uuid())
+  orderId       String
+  order         Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  dishId        String
+  dish          Dish   @relation(fields: [dishId], references: [id])
+  nameSnapshot  String // dish name at time of order
+  priceSnapshot Float // unit price at time of order
+  quantity      Int    @default(1)
 }
 
 model PasswordReset {

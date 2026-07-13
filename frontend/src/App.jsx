@@ -8,6 +8,8 @@ import AppLayout from './components/AppLayout.jsx';
 import AuthPage from './pages/AuthPage.jsx';
 import PasswordResetPage from './pages/PasswordResetPage.jsx';
 import HomePage from './pages/HomePage.jsx';
+import CookOnboarding from './pages/CookOnboarding.jsx';
+import { useAuth } from './context/AuthContext.jsx';
 import Discovery from './pages/Discovery.jsx';
 import CookProfile from './pages/CookProfile.jsx';
 import Cart from './pages/Cart.jsx';
@@ -16,12 +18,36 @@ import Addresses from './pages/Addresses.jsx';
 import Favorites from './pages/Favorites.jsx';
 
 // Wraps a page in the auth guard + the responsive app shell (sidebar/bottom nav).
+// Cooks are redirected to their own area — the customer shell isn't for them.
 function Protected({ children }) {
   return (
     <ProtectedRoute>
-      <AppLayout>{children}</AppLayout>
+      <CustomerOnly>
+        <AppLayout>{children}</AppLayout>
+      </CustomerOnly>
     </ProtectedRoute>
   );
+}
+
+function CustomerOnly({ children }) {
+  const { user } = useAuth();
+  if (user?.role === 'COOK') return <Navigate to="/cook" replace />;
+  return children;
+}
+
+// Cook-only area (own authenticated shell, no customer nav).
+function CookProtected({ children }) {
+  return (
+    <ProtectedRoute>
+      <CookOnly>{children}</CookOnly>
+    </ProtectedRoute>
+  );
+}
+
+function CookOnly({ children }) {
+  const { user } = useAuth();
+  if (user?.role !== 'COOK') return <Navigate to="/" replace />;
+  return children;
 }
 
 export default function App() {
@@ -35,6 +61,8 @@ export default function App() {
                 <Route path="/login" element={<AuthPage initialTab="login" />} />
                 <Route path="/register" element={<AuthPage initialTab="register" />} />
                 <Route path="/reset-password" element={<PasswordResetPage />} />
+
+                <Route path="/cook" element={<CookProtected><CookOnboarding /></CookProtected>} />
 
                 <Route path="/" element={<Protected><HomePage /></Protected>} />
                 <Route path="/discovery" element={<Protected><Discovery /></Protected>} />
