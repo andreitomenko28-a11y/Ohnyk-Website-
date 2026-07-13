@@ -47,8 +47,9 @@ export default function CookOnboarding() {
 
   return (
     <div className="min-h-screen">
-      {/* Top bar */}
-      <header className="sticky top-0 z-10 border-b border-[color:var(--line)] bg-surface/90 backdrop-blur">
+      {/* Top bar — static (in flow) so it never overlaps content, incl. in
+          mobile in-app webviews where a translucent sticky header mispositions. */}
+      <header className="border-b border-[color:var(--line)] bg-surface">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-3.5">
           <span className="inline-flex items-center gap-2 text-[20px]">
             <FlameMark className="h-7 w-7" />
@@ -347,7 +348,7 @@ function ProfileSection({ cook, refreshUser, t }) {
     <form onSubmit={save} className="mt-6 rounded-card border border-[color:var(--line)] bg-surface p-5 shadow-card">
       <h2 className="mb-4 flex items-center gap-2 font-display text-[16px] font-bold">
         <MapPinIcon className="h-5 w-5 text-ember" />
-        {t('cookAreaTitle')}
+        {t('cookProfileSection')}
       </h2>
 
       <label className="field-label">{t('name')}</label>
