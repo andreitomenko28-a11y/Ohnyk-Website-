@@ -4,7 +4,7 @@ import { useI18n } from '../i18n/index.jsx';
 import { FlameMark } from './Logo.jsx';
 import Wordmark from './Wordmark.jsx';
 import ThemeToggle from './ThemeToggle.jsx';
-import { LogoutIcon, ProfileIcon, FoodIcon } from './icons.jsx';
+import { LogoutIcon, ProfileIcon, FoodIcon, CartIcon } from './icons.jsx';
 
 // Shared shell for the cook area: static top bar (no sticky overlap) + tab nav.
 export default function CookShell({ children }) {
@@ -46,6 +46,11 @@ export default function CookShell({ children }) {
             <NavLink to="/cook/menu" className={tabClass}>
               <FoodIcon className="h-4 w-4" />
               {t('tabMenu')}
+              {!verified && <span className="ml-1 text-[11px]">🔒</span>}
+            </NavLink>
+            <NavLink to="/cook/orders" className={tabClass}>
+              <CartIcon className="h-4 w-4" />
+              {t('tabOrders')}
               {!verified && <span className="ml-1 text-[11px]">🔒</span>}
             </NavLink>
           </nav>

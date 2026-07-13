@@ -181,3 +181,24 @@ export const updateDishSchema = z
   .object(dishOptional)
   .refine((d) => Object.keys(d).length > 0, { message: 'Немає полів для оновлення' });
 
+// --- Phase 3.3: orders & dashboard ------------------------------------------
+
+export const ORDER_STATUSES = ['NEW', 'PREPARING', 'READY', 'HANDED_OVER', 'COMPLETED', 'CANCELLED'];
+
+// Checkout from the cart. Address comes from a saved address or free text.
+export const createOrderSchema = z.object({
+  addressId: z.string().trim().uuid('Некоректна адреса').optional(),
+  addressText: z.string().trim().max(300).optional(),
+  note: z.string().trim().max(500).optional().or(z.literal('')),
+});
+
+export const updateOrderStatusSchema = z.object({
+  status: z.enum(ORDER_STATUSES),
+});
+
+export const listOrdersSchema = z.object({
+  status: z.enum(ORDER_STATUSES).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+

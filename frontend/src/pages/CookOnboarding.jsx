@@ -84,7 +84,7 @@ export default function CookOnboarding() {
         {/* Menu now lives in its own tab; orders arrive in Module 3.3 */}
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
           <LockedCard Icon={FoodIcon} label={verified ? t('menuOpenHint') : t('menuSoon')} enabled={verified} to={verified ? '/cook/menu' : undefined} />
-          <LockedCard Icon={CartIcon} label={t('ordersSoon')} enabled={false} />
+          <LockedCard Icon={CartIcon} label={verified ? t('ordersOpenHint') : t('ordersSoon')} enabled={verified} to={verified ? '/cook/orders' : undefined} />
         </div>
 
         <div className="mt-6">

@@ -18,6 +18,12 @@ import {
   addDishPhotos,
   deleteDishPhoto,
 } from '../controllers/cookMenuController.js';
+import {
+  listCookOrders,
+  getCookOrder,
+  updateOrderStatus,
+  cookStats,
+} from '../controllers/cookOrdersController.js';
 
 // All routes here operate on the *authenticated* cook's own account.
 // (Public discovery lives under /api/cooks — plural.)
@@ -56,5 +62,11 @@ router.post(
   addDishPhotos,
 );
 router.delete('/dishes/:id/photos/:photoId', requireActiveCook, deleteDishPhoto);
+
+// --- Dashboard: incoming orders + stats (Module 3.3) -----------------------
+router.get('/orders', requireActiveCook, listCookOrders);
+router.get('/stats', requireActiveCook, cookStats);
+router.get('/orders/:id', requireActiveCook, getCookOrder);
+router.patch('/orders/:id/status', requireActiveCook, updateOrderStatus);
 
 export default router;
