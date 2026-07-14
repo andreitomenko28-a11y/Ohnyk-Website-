@@ -1,0 +1,18 @@
+// Standalone waitlist database — SQLite, independent from the main Ohnyk app.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model WaitlistEntry {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String   @unique
+  email     String   @unique
+  role      String // "client" | "cook"
+  createdAt DateTime @default(now())
+}

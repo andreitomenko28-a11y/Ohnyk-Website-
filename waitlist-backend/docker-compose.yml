@@ -1,0 +1,18 @@
+# Standalone waitlist backend. Independent from the repo-root docker-compose.yml
+# (which runs Postgres for the main Ohnyk app). Run from this directory:
+#   docker compose up --build
+services:
+  waitlist-api:
+    build: .
+    container_name: ohnyk-waitlist-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - '${PORT:-4000}:4000'
+    volumes:
+      # Persist the SQLite database file across container restarts.
+      - waitlist-data:/app/data
+
+volumes:
+  waitlist-data:
