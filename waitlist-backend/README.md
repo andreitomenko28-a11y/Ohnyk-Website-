@@ -45,6 +45,17 @@ docker compose up --build
 The API is then on `http://localhost:${PORT:-4000}`. This compose file is
 separate from the repo-root `docker-compose.yml` (which is for the main app).
 
+## Tests
+
+Automated tests use the built-in Node test runner (`node:test`) + supertest.
+Each run builds a throwaway SQLite database under `data/` and exercises the
+API end-to-end (validation, duplicates, honeypot, phone normalisation, admin
+CSV export, CORS, rate limiting).
+
+```bash
+npm test
+```
+
 ## Environment variables (`.env`)
 
 | Variable        | Purpose                                                        |
