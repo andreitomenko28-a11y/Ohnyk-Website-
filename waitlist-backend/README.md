@@ -72,9 +72,40 @@ npm test
 | `SMTP_FROM`     | From address (optional; defaults to `SMTP_USER`).             |
 | `NOTIFY_EMAIL`  | Where new-signup notifications are delivered.                  |
 
-### Gmail SMTP example
+### Brevo (recommended for production)
 
-Enable 2FA on the Google account, create an **App Password**, and use:
+[Brevo](https://www.brevo.com) (formerly Sendinblue) has a free tier
+(~300 emails/day) and good deliverability for transactional mail.
+
+1. Create a Brevo account and verify a **sender** — either a single sender
+   email (quickest) or your domain (best deliverability; add the SPF/DKIM
+   records Brevo shows you).
+2. Go to **SMTP & API → SMTP**. Note two things there:
+   - **Login** — looks like `8xxxxx@smtp-brevo.com`.
+   - **SMTP key** — click *Generate a new SMTP key*. This is the password
+     (do **not** use your account login password).
+3. Put them in `.env`:
+
+   ```
+   SMTP_HOST=smtp-relay.brevo.com
+   SMTP_PORT=587
+   SMTP_USER=8xxxxx@smtp-brevo.com          # the Brevo SMTP login
+   SMTP_PASS=<your Brevo SMTP key>
+   SMTP_FROM=Ohnyk Waitlist <no-reply@yourdomain.com>   # a VERIFIED sender
+   NOTIFY_EMAIL=owner@example.com           # where you want to receive signups
+   ```
+
+   > `SMTP_FROM` **must** be a sender/domain you verified in step 1, or Brevo
+   > rejects the message. `NOTIFY_EMAIL` can be any inbox.
+
+4. Restart the backend. On each signup the log shows
+   `[mailer] sent notification to … — messageId=…`; you can cross-check it in
+   Brevo under **Transactional → Email → Logs**.
+
+### Gmail SMTP alternative
+
+Enable 2FA on the Google account, create an **App Password** (not your login
+password), and use:
 
 ```
 SMTP_HOST=smtp.gmail.com
