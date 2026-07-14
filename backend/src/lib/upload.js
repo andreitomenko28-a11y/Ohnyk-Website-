@@ -7,9 +7,11 @@ import { httpError } from '../middleware/errorHandler.js';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB per image
 const MAX_DOC_BYTES = 8 * 1024 * 1024; // 8 MB per document
+const MAX_VIDEO_BYTES = 40 * 1024 * 1024; // 40 MB per video (kitchen tour)
 
 const IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
 const DOC_MIME = new Set([...IMAGE_MIME, 'application/pdf']);
+const VIDEO_MIME = new Set(['video/mp4', 'video/quicktime', 'video/webm', 'video/x-matroska']);
 
 function makeUploader(allowed, limitBytes, label) {
   return multer({
@@ -26,6 +28,7 @@ function makeUploader(allowed, limitBytes, label) {
 
 export const imageUpload = makeUploader(IMAGE_MIME, MAX_IMAGE_BYTES, 'фото');
 export const docUpload = makeUploader(DOC_MIME, MAX_DOC_BYTES, 'документ');
+export const videoUpload = makeUploader(VIDEO_MIME, MAX_VIDEO_BYTES, 'відео');
 
 // Normalises multer's own errors (e.g. LIMIT_FILE_SIZE) into httpError so the
 // central error handler returns a clean 400.

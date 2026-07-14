@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authGuard, requireRole } from '../middleware/authGuard.js';
 import { loadCook, requireActiveCook } from '../middleware/cookGuard.js';
-import { imageUpload, docUpload, handleUploadError } from '../lib/upload.js';
+import { imageUpload, docUpload, videoUpload, handleUploadError } from '../lib/upload.js';
 import {
   getMyCookProfile,
   updateMyCookProfile,
@@ -9,6 +9,9 @@ import {
   requestPhoneVerification,
   confirmPhoneVerification,
   uploadVerificationDocument,
+  uploadIdentityDocument,
+  uploadKitchenPhoto,
+  uploadKitchenVideo,
 } from '../controllers/cookAccountController.js';
 import {
   listMyDishes,
@@ -39,13 +42,25 @@ router.post('/profile/photo', imageUpload.single('photo'), handleUploadError, up
 router.post('/verification/phone/request', requestPhoneVerification);
 router.post('/verification/phone/confirm', confirmPhoneVerification);
 
-// Permit/document upload for manual admin review.
+// Document upload for manual admin review — personal medical record.
 router.post(
   '/verification/document',
   docUpload.single('document'),
   handleUploadError,
   uploadVerificationDocument,
 );
+
+// Identity document (passport / driver's licence) for identity verification.
+router.post(
+  '/verification/identity',
+  docUpload.single('document'),
+  handleUploadError,
+  uploadIdentityDocument,
+);
+
+// Optional kitchen photo & video — build buyer trust.
+router.post('/kitchen/photo', imageUpload.single('photo'), handleUploadError, uploadKitchenPhoto);
+router.post('/kitchen/video', videoUpload.single('video'), handleUploadError, uploadKitchenVideo);
 
 // --- Menu management (Module 3.2) ------------------------------------------
 // Viewing the own menu is allowed while pending; publishing/editing requires a

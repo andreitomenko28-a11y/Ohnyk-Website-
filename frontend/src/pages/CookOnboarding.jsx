@@ -75,6 +75,8 @@ export default function CookOnboarding() {
           <div className="my-4 h-px bg-[color:var(--line)]" />
           <PhoneStep cook={cook} refreshUser={refreshUser} t={t} />
           <div className="my-4 h-px bg-[color:var(--line)]" />
+          <IdentityStep cook={cook} refreshUser={refreshUser} t={t} />
+          <div className="my-4 h-px bg-[color:var(--line)]" />
           <DocStep cook={cook} refreshUser={refreshUser} t={t} />
         </section>
 
@@ -285,6 +287,46 @@ function DocStep({ cook, refreshUser, t }) {
   );
 }
 
+// Identity document (passport / driver's licence) uploaded at onboarding.
+function IdentityStep({ cook, refreshUser, t }) {
+  const inputRef = useRef(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  async function onPick(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setErr('');
+    setBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append('document', file);
+      await api.post('/cook/verification/identity', fd);
+      await refreshUser();
+    } catch (er) {
+      setErr(apiError(er));
+    } finally {
+      setBusy(false);
+      if (inputRef.current) inputRef.current.value = '';
+    }
+  }
+
+  const done = !!cook.identityDocUrl;
+  return (
+    <StepRow done={done} title={done ? t('stepIdentityDone') : t('stepIdentity')}>
+      <input ref={inputRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={onPick} />
+      <button
+        onClick={() => inputRef.current?.click()}
+        disabled={busy}
+        className="rounded-lg border border-[color:var(--line)] px-3.5 py-2 text-[13px] font-semibold transition-colors hover:border-ember hover:text-ember disabled:opacity-60"
+      >
+        {busy ? t('loading') : done ? t('changeIdentity') : t('uploadIdentity')}
+      </button>
+      {err && <p className="mt-2 text-[12.5px] text-red-500">{err}</p>}
+    </StepRow>
+  );
+}
+
 function ProfileSection({ cook, refreshUser, t }) {
   const [form, setForm] = useState({
     displayName: cook.displayName || '',
@@ -353,6 +395,8 @@ function ProfileSection({ cook, refreshUser, t }) {
         maxLength={500}
       />
 
+      <KitchenMedia cook={cook} refreshUser={refreshUser} t={t} />
+
       {err && <p className="mt-3 text-[12.5px] text-red-500">{err}</p>}
 
       <div className="mt-5 flex items-center gap-3">
@@ -362,6 +406,70 @@ function ProfileSection({ cook, refreshUser, t }) {
         {saved && <span className="text-[13px] font-semibold text-emerald-600 dark:text-emerald-400">{t('profileSaved')}</span>}
       </div>
     </form>
+  );
+}
+
+// Optional kitchen photo & video uploads — build buyer trust.
+function KitchenMedia({ cook, refreshUser, t }) {
+  const photoRef = useRef(null);
+  const videoRef = useRef(null);
+  const [busy, setBusy] = useState('');
+  const [err, setErr] = useState('');
+
+  async function upload(kind, file) {
+    if (!file) return;
+    setErr('');
+    setBusy(kind);
+    try {
+      const fd = new FormData();
+      fd.append(kind === 'photo' ? 'photo' : 'video', file);
+      await api.post(`/cook/kitchen/${kind}`, fd);
+      await refreshUser();
+    } catch (er) {
+      setErr(apiError(er));
+    } finally {
+      setBusy('');
+      if (photoRef.current) photoRef.current.value = '';
+      if (videoRef.current) videoRef.current.value = '';
+    }
+  }
+
+  const btn =
+    'rounded-lg border border-[color:var(--line)] px-3.5 py-2 text-[13px] font-semibold transition-colors hover:border-ember hover:text-ember disabled:opacity-60';
+
+  return (
+    <div className="mt-4">
+      <label className="field-label">
+        {t('kitchenPhotoLabel')} <span className="font-normal text-[color:var(--muted)]">{t('optional')}</span>
+      </label>
+      <div className="flex items-center gap-3">
+        {cook.kitchenPhotoUrl && (
+          <img src={cook.kitchenPhotoUrl} alt="" className="h-14 w-14 rounded-lg object-cover" />
+        )}
+        <input ref={photoRef} type="file" accept="image/*" className="hidden" onChange={(e) => upload('photo', e.target.files?.[0])} />
+        <button type="button" onClick={() => photoRef.current?.click()} disabled={!!busy} className={btn}>
+          {busy === 'photo' ? t('loading') : cook.kitchenPhotoUrl ? t('changeKitchenPhoto') : t('uploadKitchenPhoto')}
+        </button>
+      </div>
+
+      <label className="field-label">
+        {t('kitchenVideoLabel')} <span className="font-normal text-[color:var(--muted)]">{t('optional')}</span>
+      </label>
+      <div className="flex items-center gap-3">
+        {cook.kitchenVideoUrl && (
+          <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-emerald-600 dark:text-emerald-400">
+            <Check className="h-4 w-4" /> {t('kitchenMediaDone')}
+          </span>
+        )}
+        <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={(e) => upload('video', e.target.files?.[0])} />
+        <button type="button" onClick={() => videoRef.current?.click()} disabled={!!busy} className={btn}>
+          {busy === 'video' ? t('loading') : cook.kitchenVideoUrl ? t('changeKitchenVideo') : t('uploadKitchenVideo')}
+        </button>
+      </div>
+
+      <p className="mt-2.5 text-[12px] leading-relaxed text-[color:var(--muted)]">{t('kitchenTrust')}</p>
+      {err && <p className="mt-2 text-[12.5px] text-red-500">{err}</p>}
+    </div>
   );
 }
 

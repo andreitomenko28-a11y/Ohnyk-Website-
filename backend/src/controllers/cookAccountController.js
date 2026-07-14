@@ -25,6 +25,9 @@ function cookAccount(cook, user) {
     phoneVerified: cook.phoneVerified,
     verificationStatus: cook.verificationStatus,
     verificationDocUrl: cook.verificationDocUrl,
+    identityDocUrl: cook.identityDocUrl,
+    kitchenPhotoUrl: cook.kitchenPhotoUrl,
+    kitchenVideoUrl: cook.kitchenVideoUrl,
     verifiedAt: cook.verifiedAt,
     status: cook.status,
     // Convenience flag for the client: may the cook publish menu / take orders?
@@ -126,6 +129,61 @@ export async function uploadVerificationDocument(req, res, next) {
       cook: await withUser(cook),
       message: 'Документ завантажено. Очікуйте на підтвердження адміністратором.',
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/cook/verification/identity  (multipart: field "document")
+// Passport / driver's licence for identity verification. Reviewed by an admin.
+export async function uploadIdentityDocument(req, res, next) {
+  try {
+    if (!req.file) throw httpError(400, 'Файл документа не надано');
+    const url = await saveDocument(req.file.buffer, 'identity', req.file.originalname);
+    const prev = req.cook.identityDocUrl;
+    const cook = await prisma.cook.update({
+      where: { id: req.cook.id },
+      data: { identityDocUrl: url },
+    });
+    if (prev) await deleteByUrl(prev);
+    res.status(201).json({
+      cook: await withUser(cook),
+      message: 'Документ особи завантажено. Очікуйте на підтвердження адміністратором.',
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/cook/kitchen/photo  (multipart: field "photo") — optional, builds trust.
+export async function uploadKitchenPhoto(req, res, next) {
+  try {
+    if (!req.file) throw httpError(400, 'Файл фото не надано');
+    const url = await saveImage(req.file.buffer, 'kitchen', { width: 1280, quality: 82 });
+    const prev = req.cook.kitchenPhotoUrl;
+    const cook = await prisma.cook.update({
+      where: { id: req.cook.id },
+      data: { kitchenPhotoUrl: url },
+    });
+    if (prev) await deleteByUrl(prev);
+    res.status(201).json({ cook: await withUser(cook) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/cook/kitchen/video  (multipart: field "video") — optional, builds trust.
+export async function uploadKitchenVideo(req, res, next) {
+  try {
+    if (!req.file) throw httpError(400, 'Файл відео не надано');
+    const url = await saveDocument(req.file.buffer, 'kitchen', req.file.originalname);
+    const prev = req.cook.kitchenVideoUrl;
+    const cook = await prisma.cook.update({
+      where: { id: req.cook.id },
+      data: { kitchenVideoUrl: url },
+    });
+    if (prev) await deleteByUrl(prev);
+    res.status(201).json({ cook: await withUser(cook) });
   } catch (err) {
     next(err);
   }

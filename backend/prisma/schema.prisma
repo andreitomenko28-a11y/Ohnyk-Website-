@@ -82,7 +82,10 @@ model Cook {
   deliveryZone       String? // free-text delivery area
   phoneVerified      Boolean            @default(false)
   verificationStatus VerificationStatus @default(PENDING)
-  verificationDocUrl String? // uploaded permit/document
+  verificationDocUrl String? // uploaded document — personal medical record
+  identityDocUrl     String? // passport / driver's licence — identity check
+  kitchenPhotoUrl    String? // optional — kitchen photo, builds buyer trust
+  kitchenVideoUrl    String? // optional — kitchen video tour, builds buyer trust
   verifiedAt         DateTime?
   verifiedByAdminId  String? // admin user id who approved
   status             CookStatus         @default(PENDING)

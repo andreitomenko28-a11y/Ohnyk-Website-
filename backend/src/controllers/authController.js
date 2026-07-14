@@ -44,6 +44,9 @@ function publicUser(user) {
           phoneVerified: user.cookProfile.phoneVerified,
           verificationStatus: user.cookProfile.verificationStatus,
           verificationDocUrl: user.cookProfile.verificationDocUrl,
+          identityDocUrl: user.cookProfile.identityDocUrl,
+          kitchenPhotoUrl: user.cookProfile.kitchenPhotoUrl,
+          kitchenVideoUrl: user.cookProfile.kitchenVideoUrl,
           verifiedAt: user.cookProfile.verifiedAt,
           status: user.cookProfile.status,
         }
