@@ -57,12 +57,19 @@ export async function sendNewEntryNotification(entry) {
   ].join('\n');
 
   try {
-    await t.sendMail({
+    const info = await t.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER || notify,
       to: notify,
       subject: `Ohnyk waitlist: ${entry.name} (${entry.role})`,
       text,
     });
+    // Log the message id (and, for Ethereal test accounts, the preview URL)
+    // so deploys have a trace that the notification actually went out.
+    const preview = nodemailer.getTestMessageUrl(info);
+    console.log(
+      `[mailer] sent notification to ${notify} — messageId=${info.messageId}` +
+        (preview ? ` — preview: ${preview}` : ''),
+    );
     return true;
   } catch (err) {
     console.error('[mailer] failed to send notification:', err.message);
