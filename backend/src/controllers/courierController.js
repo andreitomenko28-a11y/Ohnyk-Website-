@@ -3,6 +3,7 @@ import { httpError } from '../middleware/errorHandler.js';
 import { courierStatusSchema, courierAdvanceSchema, listOrdersSchema } from '../validation/schemas.js';
 import { serializeOrder } from './orderController.js';
 import { notifyOrderStatus } from '../lib/notify.js';
+import { recordOrderEvent } from '../lib/orderEvents.js';
 
 const orderInclude = {
   items: true,
@@ -105,6 +106,7 @@ export async function claimOrder(req, res, next) {
     }
 
     const order = await prisma.order.findUnique({ where: { id: req.params.id }, include: orderInclude });
+    await recordOrderEvent(order.id, 'COURIER_ASSIGNED');
     await notifyOrderStatus({ order });
     res.json({ order: serializeOrder(order) });
   } catch (err) {
@@ -125,6 +127,7 @@ export async function advanceStatus(req, res, next) {
     }
 
     const updated = await prisma.order.update({ where: { id: order.id }, data: { status }, include: orderInclude });
+    await recordOrderEvent(order.id, status);
     await notifyOrderStatus({ order: updated });
     res.json({ order: serializeOrder(updated) });
   } catch (err) {

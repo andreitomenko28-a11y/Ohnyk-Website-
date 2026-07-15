@@ -61,6 +61,7 @@ export async function payOrder(orderId) {
     data: {
       status: 'NEW',
       payment: { create: { status: 'SUCCESS', amount: order.total, provider: 'monopay' } },
+      events: { create: { status: 'NEW' } },
     },
   });
 }

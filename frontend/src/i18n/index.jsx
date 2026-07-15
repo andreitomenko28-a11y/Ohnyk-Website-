@@ -258,6 +258,15 @@ export const dict = {
     geoSharing: 'Локація передається',
     geoDenied: 'Доступ до геолокації заборонено',
     geoUnavailable: 'Геолокація недоступна',
+    // orders history (Module 4.5)
+    navOrders: 'Замовлення',
+    myOrders: 'Мої замовлення',
+    orderTitle: 'Замовлення',
+    noOrders: 'Замовлень поки немає',
+    ordersFilter_ALL: 'Усі',
+    ordersFilter_ACTIVE: 'Активні',
+    ordersFilter_DELIVERED: 'Виконані',
+    ordersFilter_CANCELLED: 'Скасовані',
     // payment (Module 4.2)
     payTitle: 'Оплата замовлення',
     payNow: 'Оплатити картою',
@@ -553,6 +562,15 @@ export const dict = {
     geoSharing: 'Sharing location',
     geoDenied: 'Location access denied',
     geoUnavailable: 'Location unavailable',
+    // orders history (Module 4.5)
+    navOrders: 'Orders',
+    myOrders: 'My orders',
+    orderTitle: 'Order',
+    noOrders: 'No orders yet',
+    ordersFilter_ALL: 'All',
+    ordersFilter_ACTIVE: 'Active',
+    ordersFilter_DELIVERED: 'Completed',
+    ordersFilter_CANCELLED: 'Cancelled',
     // payment (Module 4.2)
     payTitle: 'Order payment',
     payNow: 'Pay by card',

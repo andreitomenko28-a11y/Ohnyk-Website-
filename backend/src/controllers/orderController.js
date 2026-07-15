@@ -9,6 +9,7 @@ const orderInclude = {
   cook: { include: { user: { select: { fullName: true } } } },
   buyer: { select: { fullName: true, phone: true } },
   courier: { include: { user: { select: { fullName: true, phone: true } } } },
+  events: { orderBy: { createdAt: 'asc' } },
 };
 
 export function serializeOrder(order) {
@@ -22,10 +23,13 @@ export function serializeOrder(order) {
     commission: order.commission,
     deliveryMethod: order.deliveryMethod,
     addressText: order.addressText,
+    deliveryLat: order.deliveryLat ?? null,
+    deliveryLng: order.deliveryLng ?? null,
     note: order.note,
     scheduledFor: order.scheduledFor,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
+    timeline: (order.events ?? []).map((e) => ({ status: e.status, at: e.createdAt })),
     cook: order.cook
       ? { id: order.cook.id, name: order.cook.displayName || order.cook.user?.fullName || '' }
       : { id: order.cookId },
@@ -153,6 +157,8 @@ export async function checkout(req, res, next) {
         },
         include: orderInclude,
       });
+      const ev = await tx.orderEvent.create({ data: { orderId: created.id, status: 'AWAITING_PAYMENT' } });
+      created.events = [ev]; // include the just-created event in the response
       await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
       await tx.cart.update({ where: { id: cart.id }, data: { cookId: null } });
       return created;

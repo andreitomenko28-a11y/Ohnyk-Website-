@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import BrandMark from './BrandMark.jsx';
 import LangSwitch from './LangSwitch.jsx';
 import ThemeToggle from './ThemeToggle.jsx';
-import { HomeIcon, SearchIcon, CartIcon, ProfileIcon, HeartIcon } from './icons.jsx';
+import { HomeIcon, SearchIcon, CartIcon, ProfileIcon, HeartIcon, BoxIcon } from './icons.jsx';
 
 // Desktop navigation rail (visible at lg+). Mobile uses BottomNav instead.
 export default function Sidebar() {
@@ -20,6 +20,7 @@ export default function Sidebar() {
     { Icon: SearchIcon, label: t('navSearch'), path: '/discovery' },
     { Icon: HeartIcon, label: t('favorites'), path: '/favorites' },
     { Icon: CartIcon, label: t('navCart'), path: '/cart', badge: cart.itemCount },
+    { Icon: BoxIcon, label: t('navOrders'), path: '/orders' },
     { Icon: ProfileIcon, label: t('navProfile'), path: '/profile' },
   ];
 

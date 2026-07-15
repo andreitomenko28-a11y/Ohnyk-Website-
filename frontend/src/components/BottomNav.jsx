@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useI18n } from '../i18n/index.jsx';
 import { useCart } from '../context/CartContext.jsx';
-import { HomeIcon, SearchIcon, CartIcon, ProfileIcon } from './icons.jsx';
+import { HomeIcon, SearchIcon, CartIcon, ProfileIcon, BoxIcon } from './icons.jsx';
 
 // Fixed bottom navigation — floating pill with outline icons (active = ember).
 export default function BottomNav() {
@@ -14,6 +14,7 @@ export default function BottomNav() {
     { Icon: HomeIcon, label: t('navHome'), path: '/' },
     { Icon: SearchIcon, label: t('navSearch'), path: '/discovery' },
     { Icon: CartIcon, label: t('navCart'), path: '/cart', badge: cart.itemCount },
+    { Icon: BoxIcon, label: t('navOrders'), path: '/orders' },
     { Icon: ProfileIcon, label: t('navProfile'), path: '/profile' },
   ];
 

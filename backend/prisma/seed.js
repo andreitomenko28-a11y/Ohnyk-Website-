@@ -234,6 +234,10 @@ async function main() {
   // Clean previous demo orders for an idempotent seed.
   await prisma.order.deleteMany({ where: { buyerId: customer.id } });
 
+  // The status progression each demo order has already gone through — used to
+  // seed a realistic timeline (OrderEvents).
+  const PROGRESSION = ['AWAITING_PAYMENT', 'NEW', 'PREPARING', 'READY', 'COURIER_ASSIGNED', 'PICKED_UP', 'ON_THE_WAY', 'DELIVERED'];
+
   // Demo orders are already paid (a successful Payment attached).
   const orderPlans = [
     { status: 'NEW', note: 'Подзвоніть перед доставкою', items: [[0, 1], [2, 2]] },
@@ -248,6 +252,12 @@ async function main() {
     });
     const subtotal = items.reduce((s, i) => s + i.priceSnapshot * i.quantity, 0);
     const p = computePricing(subtotal);
+
+    // Build the timeline up to (and including) the order's current status.
+    const upto = PROGRESSION.slice(0, PROGRESSION.indexOf(plan.status) + 1);
+    const base = Date.now() - upto.length * 6 * 60 * 1000; // ~6 min apart
+    const events = upto.map((status, i) => ({ status, createdAt: new Date(base + i * 6 * 60 * 1000) }));
+
     await prisma.order.create({
       data: {
         buyerId: customer.id,
@@ -261,6 +271,7 @@ async function main() {
         cookPayout: p.cookPayout,
         commission: p.commission,
         items: { create: items },
+        events: { create: events },
         payment: { create: { status: 'SUCCESS', amount: p.total, provider: 'monopay' } },
       },
     });

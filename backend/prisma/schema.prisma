@@ -239,12 +239,24 @@ model Order {
   createdAt DateTime    @default(now())
   updatedAt DateTime    @default(now()) @updatedAt
 
-  items OrderItem[]
+  items  OrderItem[]
+  events OrderEvent[]
 
   @@index([cookId, status])
   @@index([buyerId])
   @@index([courierId, status])
   @@index([status])
+}
+
+// Append-only status history for an order (the delivery timeline).
+model OrderEvent {
+  id        String      @id @default(uuid())
+  orderId   String
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    OrderStatus
+  createdAt DateTime    @default(now())
+
+  @@index([orderId])
 }
 
 // One payment per order (MonoPay acquiring). Provider-agnostic fields.

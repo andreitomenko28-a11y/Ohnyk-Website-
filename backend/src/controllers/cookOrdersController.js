@@ -3,6 +3,7 @@ import { httpError } from '../middleware/errorHandler.js';
 import { listOrdersSchema, updateOrderStatusSchema } from '../validation/schemas.js';
 import { serializeOrder } from './orderController.js';
 import { notifyOrderStatus } from '../lib/notify.js';
+import { recordOrderEvent } from '../lib/orderEvents.js';
 
 const orderInclude = {
   items: true,
@@ -77,6 +78,7 @@ export async function updateOrderStatus(req, res, next) {
       data: { status },
       include: orderInclude,
     });
+    await recordOrderEvent(order.id, status);
     await notifyOrderStatus({ order: updated });
     res.json({ order: serializeOrder(updated) });
   } catch (err) {

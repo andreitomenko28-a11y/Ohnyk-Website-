@@ -27,7 +27,7 @@ async function applyPaymentResult({ payment, monoStatus, transactionId, raw }) {
     if (mapped.paid) {
       const current = await tx.order.findUnique({ where: { id: payment.orderId } });
       if (current && current.status === 'AWAITING_PAYMENT') {
-        return tx.order.update({
+        const updated = await tx.order.update({
           where: { id: payment.orderId },
           data: { status: 'NEW' },
           include: {
@@ -35,6 +35,8 @@ async function applyPaymentResult({ payment, monoStatus, transactionId, raw }) {
             cook: { include: { user: { select: { fullName: true } } } },
           },
         });
+        await tx.orderEvent.create({ data: { orderId: payment.orderId, status: 'NEW' } });
+        return updated;
       }
     }
     return null;
