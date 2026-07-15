@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api, { tokenStore } from '../api/client.js';
+import { disconnectSocket } from '../lib/socket.js';
 
 const AuthContext = createContext(null);
 
@@ -55,6 +56,8 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => {
     tokenStore.clear();
     setUser(null);
+    // Drop the realtime connection so it can't stay authenticated as this user.
+    disconnectSocket();
   }, []);
 
   // Re-fetch the current user (e.g. after cook verification steps).

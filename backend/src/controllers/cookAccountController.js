@@ -1,6 +1,6 @@
 import { prisma } from '../lib/prisma.js';
 import { httpError } from '../middleware/errorHandler.js';
-import { saveImage, saveDocument, deleteByUrl } from '../lib/storage.js';
+import { saveImage, saveDocument, deleteByUrl, normalizeDocUrl } from '../lib/storage.js';
 import { sendVerificationCode, checkVerificationCode } from '../lib/sms.js';
 import {
   cookProfileUpdateSchema,
@@ -24,8 +24,8 @@ function cookAccount(cook, user) {
     isVerified: cook.isVerified,
     phoneVerified: cook.phoneVerified,
     verificationStatus: cook.verificationStatus,
-    verificationDocUrl: cook.verificationDocUrl,
-    identityDocUrl: cook.identityDocUrl,
+    verificationDocUrl: normalizeDocUrl(cook.verificationDocUrl),
+    identityDocUrl: normalizeDocUrl(cook.identityDocUrl),
     kitchenPhotoUrl: cook.kitchenPhotoUrl,
     kitchenVideoUrl: cook.kitchenVideoUrl,
     verifiedAt: cook.verifiedAt,
@@ -118,7 +118,7 @@ export async function confirmPhoneVerification(req, res, next) {
 export async function uploadVerificationDocument(req, res, next) {
   try {
     if (!req.file) throw httpError(400, 'Файл документа не надано');
-    const url = await saveDocument(req.file.buffer, 'verification', req.file.originalname);
+    const url = await saveDocument(req.file.buffer, 'verification', req.file.originalname, { private: true });
     const prev = req.cook.verificationDocUrl;
     const cook = await prisma.cook.update({
       where: { id: req.cook.id },
@@ -139,7 +139,7 @@ export async function uploadVerificationDocument(req, res, next) {
 export async function uploadIdentityDocument(req, res, next) {
   try {
     if (!req.file) throw httpError(400, 'Файл документа не надано');
-    const url = await saveDocument(req.file.buffer, 'identity', req.file.originalname);
+    const url = await saveDocument(req.file.buffer, 'identity', req.file.originalname, { private: true });
     const prev = req.cook.identityDocUrl;
     const cook = await prisma.cook.update({
       where: { id: req.cook.id },

@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma.js';
 import { httpError } from '../middleware/errorHandler.js';
+import { normalizeDocUrl } from '../lib/storage.js';
 import { adminRejectSchema } from '../validation/schemas.js';
 
 // Shape a cook for the admin review queue.
@@ -19,8 +20,8 @@ function adminCook(cook) {
     isVerified: cook.isVerified,
     phoneVerified: cook.phoneVerified,
     verificationStatus: cook.verificationStatus,
-    verificationDocUrl: cook.verificationDocUrl,
-    identityDocUrl: cook.identityDocUrl,
+    verificationDocUrl: normalizeDocUrl(cook.verificationDocUrl),
+    identityDocUrl: normalizeDocUrl(cook.identityDocUrl),
     kitchenPhotoUrl: cook.kitchenPhotoUrl,
     kitchenVideoUrl: cook.kitchenVideoUrl,
     status: cook.status,

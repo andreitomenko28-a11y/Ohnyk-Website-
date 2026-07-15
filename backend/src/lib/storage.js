@@ -37,20 +37,55 @@ export async function saveImage(buffer, folder, { width = 1280, quality = 82 } =
   return `/uploads/${folder}/${filename}`;
 }
 
-// Store a non-image document (e.g. a verification permit PDF/JPG) as-is.
-export async function saveDocument(buffer, folder, originalName) {
+// Public assets (dish/cook/kitchen media) are served statically at /uploads/*.
+// Private documents (identity, verification) are NEVER served statically —
+// they are streamed through the authenticated /api/documents route instead.
+export const PUBLIC_PREFIX = '/uploads/';
+export const PRIVATE_PREFIX = '/api/documents/';
+
+// Store a non-image document (e.g. an ID scan or a medical book PDF/JPG) as-is.
+// Pass { private: true } for sensitive PII, which returns a /api/documents URL
+// so access is gated by the documents route rather than the public static mount.
+export async function saveDocument(buffer, folder, originalName, { private: isPrivate = false } = {}) {
   const dir = path.join(UPLOAD_ROOT, folder);
   await ensureDir(dir);
   const ext = (path.extname(originalName || '').replace('.', '') || 'bin').toLowerCase();
   const filename = randomName(ext);
   await fs.writeFile(path.join(dir, filename), buffer);
-  return `/uploads/${folder}/${filename}`;
+  return `${isPrivate ? PRIVATE_PREFIX : PUBLIC_PREFIX}${folder}/${filename}`;
 }
 
-// Best-effort delete of a previously stored file by its public URL.
+// Private document folders (served only via the authenticated /api/documents route).
+const PRIVATE_FOLDERS = ['identity', 'verification'];
+
+// Back-compat: rewrite a legacy public /uploads/(identity|verification)/… URL to
+// the authenticated /api/documents/… form, so documents stored before private
+// serving are still reachable. Non-private URLs pass through unchanged.
+export function normalizeDocUrl(url) {
+  if (!url || !url.startsWith(PUBLIC_PREFIX)) return url;
+  const rel = url.slice(PUBLIC_PREFIX.length);
+  return PRIVATE_FOLDERS.some((f) => rel.startsWith(`${f}/`)) ? `${PRIVATE_PREFIX}${rel}` : url;
+}
+
+// Resolve a private document URL to a safe absolute path under UPLOAD_ROOT.
+// Returns null if the URL is malformed or would escape the upload root
+// (path-traversal guard).
+export function privateDocPath(folder, name) {
+  if (!folder || !name || name.includes('/') || name.includes('\\') || name.includes('..')) return null;
+  const abs = path.join(UPLOAD_ROOT, folder, name);
+  if (!abs.startsWith(UPLOAD_ROOT + path.sep)) return null;
+  return abs;
+}
+
+// Best-effort delete of a previously stored file by its public or private URL.
 export async function deleteByUrl(url) {
-  if (!url || !url.startsWith('/uploads/')) return;
-  const rel = url.replace('/uploads/', '');
+  if (!url) return;
+  const rel = url.startsWith(PUBLIC_PREFIX)
+    ? url.slice(PUBLIC_PREFIX.length)
+    : url.startsWith(PRIVATE_PREFIX)
+      ? url.slice(PRIVATE_PREFIX.length)
+      : null;
+  if (!rel) return;
   try {
     await fs.unlink(path.join(UPLOAD_ROOT, rel));
   } catch {
