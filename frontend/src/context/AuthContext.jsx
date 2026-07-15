@@ -57,8 +57,30 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
+  // Re-fetch the current user (e.g. after cook verification steps).
+  const refreshUser = useCallback(async () => {
+    const { data } = await api.get('/auth/me');
+    setUser(data.user);
+    return data.user;
+  }, []);
+
+  // Add/remove a cook from the current user's favourites.
+  const toggleFavorite = useCallback(
+    async (cookId) => {
+      const isFav = user?.favoriteCookIds?.includes(cookId);
+      const { data } = isFav
+        ? await api.delete(`/users/favorites/${cookId}`)
+        : await api.put(`/users/favorites/${cookId}`);
+      setUser(data.user);
+      return data.user;
+    },
+    [user]
+  );
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, setUser }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, register, logout, setUser, refreshUser, toggleFavorite }}
+    >
       {children}
     </AuthContext.Provider>
   );

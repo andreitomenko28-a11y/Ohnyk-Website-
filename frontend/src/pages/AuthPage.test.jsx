@@ -21,17 +21,20 @@ vi.mock('../api/client.js', () => {
 import api from '../api/client.js';
 import AuthPage from './AuthPage.jsx';
 import { AuthProvider } from '../context/AuthContext.jsx';
+import { ThemeProvider } from '../context/ThemeContext.jsx';
 import { I18nProvider } from '../i18n/index.jsx';
 
 function renderAuth(initialTab = 'login') {
   return render(
-    <I18nProvider>
-      <AuthProvider>
-        <MemoryRouter initialEntries={['/login']}>
-          <AuthPage initialTab={initialTab} />
-        </MemoryRouter>
-      </AuthProvider>
-    </I18nProvider>
+    <ThemeProvider>
+      <I18nProvider>
+        <AuthProvider>
+          <MemoryRouter initialEntries={['/login']}>
+            <AuthPage initialTab={initialTab} />
+          </MemoryRouter>
+        </AuthProvider>
+      </I18nProvider>
+    </ThemeProvider>
   );
 }
 
@@ -42,7 +45,7 @@ beforeEach(() => {
 describe('AuthPage', () => {
   it('shows the brand and the login tab by default', () => {
     renderAuth();
-    expect(screen.getByText('Домашня кухня твого району')).toBeInTheDocument();
+    expect(screen.getByText('Домашнє тепло у кожній страві')).toBeInTheDocument();
     expect(screen.getByText('Email або телефон')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Увійти' })).toBeInTheDocument();
   });
@@ -107,13 +110,20 @@ describe('AuthPage', () => {
     await user.click(screen.getByText('Кухар'));
     await user.type(screen.getByPlaceholderText('Андрій'), 'Оксана');
     await user.type(screen.getByPlaceholderText('you@example.com'), 'oksana@example.com');
+    await user.type(screen.getByPlaceholderText('+380'), '+380671234567');
+    // Cook-specific required field.
+    await user.type(screen.getByPlaceholderText(/Смілянська/), 'вул. Тестова, 1');
     await user.type(screen.getByPlaceholderText('Мінімум 8 символів'), 'password123');
     await user.click(screen.getByRole('button', { name: 'Створити акаунт' }));
 
     await waitFor(() => {
       expect(api.post).toHaveBeenCalledWith(
         '/auth/register',
-        expect.objectContaining({ role: 'COOK', email: 'oksana@example.com' })
+        expect.objectContaining({
+          role: 'COOK',
+          email: 'oksana@example.com',
+          kitchenAddress: 'вул. Тестова, 1',
+        })
       );
     });
   });
@@ -122,8 +132,6 @@ describe('AuthPage', () => {
     const user = userEvent.setup();
     renderAuth();
     await user.click(screen.getByRole('button', { name: 'ENG' }));
-    expect(
-      screen.getByText('Home cooking from your neighbourhood')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Home warmth in every dish')).toBeInTheDocument();
   });
 });

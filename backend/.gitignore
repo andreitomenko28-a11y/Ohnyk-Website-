@@ -2,3 +2,6 @@ node_modules/
 .env
 dist/
 *.log
+
+# Uploaded media (Phase 3) — not durable in ephemeral containers
+uploads/

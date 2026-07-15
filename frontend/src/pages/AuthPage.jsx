@@ -1,10 +1,19 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useI18n } from '../i18n/index.jsx';
 import { apiError } from '../api/client.js';
 import BrandMark from '../components/BrandMark.jsx';
 import LangSwitch from '../components/LangSwitch.jsx';
+import ThemeToggle from '../components/ThemeToggle.jsx';
+import { BagIcon, ChefHatIcon, CourierIcon } from '../components/icons.jsx';
+
+// Post-auth landing by role.
+function homeFor(role) {
+  if (role === 'COOK') return '/cook';
+  if (role === 'COURIER') return '/courier';
+  return '/';
+}
 
 // Combined Login / Register screen with tab switching — mirrors the mockup.
 export default function AuthPage({ initialTab = 'login' }) {
@@ -14,12 +23,19 @@ export default function AuthPage({ initialTab = 'login' }) {
   return (
     <div className="flex min-h-screen items-center justify-center p-6">
       <div className="w-full max-w-[420px]">
-        <div className="mb-7 text-center">
-          <BrandMark className="text-[28px]" />
-          <div className="mt-1 text-[13px] text-[color:var(--muted)]">{t('tag')}</div>
+        <div className="mb-2 flex justify-end">
+          <ThemeToggle />
+        </div>
+        <div className="mb-8 flex flex-col items-center text-center">
+          <BrandMark stacked markClassName="h-[72px] w-[72px]" className="text-[34px]" />
+          <div className="mt-3 flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-ember">
+            <span className="h-px w-6 bg-ember/50" />
+            {t('tag')}
+            <span className="h-px w-6 bg-ember/50" />
+          </div>
         </div>
 
-        <div className="overflow-hidden rounded-card border border-[color:var(--line)] bg-white shadow-card">
+        <div className="overflow-hidden rounded-card border border-[color:var(--line)] bg-surface shadow-card">
           <div className="flex border-b border-[color:var(--line)]">
             <TabButton active={tab === 'login'} onClick={() => setTab('login')}>
               {t('tabLogin')}
@@ -45,7 +61,7 @@ function TabButton({ active, onClick, children }) {
     <button
       onClick={onClick}
       className={`relative flex-1 py-[18px] font-display text-[15px] font-bold transition-colors ${
-        active ? 'text-soot' : 'text-[color:var(--muted)]'
+        active ? 'text-fg' : 'text-[color:var(--muted)]'
       }`}
     >
       {children}
@@ -69,8 +85,8 @@ function LoginForm() {
     setError('');
     setBusy(true);
     try {
-      await login(form.identifier, form.password);
-      navigate('/');
+      const u = await login(form.identifier, form.password);
+      navigate(homeFor(u.role));
     } catch (err) {
       setError(apiError(err));
     } finally {
@@ -107,9 +123,12 @@ function LoginForm() {
       <button className="btn-primary mt-6" disabled={busy}>
         {busy ? t('loading') : t('loginBtn')}
       </button>
-      <a href="#" className="mt-4 block text-center text-[13px] font-semibold text-ember">
+      <Link
+        to="/reset-password"
+        className="mt-4 block text-center text-[13px] font-semibold text-ember"
+      >
         {t('forgot')}
-      </a>
+      </Link>
     </form>
   );
 }
@@ -119,17 +138,41 @@ function RegisterForm() {
   const { register } = useAuth();
   const navigate = useNavigate();
   const [role, setRole] = useState('CUSTOMER');
-  const [form, setForm] = useState({ fullName: '', email: '', phone: '', password: '' });
+  const [form, setForm] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    password: '',
+    kitchenAddress: '',
+    deliveryZone: '',
+    bio: '',
+    transport: 'BICYCLE',
+  });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const isCook = role === 'COOK';
+  const isCourier = role === 'COURIER';
 
   async function onSubmit(e) {
     e.preventDefault();
     setError('');
     setBusy(true);
     try {
-      await register({ ...form, role });
-      navigate('/');
+      const base = {
+        fullName: form.fullName,
+        email: form.email,
+        phone: form.phone,
+        password: form.password,
+        role,
+      };
+      // Only send role-specific fields for that role.
+      const payload = isCook
+        ? { ...base, kitchenAddress: form.kitchenAddress, deliveryZone: form.deliveryZone, bio: form.bio }
+        : isCourier
+          ? { ...base, transport: form.transport }
+          : base;
+      const u = await register(payload);
+      navigate(homeFor(u.role));
     } catch (err) {
       setError(apiError(err));
     } finally {
@@ -140,20 +183,27 @@ function RegisterForm() {
   return (
     <form onSubmit={onSubmit} className="animate-[fade_.3s_ease]">
       <label className="field-label">{t('roleLabel')}</label>
-      <div className="mb-5 flex gap-2.5">
+      <div className="mb-5 flex gap-2">
         <RoleOption
           selected={role === 'CUSTOMER'}
           onClick={() => setRole('CUSTOMER')}
-          icon="🛒"
+          Icon={BagIcon}
           label={t('roleBuyer')}
           sub={t('roleBuyerSub')}
         />
         <RoleOption
           selected={role === 'COOK'}
           onClick={() => setRole('COOK')}
-          icon="👩‍🍳"
+          Icon={ChefHatIcon}
           label={t('roleCook')}
           sub={t('roleCookSub')}
+        />
+        <RoleOption
+          selected={role === 'COURIER'}
+          onClick={() => setRole('COURIER')}
+          Icon={CourierIcon}
+          label={t('roleCourier')}
+          sub={t('roleCourierSub')}
         />
       </div>
 
@@ -184,7 +234,60 @@ function RegisterForm() {
         placeholder="+380"
         value={form.phone}
         onChange={(e) => setForm({ ...form, phone: e.target.value })}
+        required={isCook || isCourier}
       />
+
+      {isCourier && (
+        <div className="animate-[fade_.25s_ease]">
+          <label className="field-label">{t('transportLabel')}</label>
+          <div className="mb-1 flex gap-2">
+            {['WALKING', 'BICYCLE', 'CAR'].map((tr) => (
+              <button
+                key={tr}
+                type="button"
+                onClick={() => setForm({ ...form, transport: tr })}
+                className={`flex-1 rounded-xl border-[1.5px] px-2 py-2.5 text-[13px] font-semibold transition-all ${
+                  form.transport === tr ? 'border-ember bg-ember/[0.06] text-ember-dark' : 'border-line text-[color:var(--muted)]'
+                }`}
+              >
+                {t(`transport${tr}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {isCook && (
+        <div className="animate-[fade_.25s_ease]">
+          <label className="field-label">{t('cookKitchenAddress')}</label>
+          <input
+            className="field-input"
+            type="text"
+            placeholder={t('cookKitchenPlaceholder')}
+            value={form.kitchenAddress}
+            onChange={(e) => setForm({ ...form, kitchenAddress: e.target.value })}
+            required
+          />
+
+          <label className="field-label">{t('cookDeliveryZone')}</label>
+          <input
+            className="field-input"
+            type="text"
+            placeholder={t('cookDeliveryPlaceholder')}
+            value={form.deliveryZone}
+            onChange={(e) => setForm({ ...form, deliveryZone: e.target.value })}
+          />
+
+          <label className="field-label">{t('cookBioLabel')}</label>
+          <textarea
+            className="field-input min-h-[76px] resize-y"
+            placeholder={t('cookBioPlaceholder')}
+            value={form.bio}
+            onChange={(e) => setForm({ ...form, bio: e.target.value })}
+            maxLength={500}
+          />
+        </div>
+      )}
 
       <label className="field-label">{t('password')}</label>
       <input
@@ -209,17 +312,17 @@ function RegisterForm() {
   );
 }
 
-function RoleOption({ selected, onClick, icon, label, sub }) {
+function RoleOption({ selected, onClick, Icon, label, sub }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={`flex-1 rounded-xl border-[1.5px] px-2.5 py-3 text-center transition-all ${
-        selected ? 'border-ember bg-ember/[0.06]' : 'border-[color:var(--line)]'
+        selected ? 'border-ember bg-ember/[0.06] text-ember-dark' : 'border-line text-[color:var(--muted)]'
       }`}
     >
-      <span className="mb-1 block text-xl">{icon}</span>
-      <span className="block text-[13px] font-semibold">{label}</span>
+      <Icon className="mx-auto mb-1.5 h-6 w-6" />
+      <span className="block text-[13px] font-semibold text-fg">{label}</span>
       <span className="mt-0.5 block text-[11px] text-[color:var(--muted)]">{sub}</span>
     </button>
   );
