@@ -17,6 +17,7 @@ datasource db {
 enum Role {
   CUSTOMER
   COOK
+  COURIER
   ADMIN
 }
 
@@ -34,14 +35,39 @@ enum CookStatus {
   SUSPENDED
 }
 
-// Lifecycle of an order, from placement to hand-off.
+// Lifecycle of an order — from checkout, through payment, cooking, and delivery.
 enum OrderStatus {
-  NEW
+  AWAITING_PAYMENT // created at checkout, before a confirmed payment
+  NEW // paid — visible to the cook
+  CONFIRMED // cook accepted the order
   PREPARING
-  READY
-  HANDED_OVER
-  COMPLETED
+  READY // ready for pickup by a courier
+  COURIER_ASSIGNED // a courier claimed it
+  PICKED_UP // courier collected it from the cook
+  ON_THE_WAY
+  DELIVERED
   CANCELLED
+}
+
+// Payment lifecycle (MonoPay acquiring).
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  REFUNDED
+}
+
+// Courier availability.
+enum CourierStatus {
+  ONLINE
+  OFFLINE
+}
+
+// Courier transport (optional).
+enum TransportType {
+  WALKING
+  BICYCLE
+  CAR
 }
 
 model User {
@@ -57,6 +83,7 @@ model User {
   createdAt    DateTime @default(now())
 
   cookProfile    Cook?
+  courierProfile CourierProfile?
   addresses      Address[]
   cart           Cart?
   passwordResets PasswordReset[]
@@ -182,10 +209,19 @@ model Order {
   buyer     User        @relation(fields: [buyerId], references: [id], onDelete: Cascade)
   cookId    String
   cook      Cook        @relation(fields: [cookId], references: [id], onDelete: Cascade)
-  status    OrderStatus @default(NEW)
+  status    OrderStatus @default(AWAITING_PAYMENT)
   total     Float       @default(0)
   addressText String    @default("") // delivery/pickup address snapshot
   note      String? // buyer comment
+
+  // --- Phase 4: delivery scheduling, courier, payment -----------------------
+  scheduledFor DateTime? // chosen delivery slot
+  deliveryLat  Float? // destination coords (for the tracking map)
+  deliveryLng  Float?
+  courierId    String?
+  courier      CourierProfile? @relation(fields: [courierId], references: [id])
+  payment      Payment?
+
   createdAt DateTime    @default(now())
   updatedAt DateTime    @default(now()) @updatedAt
 
@@ -193,6 +229,48 @@ model Order {
 
   @@index([cookId, status])
   @@index([buyerId])
+  @@index([courierId, status])
+  @@index([status])
+}
+
+// One payment per order (MonoPay acquiring). Provider-agnostic fields.
+model Payment {
+  id                String        @id @default(uuid())
+  orderId           String        @unique
+  order             Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status            PaymentStatus @default(PENDING)
+  amount            Float // in UAH
+  provider          String        @default("monopay")
+  providerInvoiceId String? // MonoPay invoiceId
+  transactionId     String? // provider transaction reference
+  rawCallback       Json? // last webhook payload (audit)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @default(now()) @updatedAt
+
+  @@index([providerInvoiceId])
+}
+
+model CourierProfile {
+  id        String        @id @default(uuid())
+  userId    String        @unique
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transport TransportType? // walking / bicycle / car
+  status    CourierStatus @default(OFFLINE)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @default(now()) @updatedAt
+
+  orders   Order[] // deliveries assigned to this courier
+  location CourierLocation?
+}
+
+// Last known courier position only (no history — keeps the table small).
+model CourierLocation {
+  id        String         @id @default(uuid())
+  courierId String         @unique
+  courier   CourierProfile @relation(fields: [courierId], references: [id], onDelete: Cascade)
+  lat       Float
+  lng       Float
+  updatedAt DateTime       @updatedAt
 }
 
 model OrderItem {

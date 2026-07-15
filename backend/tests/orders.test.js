@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { request, registerUser, registerActiveCook, authHeader } from './helpers.js';
+import { request, registerUser, registerActiveCook, authHeader, payOrder } from './helpers.js';
 
 // Creates a verified cook with one dish and returns { cook token, dishId }.
 async function cookWithDish() {
@@ -21,8 +21,8 @@ async function buyerWithCart(dishId, quantity = 2) {
   return buyer.accessToken;
 }
 
-describe('Orders & cook dashboard (Module 3.3)', () => {
-  it('checks out the cart into an order and empties the cart', async () => {
+describe('Orders, checkout & cook dashboard (Modules 3.3 / 4.1)', () => {
+  it('checks out the cart into an order (awaiting payment) and empties the cart', async () => {
     const { dishId } = await cookWithDish();
     const buyerToken = await buyerWithCart(dishId, 2);
 
@@ -31,13 +31,24 @@ describe('Orders & cook dashboard (Module 3.3)', () => {
       .set(authHeader(buyerToken))
       .send({ addressText: 'Черкаси, вул. Тестова, 1', note: 'Без цибулі' });
     expect(res.status).toBe(201);
-    expect(res.body.order.status).toBe('NEW');
+    expect(res.body.order.status).toBe('AWAITING_PAYMENT');
     expect(res.body.order.total).toBe(180);
     expect(res.body.order.items).toHaveLength(1);
     expect(res.body.order.addressText).toContain('Тестова');
 
     const cart = await request.get('/api/cart').set(authHeader(buyerToken));
     expect(cart.body.cart.itemCount).toBe(0);
+  });
+
+  it('returns delivery slots for the current cart', async () => {
+    const { dishId } = await cookWithDish();
+    const buyerToken = await buyerWithCart(dishId);
+    const res = await request.get('/api/orders/delivery-slots').set(authHeader(buyerToken));
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.days)).toBe(true);
+    // A dish with no schedule is available every day → some slots exist.
+    expect(res.body.days.length).toBeGreaterThan(0);
+    expect(res.body.days[0].slots.length).toBeGreaterThan(0);
   });
 
   it('rejects checkout with an empty cart', async () => {
@@ -69,7 +80,7 @@ describe('Orders & cook dashboard (Module 3.3)', () => {
     expect(res.status).toBe(400);
   });
 
-  it('shows the order to the cook and lets them advance the status', async () => {
+  it('hides unpaid orders from the cook but shows paid ones and advances status', async () => {
     const { cookToken, dishId } = await cookWithDish();
     const buyerToken = await buyerWithCart(dishId);
     const order = await request
@@ -78,11 +89,17 @@ describe('Orders & cook dashboard (Module 3.3)', () => {
       .send({ addressText: 'Черкаси' });
     const id = order.body.order.id;
 
+    // Awaiting payment → not visible to the cook.
+    const before = await request.get('/api/cook/orders').set(authHeader(cookToken));
+    expect(before.body.total).toBe(0);
+
+    await payOrder(id); // Module 4.2 will do this on payment success
+
     const incoming = await request.get('/api/cook/orders').set(authHeader(cookToken));
     expect(incoming.body.total).toBe(1);
     expect(incoming.body.orders[0].buyer.name).toBeTruthy();
 
-    for (const status of ['PREPARING', 'READY', 'HANDED_OVER', 'COMPLETED']) {
+    for (const status of ['PREPARING', 'READY']) {
       const r = await request
         .patch(`/api/cook/orders/${id}/status`)
         .set(authHeader(cookToken))
@@ -97,10 +114,11 @@ describe('Orders & cook dashboard (Module 3.3)', () => {
     const buyerToken = await buyerWithCart(dishId);
     const order = await request.post('/api/orders').set(authHeader(buyerToken)).send({ addressText: 'Черкаси' });
     const id = order.body.order.id;
+    await payOrder(id);
     const res = await request
       .patch(`/api/cook/orders/${id}/status`)
       .set(authHeader(cookToken))
-      .send({ status: 'COMPLETED' }); // NEW → COMPLETED not allowed
+      .send({ status: 'READY' }); // NEW → READY (must go through PREPARING) not allowed
     expect(res.status).toBe(400);
   });
 
@@ -120,7 +138,8 @@ describe('Orders & cook dashboard (Module 3.3)', () => {
   it('reports dashboard stats', async () => {
     const { cookToken, dishId } = await cookWithDish();
     const buyerToken = await buyerWithCart(dishId, 3);
-    await request.post('/api/orders').set(authHeader(buyerToken)).send({ addressText: 'Черкаси' });
+    const order = await request.post('/api/orders').set(authHeader(buyerToken)).send({ addressText: 'Черкаси' });
+    await payOrder(order.body.order.id); // only paid orders count in stats
 
     const stats = await request.get('/api/cook/stats').set(authHeader(cookToken));
     expect(stats.status).toBe(200);

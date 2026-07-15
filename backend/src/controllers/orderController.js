@@ -1,7 +1,7 @@
 import { prisma } from '../lib/prisma.js';
 import { httpError } from '../middleware/errorHandler.js';
 import { createOrderSchema, listOrdersSchema } from '../validation/schemas.js';
-import { notifyNewOrder } from '../lib/notify.js';
+import { computeDeliverySlots, isValidSlot } from '../lib/deliverySlots.js';
 
 const orderInclude = {
   items: true,
@@ -16,6 +16,7 @@ export function serializeOrder(order) {
     total: order.total,
     addressText: order.addressText,
     note: order.note,
+    scheduledFor: order.scheduledFor,
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
     cook: order.cook
@@ -38,10 +39,25 @@ function formatAddress(a) {
   return `${a.city}, ${a.street}, ${a.building}${apt}`;
 }
 
-// POST /api/orders — checkout the current cart into an order.
+// GET /api/orders/delivery-slots — available delivery times for the current cart.
+export async function deliverySlots(req, res, next) {
+  try {
+    const cart = await prisma.cart.findUnique({
+      where: { userId: req.user.id },
+      include: { items: { include: { dish: true } } },
+    });
+    if (!cart || cart.items.length === 0) throw httpError(400, 'Кошик порожній');
+    const dishes = cart.items.map((it) => it.dish);
+    res.json({ days: computeDeliverySlots(dishes) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/orders — checkout the current cart into an order (awaiting payment).
 export async function checkout(req, res, next) {
   try {
-    const { addressId, addressText, note } = createOrderSchema.parse(req.body);
+    const { addressId, addressText, note, scheduledFor } = createOrderSchema.parse(req.body);
 
     const cart = await prisma.cart.findUnique({
       where: { userId: req.user.id },
@@ -80,6 +96,11 @@ export async function checkout(req, res, next) {
     }
     if (!address) throw httpError(400, 'Вкажіть адресу доставки');
 
+    // Validate the chosen delivery slot against the dishes' availability.
+    if (scheduledFor && !isValidSlot(cart.items.map((it) => it.dish), scheduledFor)) {
+      throw httpError(400, 'Обраний час доставки недоступний');
+    }
+
     const items = cart.items.map((it) => ({
       dishId: it.dishId,
       nameSnapshot: it.dish.name,
@@ -88,16 +109,19 @@ export async function checkout(req, res, next) {
     }));
     const total = Number(items.reduce((s, i) => s + i.priceSnapshot * i.quantity, 0).toFixed(2));
 
-    // Create the order and empty the cart atomically.
+    // Create the order (awaiting payment) and empty the cart atomically.
+    // The order becomes NEW — and the cook is notified — only after a
+    // confirmed payment (Module 4.2).
     const order = await prisma.$transaction(async (tx) => {
       const created = await tx.order.create({
         data: {
           buyerId: req.user.id,
           cookId,
-          status: 'NEW',
+          status: 'AWAITING_PAYMENT',
           total,
           addressText: address,
           note: note || null,
+          scheduledFor: scheduledFor ? new Date(scheduledFor) : null,
           items: { create: items },
         },
         include: orderInclude,
@@ -107,7 +131,6 @@ export async function checkout(req, res, next) {
       return created;
     });
 
-    await notifyNewOrder({ cook, order });
     res.status(201).json({ order: serializeOrder(order) });
   } catch (err) {
     next(err);

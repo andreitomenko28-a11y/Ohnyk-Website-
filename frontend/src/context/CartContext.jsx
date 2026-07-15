@@ -7,14 +7,20 @@ const CartContext = createContext(null);
 const EMPTY = { items: [], itemCount: 0, subtotal: 0, cookId: null };
 
 export function CartProvider({ children }) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [cart, setCart] = useState(EMPTY);
-  const [loading, setLoading] = useState(false);
+  // Start "loading" so consumers don't treat the cart as empty before the
+  // first fetch settles (e.g. the checkout page's empty-cart redirect).
+  const [loading, setLoading] = useState(true);
 
-  // Load the cart whenever the signed-in user changes.
+  // Load the cart whenever the signed-in user changes. Stay "loading" while
+  // auth is still restoring the session, otherwise a fresh page load would
+  // briefly see user=null and treat the cart as empty (wrongly redirecting).
   const refresh = useCallback(async () => {
+    if (authLoading) return;
     if (!user) {
       setCart(EMPTY);
+      setLoading(false);
       return;
     }
     setLoading(true);
@@ -26,7 +32,7 @@ export function CartProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   useEffect(() => {
     refresh();

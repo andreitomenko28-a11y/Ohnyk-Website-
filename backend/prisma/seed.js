@@ -62,6 +62,20 @@ async function main() {
     include: { addresses: true },
   });
 
+  // --- Courier (Phase 4) -----------------------------------------------------
+  await prisma.user.upsert({
+    where: { email: 'courier@ohnyk.app' },
+    update: { role: 'COURIER' },
+    create: {
+      email: 'courier@ohnyk.app',
+      phone: '+380679990011',
+      passwordHash,
+      fullName: 'Кур’єр Петро',
+      role: 'COURIER',
+      courierProfile: { create: { transport: 'BICYCLE', status: 'OFFLINE' } },
+    },
+  });
+
   // A verified/active cook profile (Phase 3 defaults).
   const verified = (extra) => ({
     isVerified: true,
@@ -219,10 +233,11 @@ async function main() {
   // Clean previous demo orders for an idempotent seed.
   await prisma.order.deleteMany({ where: { buyerId: customer.id } });
 
+  // Demo orders are already paid (a successful Payment attached).
   const orderPlans = [
     { status: 'NEW', note: 'Подзвоніть перед доставкою', items: [[0, 1], [2, 2]] },
     { status: 'PREPARING', note: null, items: [[1, 1]] },
-    { status: 'COMPLETED', note: 'Дякую, було смачно!', items: [[3, 1], [0, 1]] },
+    { status: 'DELIVERED', note: 'Дякую, було смачно!', items: [[3, 1], [0, 1]] },
   ];
   let orderCount = 0;
   for (const plan of orderPlans) {
@@ -240,6 +255,7 @@ async function main() {
         addressText,
         total,
         items: { create: items },
+        payment: { create: { status: 'SUCCESS', amount: total, provider: 'monopay' } },
       },
     });
     orderCount += 1;

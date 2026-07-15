@@ -9,21 +9,23 @@ const orderInclude = {
   buyer: { select: { fullName: true, phone: true } },
 };
 
-// Allowed forward transitions the cook may perform.
+// Allowed forward transitions the cook may perform. After READY a courier
+// takes over the delivery statuses (Modules 4.3–4.5).
 const TRANSITIONS = {
   NEW: ['PREPARING', 'CANCELLED'],
   PREPARING: ['READY', 'CANCELLED'],
-  READY: ['HANDED_OVER', 'COMPLETED'],
-  HANDED_OVER: ['COMPLETED'],
-  COMPLETED: [],
-  CANCELLED: [],
+  READY: [],
 };
 
-// GET /api/cook/orders — incoming orders for the cook (optional status filter).
+// GET /api/cook/orders — incoming (paid) orders for the cook. Unpaid orders
+// (AWAITING_PAYMENT) are never shown.
 export async function listCookOrders(req, res, next) {
   try {
     const { status, limit, offset } = listOrdersSchema.parse(req.query);
-    const where = { cookId: req.cook.id, ...(status ? { status } : {}) };
+    const where = {
+      cookId: req.cook.id,
+      ...(status ? { status } : { status: { not: 'AWAITING_PAYMENT' } }),
+    };
     const [orders, total] = await Promise.all([
       prisma.order.findMany({ where, include: orderInclude, orderBy: { createdAt: 'desc' }, take: limit, skip: offset }),
       prisma.order.count({ where }),
@@ -79,7 +81,8 @@ export async function cookStats(req, res, next) {
     startWeek.setDate(startWeek.getDate() - 6); // last 7 days, inclusive
 
     const orders = await prisma.order.findMany({ where: { cookId }, include: { items: true } });
-    const active = orders.filter((o) => o.status !== 'CANCELLED');
+    // Exclude unpaid and cancelled orders from stats.
+    const active = orders.filter((o) => o.status !== 'CANCELLED' && o.status !== 'AWAITING_PAYMENT');
     const sum = (arr) => Number(arr.reduce((s, o) => s + o.total, 0).toFixed(2));
 
     const todayOrders = active.filter((o) => o.createdAt >= startToday);

@@ -6,26 +6,28 @@ import api, { apiError } from '../api/client.js';
 import CookShell from '../components/CookShell.jsx';
 import { CartIcon } from '../components/icons.jsx';
 
-// Allowed next statuses per current status (mirrors the backend).
+// Cook-actionable next statuses (mirrors the backend). After READY a courier
+// takes over the delivery statuses.
 const NEXT = {
   NEW: ['PREPARING', 'CANCELLED'],
   PREPARING: ['READY', 'CANCELLED'],
-  READY: ['HANDED_OVER', 'COMPLETED'],
-  HANDED_OVER: ['COMPLETED'],
-  COMPLETED: [],
-  CANCELLED: [],
+  READY: [],
 };
 
+// Badge style for every order status (delivery statuses are read-only here).
 const STATUS_STYLE = {
   NEW: 'bg-ember/15 text-ember',
+  CONFIRMED: 'bg-ember/15 text-ember',
   PREPARING: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
   READY: 'bg-sky-500/15 text-sky-600 dark:text-sky-400',
-  HANDED_OVER: 'bg-indigo-500/15 text-indigo-500 dark:text-indigo-400',
-  COMPLETED: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+  COURIER_ASSIGNED: 'bg-indigo-500/15 text-indigo-500 dark:text-indigo-400',
+  PICKED_UP: 'bg-indigo-500/15 text-indigo-500 dark:text-indigo-400',
+  ON_THE_WAY: 'bg-indigo-500/15 text-indigo-500 dark:text-indigo-400',
+  DELIVERED: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
   CANCELLED: 'bg-red-500/15 text-red-600 dark:text-red-400',
 };
 
-const FILTERS = ['ALL', 'NEW', 'PREPARING', 'READY', 'COMPLETED'];
+const FILTERS = ['ALL', 'NEW', 'PREPARING', 'READY', 'DELIVERED'];
 
 export default function CookOrders() {
   const { user } = useAuth();

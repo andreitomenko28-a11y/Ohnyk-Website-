@@ -52,6 +52,19 @@ export async function registerActiveCook(overrides = {}) {
   return body;
 }
 
+// Marks an order as paid: status → NEW with a successful Payment attached.
+// Mirrors what the payment-success flow (Module 4.2) will do.
+export async function payOrder(orderId) {
+  const order = await prisma.order.findUnique({ where: { id: orderId } });
+  return prisma.order.update({
+    where: { id: orderId },
+    data: {
+      status: 'NEW',
+      payment: { create: { status: 'SUCCESS', amount: order.total, provider: 'monopay' } },
+    },
+  });
+}
+
 // Creates an ADMIN and returns a token whose payload carries the ADMIN role
 // (role is promoted in the DB, then a fresh login re-issues the token).
 export async function createAdmin() {
