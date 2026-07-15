@@ -2,6 +2,7 @@ import { prisma } from '../lib/prisma.js';
 import { httpError } from '../middleware/errorHandler.js';
 import { createOrderSchema, listOrdersSchema } from '../validation/schemas.js';
 import { computeDeliverySlots, isValidSlot } from '../lib/deliverySlots.js';
+import { computePricing } from '../lib/pricing.js';
 
 const orderInclude = {
   items: true,
@@ -14,7 +15,11 @@ export function serializeOrder(order) {
   return {
     id: order.id,
     status: order.status,
+    subtotal: order.subtotal,
+    serviceFee: order.serviceFee,
     total: order.total,
+    cookPayout: order.cookPayout,
+    commission: order.commission,
     deliveryMethod: order.deliveryMethod,
     addressText: order.addressText,
     note: order.note,
@@ -123,7 +128,8 @@ export async function checkout(req, res, next) {
       priceSnapshot: it.dish.price,
       quantity: it.quantity,
     }));
-    const total = Number(items.reduce((s, i) => s + i.priceSnapshot * i.quantity, 0).toFixed(2));
+    const subtotal = Number(items.reduce((s, i) => s + i.priceSnapshot * i.quantity, 0).toFixed(2));
+    const pricing = computePricing(subtotal);
 
     // Create the order (awaiting payment) and empty the cart atomically.
     // The order becomes NEW — and the cook is notified — only after a
@@ -134,7 +140,11 @@ export async function checkout(req, res, next) {
           buyerId: req.user.id,
           cookId,
           status: 'AWAITING_PAYMENT',
-          total,
+          subtotal: pricing.subtotal,
+          serviceFee: pricing.serviceFee,
+          total: pricing.total,
+          cookPayout: pricing.cookPayout,
+          commission: pricing.commission,
           deliveryMethod,
           addressText: address,
           note: note || null,

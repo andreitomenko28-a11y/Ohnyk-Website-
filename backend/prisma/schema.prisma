@@ -216,7 +216,14 @@ model Order {
   cookId    String
   cook      Cook        @relation(fields: [cookId], references: [id], onDelete: Cascade)
   status    OrderStatus @default(AWAITING_PAYMENT)
-  total     Float       @default(0)
+  // Pricing (see lib/pricing.js). subtotal = cook's dish prices; total = what the
+  // customer pays (subtotal + 10% service fee); cookPayout = subtotal − 10%
+  // commission; commission = the app's total take (~20% of subtotal).
+  subtotal   Float @default(0)
+  serviceFee Float @default(0)
+  total      Float @default(0) // amount charged to the customer
+  cookPayout Float @default(0) // amount the cook earns
+  commission Float @default(0) // app's total commission
   addressText String    @default("") // delivery/pickup address snapshot
   note      String? // buyer comment
 

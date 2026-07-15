@@ -241,6 +241,11 @@ export const dict = {
     method_PICKUP_sub: 'Заберіть замовлення у кухаря',
     pickupPoint: 'Точка самовивозу',
     pickupTime: 'Час готовності',
+    // commission / pricing
+    serviceFee: 'Сервісний збір',
+    toPay: 'До сплати',
+    orderValue: 'Вартість замовлення',
+    yourEarnings: 'Ваш дохід',
     // payment (Module 4.2)
     payTitle: 'Оплата замовлення',
     payNow: 'Оплатити картою',
@@ -519,6 +524,11 @@ export const dict = {
     method_PICKUP_sub: 'Collect the order from the cook',
     pickupPoint: 'Pickup point',
     pickupTime: 'Ready by',
+    // commission / pricing
+    serviceFee: 'Service fee',
+    toPay: 'To pay',
+    orderValue: 'Order value',
+    yourEarnings: 'You earn',
     // payment (Module 4.2)
     payTitle: 'Order payment',
     payNow: 'Pay by card',

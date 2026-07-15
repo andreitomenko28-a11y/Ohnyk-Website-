@@ -44,7 +44,9 @@ export default function Cart() {
 
           <CartSummary
             subtotal={cart.subtotal}
-            deliveryFee={0}
+            serviceFee={cart.serviceFee}
+            deliveryFee={cart.deliveryFee}
+            total={cart.total}
             onCheckout={() => navigate('/checkout')}
             checkoutLabel={t('toCheckout')}
           />

@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
+import { computePricing } from '../src/lib/pricing.js';
 
 const prisma = new PrismaClient();
 
@@ -245,7 +246,8 @@ async function main() {
       const d = oksanaDishes[idx];
       return { dishId: d.id, nameSnapshot: d.name, priceSnapshot: d.price, quantity: qty };
     });
-    const total = items.reduce((s, i) => s + i.priceSnapshot * i.quantity, 0);
+    const subtotal = items.reduce((s, i) => s + i.priceSnapshot * i.quantity, 0);
+    const p = computePricing(subtotal);
     await prisma.order.create({
       data: {
         buyerId: customer.id,
@@ -253,9 +255,13 @@ async function main() {
         status: plan.status,
         note: plan.note,
         addressText,
-        total,
+        subtotal: p.subtotal,
+        serviceFee: p.serviceFee,
+        total: p.total,
+        cookPayout: p.cookPayout,
+        commission: p.commission,
         items: { create: items },
-        payment: { create: { status: 'SUCCESS', amount: total, provider: 'monopay' } },
+        payment: { create: { status: 'SUCCESS', amount: p.total, provider: 'monopay' } },
       },
     });
     orderCount += 1;

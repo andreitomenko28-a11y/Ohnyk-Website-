@@ -96,7 +96,8 @@ export async function cookStats(req, res, next) {
     const orders = await prisma.order.findMany({ where: { cookId }, include: { items: true } });
     // Exclude unpaid and cancelled orders from stats.
     const active = orders.filter((o) => o.status !== 'CANCELLED' && o.status !== 'AWAITING_PAYMENT');
-    const sum = (arr) => Number(arr.reduce((s, o) => s + o.total, 0).toFixed(2));
+    // Revenue is the cook's net earnings — after the 10% app commission.
+    const sum = (arr) => Number(arr.reduce((s, o) => s + o.cookPayout, 0).toFixed(2));
 
     const todayOrders = active.filter((o) => o.createdAt >= startToday);
     const weekOrders = active.filter((o) => o.createdAt >= startWeek);

@@ -32,7 +32,11 @@ describe('Orders, checkout & cook dashboard (Modules 3.3 / 4.1)', () => {
       .send({ addressText: 'Черкаси, вул. Тестова, 1', note: 'Без цибулі' });
     expect(res.status).toBe(201);
     expect(res.body.order.status).toBe('AWAITING_PAYMENT');
-    expect(res.body.order.total).toBe(180);
+    expect(res.body.order.subtotal).toBe(180);
+    expect(res.body.order.serviceFee).toBe(18); // customer +10%
+    expect(res.body.order.total).toBe(198); // customer pays 180 + 18
+    expect(res.body.order.cookPayout).toBe(162); // cook earns 180 − 10%
+    expect(res.body.order.commission).toBe(36); // app take ~20%
     expect(res.body.order.items).toHaveLength(1);
     expect(res.body.order.addressText).toContain('Тестова');
 
@@ -144,7 +148,7 @@ describe('Orders, checkout & cook dashboard (Modules 3.3 / 4.1)', () => {
     const stats = await request.get('/api/cook/stats').set(authHeader(cookToken));
     expect(stats.status).toBe(200);
     expect(stats.body.ordersTotal).toBe(1);
-    expect(stats.body.revenueTotal).toBe(270);
+    expect(stats.body.revenueTotal).toBe(243); // net: 3×90 = 270 − 10% commission
     expect(stats.body.topDishes[0]).toMatchObject({ name: 'Борщ', qty: 3 });
     expect(stats.body.newCount).toBe(1);
   });

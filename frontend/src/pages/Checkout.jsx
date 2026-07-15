@@ -218,9 +218,19 @@ export default function Checkout() {
               {slot ? new Date(slot).toLocaleString(lang === 'en' ? 'en-GB' : 'uk-UA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : t('asap')}
             </span>
           </div>
-          <div className="mt-1 flex justify-between text-[15px] font-bold">
-            <span>{t('total')}</span>
-            <span>{cart.subtotal}₴</span>
+          <div className="mt-2 flex justify-between text-[13px] text-[color:var(--muted)]">
+            <span>{t('subtotal')}</span>
+            <span className="font-medium text-fg">{cart.subtotal}₴</span>
+          </div>
+          {cart.serviceFee > 0 && (
+            <div className="mt-1 flex justify-between text-[13px] text-[color:var(--muted)]">
+              <span>{t('serviceFee')}</span>
+              <span className="font-medium text-fg">{cart.serviceFee}₴</span>
+            </div>
+          )}
+          <div className="mt-2 flex justify-between text-[15px] font-bold">
+            <span>{t('toPay')}</span>
+            <span>{cart.total}₴</span>
           </div>
         </section>
 

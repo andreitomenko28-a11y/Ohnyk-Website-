@@ -5,6 +5,7 @@ import {
   updateCartItemSchema,
   cartTotalSchema,
 } from '../validation/schemas.js';
+import { computePricing } from '../lib/pricing.js';
 
 const cartInclude = {
   items: {
@@ -47,14 +48,18 @@ function shapeCart(cart, deliveryFee = 0) {
   const subtotal = Number(items.reduce((sum, i) => sum + i.lineTotal, 0).toFixed(2));
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
 
+  // Include the 10% customer service fee so the cart shows the real amount due.
+  const pricing = computePricing(subtotal, deliveryFee);
+
   return {
     id: cart.id,
     cookId: cart.cookId,
     items,
     itemCount,
     subtotal,
-    deliveryFee: Number(deliveryFee.toFixed(2)),
-    total: Number((subtotal + deliveryFee).toFixed(2)),
+    serviceFee: pricing.serviceFee,
+    deliveryFee: pricing.deliveryFee,
+    total: pricing.total,
     updatedAt: cart.updatedAt,
   };
 }
@@ -177,6 +182,7 @@ export async function cartTotal(req, res, next) {
     res.json({
       itemCount: shaped.itemCount,
       subtotal: shaped.subtotal,
+      serviceFee: shaped.serviceFee,
       deliveryFee: shaped.deliveryFee,
       total: shaped.total,
     });

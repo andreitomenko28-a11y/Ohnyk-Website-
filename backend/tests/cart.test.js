@@ -105,8 +105,9 @@ describe('Cart', () => {
     await request.post('/api/cart/add').set(auth).send({ dishId: dishes[0].id, quantity: 2 });
     const res = await request.post('/api/cart/total').set(auth).send({ deliveryFee: 50 });
     expect(res.body.subtotal).toBe(180);
+    expect(res.body.serviceFee).toBe(18); // 10% customer fee
     expect(res.body.deliveryFee).toBe(50);
-    expect(res.body.total).toBe(230);
+    expect(res.body.total).toBe(248); // 180 + 18 + 50
   });
 
   it('404s on a missing dish and on a foreign cart item', async () => {

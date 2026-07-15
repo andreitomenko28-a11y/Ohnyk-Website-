@@ -222,8 +222,13 @@ function OrderCard({ order, t, lang, onChanged }) {
             <span className="font-medium">{i.lineTotal} ₴</span>
           </div>
         ))}
-        <div className="flex justify-between border-t border-[color:var(--line)] pt-2 text-[14px] font-bold">
-          <span>{order.total} ₴</span>
+        <div className="mt-2 flex justify-between border-t border-[color:var(--line)] pt-2 text-[12.5px] text-[color:var(--muted)]">
+          <span>{t('orderValue')}</span>
+          <span>{order.subtotal ?? order.total} ₴</span>
+        </div>
+        <div className="flex items-baseline justify-between text-[14px] font-bold">
+          <span className="text-[12.5px] font-semibold text-[color:var(--muted)]">{t('yourEarnings')}</span>
+          <span className="text-emerald-600 dark:text-emerald-400">{order.cookPayout ?? order.total} ₴</span>
         </div>
       </div>
 
