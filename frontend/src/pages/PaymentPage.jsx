@@ -93,7 +93,13 @@ export default function PaymentPage() {
         <div className="mb-6 text-sm font-semibold">
           {info.cookName} · {amount}₴
         </div>
-        <button onClick={() => navigate('/discovery')} className="btn-primary max-w-[240px]">
+        <button onClick={() => navigate(`/track/${orderId}`)} className="btn-primary mb-2 max-w-[240px]">
+          {t('trackOrder')}
+        </button>
+        <button
+          onClick={() => navigate('/discovery')}
+          className="max-w-[240px] rounded-xl px-4 py-2 text-[14px] font-semibold text-[color:var(--muted)]"
+        >
           {t('keepShopping')}
         </button>
       </Centered>

@@ -1,9 +1,12 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useI18n } from '../i18n/index.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import api, { apiError } from '../api/client.js';
 import CourierShell from '../components/CourierShell.jsx';
 import { MapPinIcon, BoxIcon } from '../components/icons.jsx';
+import { getSocket } from '../lib/socket.js';
+
+const LIVE_STATUSES = ['COURIER_ASSIGNED', 'PICKED_UP', 'ON_THE_WAY'];
 
 const STATUS_STYLE = {
   READY: 'bg-sky-500/15 text-sky-600 dark:text-sky-400',
@@ -31,6 +34,7 @@ export default function CourierDashboard() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState('');
   const [error, setError] = useState('');
+  const [geo, setGeo] = useState('off'); // off | sharing | denied | unavailable
 
   const online = status === 'ONLINE';
 
@@ -117,6 +121,36 @@ export default function CourierDashboard() {
   const activeMine = mine.filter((o) => o.status !== 'DELIVERED');
   const doneMine = mine.filter((o) => o.status === 'DELIVERED');
 
+  // Share live GPS while there are in-progress deliveries. The latest set of
+  // active order ids is read via a ref so the single watcher always emits for
+  // the current deliveries without re-subscribing on every poll.
+  const trackingIds = mine.filter((o) => LIVE_STATUSES.includes(o.status)).map((o) => o.id);
+  const trackingKey = trackingIds.join(',');
+  const trackingIdsRef = useRef(trackingIds);
+  trackingIdsRef.current = trackingIds;
+
+  useEffect(() => {
+    if (!trackingKey) {
+      setGeo('off');
+      return;
+    }
+    if (!('geolocation' in navigator)) {
+      setGeo('unavailable');
+      return;
+    }
+    const socket = getSocket();
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        setGeo('sharing');
+        const { latitude: lat, longitude: lng } = pos.coords;
+        for (const id of trackingIdsRef.current) socket.emit('location:update', { orderId: id, lat, lng });
+      },
+      (err) => setGeo(err.code === err.PERMISSION_DENIED ? 'denied' : 'unavailable'),
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 },
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [trackingKey]);
+
   return (
     <CourierShell>
       {/* Availability */}
@@ -139,6 +173,19 @@ export default function CourierDashboard() {
           />
         </button>
       </section>
+
+      {geo !== 'off' && (
+        <div
+          className={`mb-4 flex items-center gap-2 rounded-lg px-3 py-2 text-[12.5px] font-semibold ${
+            geo === 'sharing'
+              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+              : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+          }`}
+        >
+          <span className={`h-2 w-2 rounded-full ${geo === 'sharing' ? 'animate-pulse bg-emerald-500' : 'bg-amber-500'}`} />
+          {geo === 'sharing' ? t('geoSharing') : geo === 'denied' ? t('geoDenied') : t('geoUnavailable')}
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 rounded-lg bg-ember/10 px-3 py-2.5 text-[13px] font-medium text-ember-dark">{error}</div>

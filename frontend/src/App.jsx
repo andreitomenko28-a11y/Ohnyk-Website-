@@ -18,6 +18,7 @@ import CookProfile from './pages/CookProfile.jsx';
 import Cart from './pages/Cart.jsx';
 import Checkout from './pages/Checkout.jsx';
 import PaymentPage from './pages/PaymentPage.jsx';
+import TrackPage from './pages/TrackPage.jsx';
 import Profile from './pages/Profile.jsx';
 import Addresses from './pages/Addresses.jsx';
 import Favorites from './pages/Favorites.jsx';
@@ -95,6 +96,7 @@ export default function App() {
                 <Route path="/cart" element={<Protected><Cart /></Protected>} />
                 <Route path="/checkout" element={<Protected><Checkout /></Protected>} />
                 <Route path="/pay/:orderId" element={<Protected><PaymentPage /></Protected>} />
+                <Route path="/track/:orderId" element={<Protected><TrackPage /></Protected>} />
                 <Route path="/profile" element={<Protected><Profile /></Protected>} />
                 <Route path="/addresses" element={<Protected><Addresses /></Protected>} />
                 <Route path="/favorites" element={<Protected><Favorites /></Protected>} />
