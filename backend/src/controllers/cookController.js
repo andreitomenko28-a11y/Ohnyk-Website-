@@ -128,7 +128,10 @@ export async function getCook(req, res, next) {
       include: cookInclude,
     });
     if (!cook) throw httpError(404, 'Кухаря не знайдено');
-    res.json({ cook: publicCook(cook) });
+    // Detail view also exposes the pickup point + delivery zone (used at checkout).
+    res.json({
+      cook: { ...publicCook(cook), kitchenAddress: cook.kitchenAddress, deliveryZone: cook.deliveryZone },
+    });
   } catch (err) {
     next(err);
   }

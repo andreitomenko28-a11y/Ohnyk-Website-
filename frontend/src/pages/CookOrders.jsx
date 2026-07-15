@@ -6,13 +6,24 @@ import api, { apiError } from '../api/client.js';
 import CookShell from '../components/CookShell.jsx';
 import { CartIcon } from '../components/icons.jsx';
 
-// Cook-actionable next statuses (mirrors the backend). After READY a courier
-// takes over the delivery statuses.
-const NEXT = {
-  NEW: ['PREPARING', 'CANCELLED'],
-  PREPARING: ['READY', 'CANCELLED'],
-  READY: [],
-};
+// Cook-actionable next statuses (mirrors the backend), per delivery method.
+//   • COURIER       — cook stops at READY; a courier takes over.
+//   • COOK_DELIVERY — cook delivers: READY → ON_THE_WAY → DELIVERED.
+//   • PICKUP        — customer collects: READY → DELIVERED.
+function nextFor(order) {
+  const t = {
+    NEW: ['PREPARING', 'CANCELLED'],
+    PREPARING: ['READY', 'CANCELLED'],
+    READY: [],
+    ON_THE_WAY: [],
+  };
+  if (order.deliveryMethod === 'PICKUP') t.READY = ['DELIVERED'];
+  else if (order.deliveryMethod === 'COOK_DELIVERY') {
+    t.READY = ['ON_THE_WAY'];
+    t.ON_THE_WAY = ['DELIVERED'];
+  }
+  return t[order.status] || [];
+}
 
 // Badge style for every order status (delivery statuses are read-only here).
 const STATUS_STYLE = {
@@ -194,7 +205,12 @@ function OrderCard({ order, t, lang, onChanged }) {
         </span>
       </div>
 
-      <div className="mt-2 text-[13px] text-[color:var(--muted)]">{order.addressText}</div>
+      <div className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-elevated px-2 py-1 text-[11.5px] font-semibold text-[color:var(--muted)]">
+        {t(`method_${order.deliveryMethod || 'COURIER'}`)}
+      </div>
+      <div className="mt-1.5 text-[13px] text-[color:var(--muted)]">
+        {order.deliveryMethod === 'PICKUP' ? `${t('pickupPoint')}: ${order.addressText}` : order.addressText}
+      </div>
       {order.buyer?.phone && <div className="text-[13px] text-[color:var(--muted)]">{order.buyer.phone}</div>}
 
       <div className="mt-3 space-y-1 border-t border-[color:var(--line)] pt-3">
@@ -219,9 +235,9 @@ function OrderCard({ order, t, lang, onChanged }) {
 
       {err && <p className="mt-2 text-[12.5px] text-red-500">{err}</p>}
 
-      {NEXT[order.status]?.length > 0 && (
+      {nextFor(order).length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
-          {NEXT[order.status].map((s) => (
+          {nextFor(order).map((s) => (
             <button
               key={s}
               disabled={busy}

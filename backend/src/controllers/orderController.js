@@ -15,6 +15,7 @@ export function serializeOrder(order) {
     id: order.id,
     status: order.status,
     total: order.total,
+    deliveryMethod: order.deliveryMethod,
     addressText: order.addressText,
     note: order.note,
     scheduledFor: order.scheduledFor,
@@ -66,7 +67,7 @@ export async function deliverySlots(req, res, next) {
 // POST /api/orders — checkout the current cart into an order (awaiting payment).
 export async function checkout(req, res, next) {
   try {
-    const { addressId, addressText, note, scheduledFor } = createOrderSchema.parse(req.body);
+    const { addressId, addressText, note, scheduledFor, deliveryMethod } = createOrderSchema.parse(req.body);
 
     const cart = await prisma.cart.findUnique({
       where: { userId: req.user.id },
@@ -90,20 +91,26 @@ export async function checkout(req, res, next) {
       );
     }
 
-    // Resolve the delivery address (explicit id → text → user default).
-    let address = addressText;
-    if (addressId) {
-      const a = await prisma.address.findUnique({ where: { id: addressId } });
-      if (!a || a.userId !== req.user.id) throw httpError(400, 'Адресу не знайдено');
-      address = formatAddress(a);
-    } else if (!address) {
-      const def = await prisma.address.findFirst({
-        where: { userId: req.user.id },
-        orderBy: { isDefault: 'desc' },
-      });
-      if (def) address = formatAddress(def);
+    // Resolve the address. For pickup we store the cook's kitchen address as the
+    // collection point; otherwise the buyer's delivery address (id → text → default).
+    let address;
+    if (deliveryMethod === 'PICKUP') {
+      address = cook.kitchenAddress || cook.city || 'Самовивіз';
+    } else {
+      address = addressText;
+      if (addressId) {
+        const a = await prisma.address.findUnique({ where: { id: addressId } });
+        if (!a || a.userId !== req.user.id) throw httpError(400, 'Адресу не знайдено');
+        address = formatAddress(a);
+      } else if (!address) {
+        const def = await prisma.address.findFirst({
+          where: { userId: req.user.id },
+          orderBy: { isDefault: 'desc' },
+        });
+        if (def) address = formatAddress(def);
+      }
+      if (!address) throw httpError(400, 'Вкажіть адресу доставки');
     }
-    if (!address) throw httpError(400, 'Вкажіть адресу доставки');
 
     // Validate the chosen delivery slot against the dishes' availability.
     if (scheduledFor && !isValidSlot(cart.items.map((it) => it.dish), scheduledFor)) {
@@ -128,6 +135,7 @@ export async function checkout(req, res, next) {
           cookId,
           status: 'AWAITING_PAYMENT',
           total,
+          deliveryMethod,
           addressText: address,
           note: note || null,
           scheduledFor: scheduledFor ? new Date(scheduledFor) : null,

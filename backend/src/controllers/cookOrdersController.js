@@ -10,13 +10,25 @@ const orderInclude = {
   courier: { include: { user: { select: { fullName: true, phone: true } } } },
 };
 
-// Allowed forward transitions the cook may perform. After READY a courier
-// takes over the delivery statuses (Modules 4.3–4.5).
-const TRANSITIONS = {
-  NEW: ['PREPARING', 'CANCELLED'],
-  PREPARING: ['READY', 'CANCELLED'],
-  READY: [],
-};
+// Allowed forward transitions the cook may perform, per delivery method.
+//   • COURIER       — the cook stops at READY; a courier takes over delivery.
+//   • COOK_DELIVERY — the cook delivers: READY → ON_THE_WAY → DELIVERED.
+//   • PICKUP        — the customer collects: READY → DELIVERED (handed over).
+function cookTransitions(order) {
+  const t = {
+    NEW: ['PREPARING', 'CANCELLED'],
+    PREPARING: ['READY', 'CANCELLED'],
+    READY: [],
+    ON_THE_WAY: [],
+  };
+  if (order.deliveryMethod === 'PICKUP') {
+    t.READY = ['DELIVERED'];
+  } else if (order.deliveryMethod === 'COOK_DELIVERY') {
+    t.READY = ['ON_THE_WAY'];
+    t.ON_THE_WAY = ['DELIVERED'];
+  }
+  return t;
+}
 
 // GET /api/cook/orders — incoming (paid) orders for the cook. Unpaid orders
 // (AWAITING_PAYMENT) are never shown.
@@ -56,7 +68,7 @@ export async function updateOrderStatus(req, res, next) {
     if (!order || order.cookId !== req.cook.id) throw httpError(404, 'Замовлення не знайдено');
 
     if (order.status === status) throw httpError(400, 'Замовлення вже в цьому статусі');
-    if (!TRANSITIONS[order.status]?.includes(status)) {
+    if (!cookTransitions(order)[order.status]?.includes(status)) {
       throw httpError(400, `Неможливий перехід статусу: ${order.status} → ${status}`);
     }
 

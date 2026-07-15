@@ -196,7 +196,18 @@ export const updateDishSchema = z
 
 // --- Phase 3.3: orders & dashboard ------------------------------------------
 
-export const ORDER_STATUSES = ['NEW', 'PREPARING', 'READY', 'HANDED_OVER', 'COMPLETED', 'CANCELLED'];
+export const ORDER_STATUSES = [
+  'AWAITING_PAYMENT',
+  'NEW',
+  'CONFIRMED',
+  'PREPARING',
+  'READY',
+  'COURIER_ASSIGNED',
+  'PICKED_UP',
+  'ON_THE_WAY',
+  'DELIVERED',
+  'CANCELLED',
+];
 
 // Checkout from the cart. Address comes from a saved address or free text.
 // scheduledFor is an ISO datetime slot (omit for "as soon as possible").
@@ -205,6 +216,7 @@ export const createOrderSchema = z.object({
   addressText: z.string().trim().max(300).optional(),
   note: z.string().trim().max(500).optional().or(z.literal('')),
   scheduledFor: z.string().datetime({ message: 'Некоректний час доставки' }).optional(),
+  deliveryMethod: z.enum(['PICKUP', 'COOK_DELIVERY', 'COURIER']).default('COURIER'),
 });
 
 export const updateOrderStatusSchema = z.object({

@@ -214,6 +214,8 @@ export const dict = {
     actPREPARING: 'Прийняти',
     actREADY: 'Готово',
     actCANCELLED: 'Скасувати',
+    actON_THE_WAY: 'Виїхав на доставку',
+    actDELIVERED: 'Доставлено',
     ordersOpenHint: 'Перейти до замовлень',
     // Checkout (Phase 4.1)
     checkoutTitle: 'Оформлення',
@@ -229,6 +231,16 @@ export const dict = {
     awaitingPaymentHint: 'Замовлення очікує оплати.',
     toCheckout: 'Оформити замовлення',
     backToCart: 'Назад до кошика',
+    // delivery method (Module 4.3b)
+    deliveryMethod: 'Спосіб доставки',
+    method_COURIER: 'Сторонній кур’єр',
+    method_COURIER_sub: 'Замовлення доставить кур’єр сервісу',
+    method_COOK_DELIVERY: 'Доставка від кухаря',
+    method_COOK_DELIVERY_sub: 'Кухар привезе замовлення особисто',
+    method_PICKUP: 'Самовивіз',
+    method_PICKUP_sub: 'Заберіть замовлення у кухаря',
+    pickupPoint: 'Точка самовивозу',
+    pickupTime: 'Час готовності',
     // payment (Module 4.2)
     payTitle: 'Оплата замовлення',
     payNow: 'Оплатити картою',
@@ -480,6 +492,8 @@ export const dict = {
     actPREPARING: 'Accept',
     actREADY: 'Ready',
     actCANCELLED: 'Cancel',
+    actON_THE_WAY: 'Out for delivery',
+    actDELIVERED: 'Delivered',
     ordersOpenHint: 'Go to orders',
     // Checkout (Phase 4.1)
     checkoutTitle: 'Checkout',
@@ -495,6 +509,16 @@ export const dict = {
     awaitingPaymentHint: 'The order is awaiting payment.',
     toCheckout: 'Checkout',
     backToCart: 'Back to cart',
+    // delivery method (Module 4.3b)
+    deliveryMethod: 'Delivery method',
+    method_COURIER: 'Third-party courier',
+    method_COURIER_sub: 'A service courier delivers the order',
+    method_COOK_DELIVERY: 'Delivery by the cook',
+    method_COOK_DELIVERY_sub: 'The cook delivers the order in person',
+    method_PICKUP: 'Pickup',
+    method_PICKUP_sub: 'Collect the order from the cook',
+    pickupPoint: 'Pickup point',
+    pickupTime: 'Ready by',
     // payment (Module 4.2)
     payTitle: 'Order payment',
     payNow: 'Pay by card',

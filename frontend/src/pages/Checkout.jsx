@@ -3,6 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n/index.jsx';
 import { useCart } from '../context/CartContext.jsx';
 import api, { apiError } from '../api/client.js';
+import { BagIcon, ChefHatIcon, CourierIcon } from '../components/icons.jsx';
+
+const METHODS = ['COURIER', 'COOK_DELIVERY', 'PICKUP'];
+const METHOD_ICON = { COURIER: CourierIcon, COOK_DELIVERY: ChefHatIcon, PICKUP: BagIcon };
 
 export default function Checkout() {
   const { t, lang } = useI18n();
@@ -11,6 +15,8 @@ export default function Checkout() {
 
   const [days, setDays] = useState([]);
   const [cookName, setCookName] = useState('');
+  const [cookKitchen, setCookKitchen] = useState('');
+  const [method, setMethod] = useState('COURIER');
   const [slot, setSlot] = useState(''); // '' = ASAP
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
@@ -37,7 +43,10 @@ export default function Checkout() {
         ]);
         if (!active) return;
         setDays(slots.data.days);
-        if (cook) setCookName(cook.data.cook?.name || '');
+        if (cook) {
+          setCookName(cook.data.cook?.name || '');
+          setCookKitchen(cook.data.cook?.kitchenAddress || '');
+        }
       } catch {
         /* slots are optional — ASAP still works */
       }
@@ -65,7 +74,7 @@ export default function Checkout() {
     setBusy(true);
     setPlacing(true);
     try {
-      const payload = {};
+      const payload = { deliveryMethod: method };
       if (note.trim()) payload.note = note.trim();
       if (slot) payload.scheduledFor = slot;
       const { data } = await api.post('/orders', payload);
@@ -100,9 +109,44 @@ export default function Checkout() {
       </header>
 
       <div className="space-y-4 px-5 pb-6">
+        {/* Delivery method */}
+        <section className="rounded-card border border-[color:var(--line)] bg-surface p-4 shadow-card">
+          <h2 className="mb-3 font-display text-[15px] font-bold">{t('deliveryMethod')}</h2>
+          <div className="space-y-2">
+            {METHODS.map((m) => {
+              const Icon = METHOD_ICON[m];
+              const active = method === m;
+              return (
+                <button
+                  key={m}
+                  onClick={() => setMethod(m)}
+                  className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition-colors ${
+                    active ? 'border-ember bg-ember/[0.06]' : 'border-[color:var(--line)]'
+                  }`}
+                >
+                  <Icon className={`h-5 w-5 shrink-0 ${active ? 'text-ember' : 'text-[color:var(--muted)]'}`} />
+                  <span className="min-w-0">
+                    <span className={`block text-[14px] font-semibold ${active ? 'text-ember-dark' : 'text-fg'}`}>
+                      {t(`method_${m}`)}
+                    </span>
+                    <span className="block text-[12px] text-[color:var(--muted)]">{t(`method_${m}_sub`)}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {method === 'PICKUP' && cookKitchen && (
+            <div className="mt-3 rounded-lg bg-ember/[0.06] px-3 py-2 text-[12.5px] text-[color:var(--muted)]">
+              {t('pickupPoint')}: <span className="font-semibold text-fg">{cookKitchen}</span>
+            </div>
+          )}
+        </section>
+
         {/* Delivery time */}
         <section className="rounded-card border border-[color:var(--line)] bg-surface p-4 shadow-card">
-          <h2 className="mb-3 font-display text-[15px] font-bold">{t('deliveryTime')}</h2>
+          <h2 className="mb-3 font-display text-[15px] font-bold">
+            {method === 'PICKUP' ? t('pickupTime') : t('deliveryTime')}
+          </h2>
           <button
             onClick={() => setSlot('')}
             className={`mb-3 w-full rounded-xl border px-3.5 py-3 text-left text-[14px] font-semibold transition-colors ${
@@ -164,8 +208,12 @@ export default function Checkout() {
             ))}
           </div>
           <div className="my-3 h-px bg-[color:var(--line)]" />
+          <div className="mb-1 flex justify-between text-[13px] text-[color:var(--muted)]">
+            <span>{t('deliveryMethod')}</span>
+            <span className="font-semibold text-fg">{t(`method_${method}`)}</span>
+          </div>
           <div className="flex justify-between text-[13px] text-[color:var(--muted)]">
-            <span>{t('deliveryTime')}</span>
+            <span>{method === 'PICKUP' ? t('pickupTime') : t('deliveryTime')}</span>
             <span className="font-semibold text-fg">
               {slot ? new Date(slot).toLocaleString(lang === 'en' ? 'en-GB' : 'uk-UA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : t('asap')}
             </span>

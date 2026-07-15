@@ -58,7 +58,7 @@ export async function updateStatus(req, res, next) {
 export async function listAvailable(req, res, next) {
   try {
     const orders = await prisma.order.findMany({
-      where: { status: 'READY', courierId: null },
+      where: { status: 'READY', courierId: null, deliveryMethod: 'COURIER' },
       include: orderInclude,
       orderBy: { scheduledFor: { sort: 'asc', nulls: 'first' } },
       take: 50,
@@ -94,9 +94,10 @@ export async function claimOrder(req, res, next) {
       throw httpError(409, 'Перейдіть онлайн, щоб брати замовлення');
     }
 
-    // Atomic claim: only succeeds if the order is still READY and unclaimed.
+    // Atomic claim: only succeeds if the order is still READY, unclaimed, and
+    // actually opted in for third-party courier delivery.
     const result = await prisma.order.updateMany({
-      where: { id: req.params.id, status: 'READY', courierId: null },
+      where: { id: req.params.id, status: 'READY', courierId: null, deliveryMethod: 'COURIER' },
       data: { status: 'COURIER_ASSIGNED', courierId: req.courier.id },
     });
     if (result.count === 0) {

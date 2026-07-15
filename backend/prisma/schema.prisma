@@ -70,6 +70,12 @@ enum TransportType {
   CAR
 }
 
+enum DeliveryMethod {
+  PICKUP // customer collects from the cook
+  COOK_DELIVERY // the cook delivers themselves
+  COURIER // a third-party courier delivers
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -215,6 +221,7 @@ model Order {
   note      String? // buyer comment
 
   // --- Phase 4: delivery scheduling, courier, payment -----------------------
+  deliveryMethod DeliveryMethod @default(COURIER) // pickup / cook / courier
   scheduledFor DateTime? // chosen delivery slot
   deliveryLat  Float? // destination coords (for the tracking map)
   deliveryLng  Float?
