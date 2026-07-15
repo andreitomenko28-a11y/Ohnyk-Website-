@@ -15,14 +15,15 @@ export default function Checkout() {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [placed, setPlaced] = useState(null);
+  const [placing, setPlacing] = useState(false);
 
   const empty = !loading && cart.items.length === 0;
 
-  // Redirect to the cart if it's empty (and no order was just placed).
+  // Redirect to the cart if it's empty (unless we're mid-checkout — the cart
+  // empties the moment the order is created, just before we leave for payment).
   useEffect(() => {
-    if (empty && !placed) navigate('/cart', { replace: true });
-  }, [empty, placed, navigate]);
+    if (empty && !placing) navigate('/cart', { replace: true });
+  }, [empty, placing, navigate]);
 
   // Load delivery slots + the cook's name for the summary.
   useEffect(() => {
@@ -62,42 +63,27 @@ export default function Checkout() {
   async function confirm() {
     setError('');
     setBusy(true);
+    setPlacing(true);
     try {
       const payload = {};
       if (note.trim()) payload.note = note.trim();
       if (slot) payload.scheduledFor = slot;
       const { data } = await api.post('/orders', payload);
       await refresh(); // backend emptied the cart
-      setPlaced(data.order);
+
+      // Create a MonoPay invoice and hand off to the payment page/gateway.
+      const { data: pay } = await api.post(`/orders/${data.order.id}/pay`);
+      const url = new URL(pay.pageUrl, window.location.origin);
+      if (url.origin === window.location.origin) {
+        navigate(url.pathname); // stub gateway lives in this SPA
+      } else {
+        window.location.assign(pay.pageUrl); // hosted monobank page
+      }
     } catch (err) {
       setError(apiError(err));
-    } finally {
+      setPlacing(false);
       setBusy(false);
     }
-  }
-
-  // --- Confirmation (awaiting payment) --------------------------------------
-  if (placed) {
-    return (
-      <div className="relative lg:mx-auto lg:max-w-[600px]">
-        <div className="flex flex-col items-center justify-center px-8 py-20 text-center">
-          <span className="mb-4 grid h-16 w-16 place-items-center rounded-full bg-amber-500/15 text-amber-500">
-            <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="9" />
-              <path d="M12 7v5l3 2" />
-            </svg>
-          </span>
-          <div className="mb-1 font-display text-xl font-bold">{t('awaitingPaymentTitle')}</div>
-          <div className="mb-3 max-w-sm text-sm text-[color:var(--muted)]">{t('awaitingPaymentHint')}</div>
-          <div className="mb-6 text-sm font-semibold">
-            {placed.cook?.name} · {placed.total}₴ · {t(`st${placed.status}`)}
-          </div>
-          <button onClick={() => navigate('/discovery')} className="btn-primary max-w-[220px]">
-            {t('keepShopping')}
-          </button>
-        </div>
-      </div>
-    );
   }
 
   if (loading || empty) {

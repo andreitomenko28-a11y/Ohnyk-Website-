@@ -10,6 +10,7 @@ import adminRoutes from './routes/admin.js';
 import categoryRoutes from './routes/categories.js';
 import cartRoutes from './routes/cart.js';
 import orderRoutes from './routes/orders.js';
+import paymentRoutes from './routes/payments.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 import { UPLOAD_ROOT } from './lib/storage.js';
 
@@ -24,8 +25,16 @@ export function createApp() {
     .map((o) => o.trim());
 
   app.use(cors({ origin: origins, credentials: true }));
-  // Larger limit accommodates base64 avatar/dish images.
-  app.use(express.json({ limit: '2mb' }));
+  // Larger limit accommodates base64 avatar/dish images. Keep the raw bytes so
+  // the payment webhook can verify the provider's signature over the exact body.
+  app.use(
+    express.json({
+      limit: '2mb',
+      verify: (req, _res, buf) => {
+        req.rawBody = buf;
+      },
+    }),
+  );
 
   // Serve uploaded media (cook photos, dish photos, verification docs).
   app.use('/uploads', express.static(UPLOAD_ROOT));
@@ -45,6 +54,7 @@ export function createApp() {
   app.use('/api/categories', categoryRoutes);
   app.use('/api/cart', cartRoutes);
   app.use('/api/orders', orderRoutes);
+  app.use('/api/payments', paymentRoutes);
 
   // 404 + error handling.
   app.use(notFound);
