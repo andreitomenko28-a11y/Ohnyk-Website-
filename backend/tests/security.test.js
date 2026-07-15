@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { request, registerCook, registerUser, createAdmin, authHeader } from './helpers.js';
+import { normalizeDocUrl } from '../src/lib/storage.js';
+
+// Box header helper: 4-byte size + a 4-char atom type, then payload.
+const box = (type, ...rest) => Buffer.concat([Buffer.from([0, 0, 0, 0x18]), Buffer.from(type, 'ascii'), ...rest]);
 
 // A buffer that begins with the PNG magic bytes (contents beyond the signature
 // are irrelevant — documents are stored as-is).
@@ -34,11 +38,11 @@ describe('Security fixes', () => {
       expect(res.status).toBe(401);
     });
 
-    it('forbids a different user from fetching someone else’s document', async () => {
+    it('returns 404 (not 403) to a different user, so filenames can’t be enumerated', async () => {
       const { url } = await cookWithIdentityDoc();
       const stranger = await registerUser({ role: 'CUSTOMER' });
       const res = await request.get(url).set(authHeader(stranger.accessToken));
-      expect(res.status).toBe(403);
+      expect(res.status).toBe(404); // indistinguishable from a missing file
     });
 
     it('lets the owning cook and an admin fetch the document', async () => {
@@ -69,6 +73,49 @@ describe('Security fixes', () => {
         .set(authHeader(cook.accessToken))
         .attach('document', PNG, { filename: 'id.png', contentType: 'image/png' });
       expect(res.status).toBe(201);
+    });
+
+    it('validates HEIC by its ftyp brand (no blanket bypass)', async () => {
+      const cook = await registerCook();
+      const realHeic = box('ftyp', Buffer.from('heic', 'ascii'));
+      const fakeHeic = box('ftyp', Buffer.from('xxxx', 'ascii')); // wrong brand
+      const ok = await request
+        .post('/api/cook/verification/identity')
+        .set(authHeader(cook.accessToken))
+        .attach('document', realHeic, { filename: 'id.heic', contentType: 'image/heic' });
+      expect(ok.status).toBe(201);
+      const bad = await request
+        .post('/api/cook/verification/identity')
+        .set(authHeader(cook.accessToken))
+        .attach('document', fakeHeic, { filename: 'spoof.heic', contentType: 'image/heic' });
+      expect(bad.status).toBe(400);
+    });
+
+    it('accepts a valid video that leads with a non-ftyp atom, rejects random bytes', async () => {
+      const cook = await registerCook();
+      // Real .mov/.mp4 files may start with a 'wide'/'moov' box, not 'ftyp'.
+      const realMov = box('wide', Buffer.alloc(16, 0));
+      const ok = await request
+        .post('/api/cook/kitchen/video')
+        .set(authHeader(cook.accessToken))
+        .attach('video', realMov, { filename: 'kitchen.mov', contentType: 'video/quicktime' });
+      expect(ok.status).toBe(201);
+      const bad = await request
+        .post('/api/cook/kitchen/video')
+        .set(authHeader(cook.accessToken))
+        .attach('video', Buffer.from('not a video at all!!'), { filename: 'x.mp4', contentType: 'video/mp4' });
+      expect(bad.status).toBe(400);
+    });
+  });
+
+  describe('Fix #4 — legacy document URL normalization', () => {
+    it('rewrites legacy /uploads private URLs to the /api/documents form', () => {
+      expect(normalizeDocUrl('/uploads/identity/a.png')).toBe('/api/documents/identity/a.png');
+      expect(normalizeDocUrl('/uploads/verification/b.pdf')).toBe('/api/documents/verification/b.pdf');
+      // Public (non-private) and already-private URLs pass through unchanged.
+      expect(normalizeDocUrl('/uploads/dishes/c.webp')).toBe('/uploads/dishes/c.webp');
+      expect(normalizeDocUrl('/api/documents/identity/d.png')).toBe('/api/documents/identity/d.png');
+      expect(normalizeDocUrl(null)).toBe(null);
     });
   });
 });

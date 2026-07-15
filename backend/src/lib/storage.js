@@ -55,6 +55,18 @@ export async function saveDocument(buffer, folder, originalName, { private: isPr
   return `${isPrivate ? PRIVATE_PREFIX : PUBLIC_PREFIX}${folder}/${filename}`;
 }
 
+// Private document folders (served only via the authenticated /api/documents route).
+const PRIVATE_FOLDERS = ['identity', 'verification'];
+
+// Back-compat: rewrite a legacy public /uploads/(identity|verification)/… URL to
+// the authenticated /api/documents/… form, so documents stored before private
+// serving are still reachable. Non-private URLs pass through unchanged.
+export function normalizeDocUrl(url) {
+  if (!url || !url.startsWith(PUBLIC_PREFIX)) return url;
+  const rel = url.slice(PUBLIC_PREFIX.length);
+  return PRIVATE_FOLDERS.some((f) => rel.startsWith(`${f}/`)) ? `${PRIVATE_PREFIX}${rel}` : url;
+}
+
 // Resolve a private document URL to a safe absolute path under UPLOAD_ROOT.
 // Returns null if the URL is malformed or would escape the upload root
 // (path-traversal guard).

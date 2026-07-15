@@ -7,6 +7,7 @@ import {
   verifyRefreshToken,
 } from '../lib/jwt.js';
 import { httpError } from '../middleware/errorHandler.js';
+import { normalizeDocUrl } from '../lib/storage.js';
 import {
   registerSchema,
   loginSchema,
@@ -43,8 +44,8 @@ function publicUser(user) {
           deliveryZone: user.cookProfile.deliveryZone,
           phoneVerified: user.cookProfile.phoneVerified,
           verificationStatus: user.cookProfile.verificationStatus,
-          verificationDocUrl: user.cookProfile.verificationDocUrl,
-          identityDocUrl: user.cookProfile.identityDocUrl,
+          verificationDocUrl: normalizeDocUrl(user.cookProfile.verificationDocUrl),
+          identityDocUrl: normalizeDocUrl(user.cookProfile.identityDocUrl),
           kitchenPhotoUrl: user.cookProfile.kitchenPhotoUrl,
           kitchenVideoUrl: user.cookProfile.kitchenVideoUrl,
           verifiedAt: user.cookProfile.verifiedAt,

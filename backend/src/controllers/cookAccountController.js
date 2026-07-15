@@ -1,6 +1,6 @@
 import { prisma } from '../lib/prisma.js';
 import { httpError } from '../middleware/errorHandler.js';
-import { saveImage, saveDocument, deleteByUrl } from '../lib/storage.js';
+import { saveImage, saveDocument, deleteByUrl, normalizeDocUrl } from '../lib/storage.js';
 import { sendVerificationCode, checkVerificationCode } from '../lib/sms.js';
 import {
   cookProfileUpdateSchema,
@@ -24,8 +24,8 @@ function cookAccount(cook, user) {
     isVerified: cook.isVerified,
     phoneVerified: cook.phoneVerified,
     verificationStatus: cook.verificationStatus,
-    verificationDocUrl: cook.verificationDocUrl,
-    identityDocUrl: cook.identityDocUrl,
+    verificationDocUrl: normalizeDocUrl(cook.verificationDocUrl),
+    identityDocUrl: normalizeDocUrl(cook.identityDocUrl),
     kitchenPhotoUrl: cook.kitchenPhotoUrl,
     kitchenVideoUrl: cook.kitchenVideoUrl,
     verifiedAt: cook.verifiedAt,

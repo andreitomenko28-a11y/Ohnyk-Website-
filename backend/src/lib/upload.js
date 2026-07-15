@@ -42,6 +42,17 @@ function startsWith(buf, sig, offset = 0) {
   return true;
 }
 
+// Top-level atoms a valid ISO-BMFF / QuickTime file may start with. Real .mp4
+// and .mov files don't always lead with 'ftyp' (older QuickTime, or a leading
+// 'free'/'wide'/'skip' atom), so we accept any known container box at offset 4.
+const ISOBMFF_ATOMS = new Set(['ftyp', 'moov', 'mdat', 'free', 'skip', 'wide', 'pnot']);
+// HEIC/HEIF share the ISO-BMFF 'ftyp' box; the major brand distinguishes them.
+const HEIF_BRANDS = new Set(['heic', 'heix', 'heim', 'heis', 'hevc', 'hevm', 'hevs', 'mif1', 'msf1', 'avif']);
+
+function boxTypeAt(buffer, offset) {
+  return buffer.length >= offset + 4 ? buffer.slice(offset, offset + 4).toString('ascii') : '';
+}
+
 function contentMatches(buffer, mime) {
   switch (mime) {
     case 'image/jpeg':
@@ -49,7 +60,7 @@ function contentMatches(buffer, mime) {
     case 'image/png':
       return startsWith(buffer, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
     case 'image/webp':
-      return startsWith(buffer, [0x52, 0x49, 0x46, 0x46]) && buffer.slice(8, 12).toString('ascii') === 'WEBP';
+      return startsWith(buffer, [0x52, 0x49, 0x46, 0x46]) && boxTypeAt(buffer, 8) === 'WEBP';
     case 'application/pdf':
       return startsWith(buffer, [0x25, 0x50, 0x44, 0x46]); // %PDF
     case 'video/webm':
@@ -57,12 +68,15 @@ function contentMatches(buffer, mime) {
       return startsWith(buffer, [0x1a, 0x45, 0xdf, 0xa3]); // EBML
     case 'video/mp4':
     case 'video/quicktime':
-      return buffer.length >= 8 && buffer.slice(4, 8).toString('ascii') === 'ftyp';
-    // No reliable/simple magic here — allow (sharp still validates images).
+      // Accept any recognised container atom, not only a leading 'ftyp'.
+      return ISOBMFF_ATOMS.has(boxTypeAt(buffer, 4));
     case 'image/heic':
     case 'image/heif':
+      return boxTypeAt(buffer, 4) === 'ftyp' && HEIF_BRANDS.has(boxTypeAt(buffer, 8));
+    // Fail closed: every MIME the allowlists permit is handled above, so an
+    // unhandled type here means the content doesn't match its declared type.
     default:
-      return true;
+      return false;
   }
 }
 
