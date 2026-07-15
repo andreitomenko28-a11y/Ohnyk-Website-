@@ -11,6 +11,7 @@ import HomePage from './pages/HomePage.jsx';
 import CookOnboarding from './pages/CookOnboarding.jsx';
 import CookMenu from './pages/CookMenu.jsx';
 import CookOrders from './pages/CookOrders.jsx';
+import CourierDashboard from './pages/CourierDashboard.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 import Discovery from './pages/Discovery.jsx';
 import CookProfile from './pages/CookProfile.jsx';
@@ -36,6 +37,7 @@ function Protected({ children }) {
 function CustomerOnly({ children }) {
   const { user } = useAuth();
   if (user?.role === 'COOK') return <Navigate to="/cook" replace />;
+  if (user?.role === 'COURIER') return <Navigate to="/courier" replace />;
   return children;
 }
 
@@ -54,6 +56,21 @@ function CookOnly({ children }) {
   return children;
 }
 
+// Courier-only area (own authenticated shell).
+function CourierProtected({ children }) {
+  return (
+    <ProtectedRoute>
+      <CourierOnly>{children}</CourierOnly>
+    </ProtectedRoute>
+  );
+}
+
+function CourierOnly({ children }) {
+  const { user } = useAuth();
+  if (user?.role !== 'COURIER') return <Navigate to="/" replace />;
+  return children;
+}
+
 export default function App() {
   return (
     <ThemeProvider>
@@ -69,6 +86,8 @@ export default function App() {
                 <Route path="/cook" element={<CookProtected><CookOnboarding /></CookProtected>} />
                 <Route path="/cook/menu" element={<CookProtected><CookMenu /></CookProtected>} />
                 <Route path="/cook/orders" element={<CookProtected><CookOrders /></CookProtected>} />
+
+                <Route path="/courier" element={<CourierProtected><CourierDashboard /></CourierProtected>} />
 
                 <Route path="/" element={<Protected><HomePage /></Protected>} />
                 <Route path="/discovery" element={<Protected><Discovery /></Protected>} />

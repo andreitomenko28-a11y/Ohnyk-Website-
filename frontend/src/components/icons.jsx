@@ -198,3 +198,24 @@ export function FoodIcon({ className = 'h-6 w-6' }) {
     </svg>
   );
 }
+
+// Courier (scooter) — role picker + courier area.
+export function CourierIcon({ className = 'h-4 w-4' }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...stroke}>
+      <circle cx="6" cy="18" r="2.4" />
+      <circle cx="18" cy="18" r="2.4" />
+      <path d="M8.4 18h7.2M4 8h4l3.5 7.5M13 8h3l3 5v3M11 8h5" />
+    </svg>
+  );
+}
+
+// Box / package — deliveries.
+export function BoxIcon({ className = 'h-5 w-5' }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...stroke}>
+      <path d="M21 8l-9-5-9 5v8l9 5 9-5V8z" />
+      <path d="M3 8l9 5 9-5M12 13v8" />
+    </svg>
+  );
+}

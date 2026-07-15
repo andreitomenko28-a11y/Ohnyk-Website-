@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// Only CUSTOMER and COOK can self-register; ADMIN is assigned manually.
+// Only CUSTOMER, COOK and COURIER can self-register; ADMIN is assigned manually.
 export const registerSchema = z
   .object({
     fullName: z.string().trim().min(2, 'Ім’я має містити щонайменше 2 символи'),
@@ -12,7 +12,7 @@ export const registerSchema = z
       .optional()
       .or(z.literal('').transform(() => undefined)),
     password: z.string().min(8, 'Пароль має містити щонайменше 8 символів'),
-    role: z.enum(['CUSTOMER', 'COOK']).default('CUSTOMER'),
+    role: z.enum(['CUSTOMER', 'COOK', 'COURIER']).default('CUSTOMER'),
     // Optional cook-onboarding fields, applied only when role === 'COOK'.
     // Kept optional so a cook profile can be completed progressively; the
     // dedicated cook form collects them up front, and phone presence is
@@ -21,7 +21,20 @@ export const registerSchema = z
     bio: z.string().trim().max(500).optional(),
     kitchenAddress: z.string().trim().min(3).max(200).optional(),
     deliveryZone: z.string().trim().max(200).optional(),
+    // Optional courier field, applied only when role === 'COURIER'.
+    transport: z.enum(['WALKING', 'BICYCLE', 'CAR']).optional(),
   });
+
+// Courier: toggle availability and choose transport.
+export const courierStatusSchema = z.object({
+  status: z.enum(['ONLINE', 'OFFLINE']).optional(),
+  transport: z.enum(['WALKING', 'BICYCLE', 'CAR']).optional(),
+});
+
+// Courier-driven delivery transitions.
+export const courierAdvanceSchema = z.object({
+  status: z.enum(['PICKED_UP', 'ON_THE_WAY', 'DELIVERED']),
+});
 
 export const loginSchema = z.object({
   // Accepts either an email or a phone number in the same field.

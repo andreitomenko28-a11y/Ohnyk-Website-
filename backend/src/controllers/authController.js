@@ -51,6 +51,13 @@ function publicUser(user) {
           status: user.cookProfile.status,
         }
       : null,
+    courier: user.courierProfile
+      ? {
+          id: user.courierProfile.id,
+          status: user.courierProfile.status,
+          transport: user.courierProfile.transport,
+        }
+      : null,
     // Back-compat flat fields (Phase 1 clients).
     isVerified: user.cookProfile?.isVerified ?? undefined,
     bio: user.cookProfile?.bio ?? undefined,
@@ -90,8 +97,14 @@ export async function register(req, res, next) {
             },
           },
         }),
+        // Couriers get an (offline) profile so they can go online right away.
+        ...(data.role === 'COURIER' && {
+          courierProfile: {
+            create: { transport: data.transport ?? null, status: 'OFFLINE' },
+          },
+        }),
       },
-      include: { cookProfile: true },
+      include: { cookProfile: true, courierProfile: true },
     });
 
     const tokens = issueTokens(user);
@@ -111,7 +124,7 @@ export async function login(req, res, next) {
       where: isEmail
         ? { email: identifier.toLowerCase() }
         : { phone: identifier },
-      include: { cookProfile: true },
+      include: { cookProfile: true, courierProfile: true },
     });
 
     // Same generic message whether user is missing or password is wrong.
@@ -141,7 +154,7 @@ export async function refresh(req, res, next) {
 
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
-      include: { cookProfile: true },
+      include: { cookProfile: true, courierProfile: true },
     });
     if (!user) throw httpError(401, 'Користувача не знайдено');
 
@@ -157,7 +170,7 @@ export async function me(req, res, next) {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      include: { cookProfile: true },
+      include: { cookProfile: true, courierProfile: true },
     });
     if (!user) throw httpError(404, 'Користувача не знайдено');
     res.json({ user: publicUser(user) });

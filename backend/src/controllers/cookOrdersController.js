@@ -7,6 +7,7 @@ import { notifyOrderStatus } from '../lib/notify.js';
 const orderInclude = {
   items: true,
   buyer: { select: { fullName: true, phone: true } },
+  courier: { include: { user: { select: { fullName: true, phone: true } } } },
 };
 
 // Allowed forward transitions the cook may perform. After READY a courier

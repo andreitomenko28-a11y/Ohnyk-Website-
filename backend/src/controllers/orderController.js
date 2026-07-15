@@ -7,6 +7,7 @@ const orderInclude = {
   items: true,
   cook: { include: { user: { select: { fullName: true } } } },
   buyer: { select: { fullName: true, phone: true } },
+  courier: { include: { user: { select: { fullName: true, phone: true } } } },
 };
 
 export function serializeOrder(order) {
@@ -23,6 +24,14 @@ export function serializeOrder(order) {
       ? { id: order.cook.id, name: order.cook.displayName || order.cook.user?.fullName || '' }
       : { id: order.cookId },
     buyer: order.buyer ? { name: order.buyer.fullName, phone: order.buyer.phone } : undefined,
+    courier: order.courier
+      ? {
+          id: order.courier.id,
+          name: order.courier.user?.fullName || '',
+          phone: order.courier.user?.phone || null,
+          transport: order.courier.transport,
+        }
+      : null,
     items: (order.items ?? []).map((i) => ({
       id: i.id,
       dishId: i.dishId,

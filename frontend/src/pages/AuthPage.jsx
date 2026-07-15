@@ -6,7 +6,14 @@ import { apiError } from '../api/client.js';
 import BrandMark from '../components/BrandMark.jsx';
 import LangSwitch from '../components/LangSwitch.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
-import { BagIcon, ChefHatIcon } from '../components/icons.jsx';
+import { BagIcon, ChefHatIcon, CourierIcon } from '../components/icons.jsx';
+
+// Post-auth landing by role.
+function homeFor(role) {
+  if (role === 'COOK') return '/cook';
+  if (role === 'COURIER') return '/courier';
+  return '/';
+}
 
 // Combined Login / Register screen with tab switching — mirrors the mockup.
 export default function AuthPage({ initialTab = 'login' }) {
@@ -79,7 +86,7 @@ function LoginForm() {
     setBusy(true);
     try {
       const u = await login(form.identifier, form.password);
-      navigate(u.role === 'COOK' ? '/cook' : '/');
+      navigate(homeFor(u.role));
     } catch (err) {
       setError(apiError(err));
     } finally {
@@ -139,22 +146,33 @@ function RegisterForm() {
     kitchenAddress: '',
     deliveryZone: '',
     bio: '',
+    transport: 'BICYCLE',
   });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const isCook = role === 'COOK';
+  const isCourier = role === 'COURIER';
 
   async function onSubmit(e) {
     e.preventDefault();
     setError('');
     setBusy(true);
     try {
-      // Only send cook fields for cooks.
+      const base = {
+        fullName: form.fullName,
+        email: form.email,
+        phone: form.phone,
+        password: form.password,
+        role,
+      };
+      // Only send role-specific fields for that role.
       const payload = isCook
-        ? { ...form, role }
-        : { fullName: form.fullName, email: form.email, phone: form.phone, password: form.password, role };
+        ? { ...base, kitchenAddress: form.kitchenAddress, deliveryZone: form.deliveryZone, bio: form.bio }
+        : isCourier
+          ? { ...base, transport: form.transport }
+          : base;
       const u = await register(payload);
-      navigate(u.role === 'COOK' ? '/cook' : '/');
+      navigate(homeFor(u.role));
     } catch (err) {
       setError(apiError(err));
     } finally {
@@ -165,7 +183,7 @@ function RegisterForm() {
   return (
     <form onSubmit={onSubmit} className="animate-[fade_.3s_ease]">
       <label className="field-label">{t('roleLabel')}</label>
-      <div className="mb-5 flex gap-2.5">
+      <div className="mb-5 flex gap-2">
         <RoleOption
           selected={role === 'CUSTOMER'}
           onClick={() => setRole('CUSTOMER')}
@@ -179,6 +197,13 @@ function RegisterForm() {
           Icon={ChefHatIcon}
           label={t('roleCook')}
           sub={t('roleCookSub')}
+        />
+        <RoleOption
+          selected={role === 'COURIER'}
+          onClick={() => setRole('COURIER')}
+          Icon={CourierIcon}
+          label={t('roleCourier')}
+          sub={t('roleCourierSub')}
         />
       </div>
 
@@ -209,8 +234,28 @@ function RegisterForm() {
         placeholder="+380"
         value={form.phone}
         onChange={(e) => setForm({ ...form, phone: e.target.value })}
-        required={isCook}
+        required={isCook || isCourier}
       />
+
+      {isCourier && (
+        <div className="animate-[fade_.25s_ease]">
+          <label className="field-label">{t('transportLabel')}</label>
+          <div className="mb-1 flex gap-2">
+            {['WALKING', 'BICYCLE', 'CAR'].map((tr) => (
+              <button
+                key={tr}
+                type="button"
+                onClick={() => setForm({ ...form, transport: tr })}
+                className={`flex-1 rounded-xl border-[1.5px] px-2 py-2.5 text-[13px] font-semibold transition-all ${
+                  form.transport === tr ? 'border-ember bg-ember/[0.06] text-ember-dark' : 'border-line text-[color:var(--muted)]'
+                }`}
+              >
+                {t(`transport${tr}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {isCook && (
         <div className="animate-[fade_.25s_ease]">
