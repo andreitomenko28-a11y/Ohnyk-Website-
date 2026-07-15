@@ -7,6 +7,7 @@ import addressRoutes from './routes/addresses.js';
 import cookRoutes from './routes/cooks.js';
 import cookAccountRoutes from './routes/cook.js';
 import adminRoutes from './routes/admin.js';
+import documentRoutes from './routes/documents.js';
 import categoryRoutes from './routes/categories.js';
 import cartRoutes from './routes/cart.js';
 import orderRoutes from './routes/orders.js';
@@ -37,7 +38,13 @@ export function createApp() {
     }),
   );
 
-  // Serve uploaded media (cook photos, dish photos, verification docs).
+  // Private PII (ID scans, medical books) must never be served statically —
+  // block those folders and force access through the authenticated
+  // /api/documents route below.
+  app.use(['/uploads/identity', '/uploads/verification'], (req, res) => {
+    res.status(404).json({ error: 'Not found' });
+  });
+  // Serve public uploaded media (cook/dish/kitchen photos & videos).
   app.use('/uploads', express.static(UPLOAD_ROOT));
 
   // Health check.
@@ -52,6 +59,7 @@ export function createApp() {
   app.use('/api/cooks', cookRoutes); // public discovery (plural)
   app.use('/api/cook', cookAccountRoutes); // authenticated cook's own account
   app.use('/api/admin', adminRoutes);
+  app.use('/api/documents', documentRoutes); // authenticated private-doc access
   app.use('/api/categories', categoryRoutes);
   app.use('/api/cart', cartRoutes);
   app.use('/api/orders', orderRoutes);

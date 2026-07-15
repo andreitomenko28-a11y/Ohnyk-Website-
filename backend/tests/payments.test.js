@@ -92,6 +92,24 @@ describe('Payment — MonoPay (Module 4.2)', () => {
     expect(paid.body.orderStatus).toBe('NEW');
   });
 
+  it('does not let a late failure downgrade an already-successful payment', async () => {
+    const { dishId } = await cookWithDish();
+    const { token, orderId } = await buyerWithOrder(dishId);
+    await request.post(`/api/orders/${orderId}/pay`).set(authHeader(token));
+    await request.post(`/api/orders/${orderId}/pay/mock`).set(authHeader(token)).send({ result: 'success' });
+
+    // A stray/duplicate failure callback must be ignored — stays paid.
+    const late = await request
+      .post(`/api/orders/${orderId}/pay/mock`)
+      .set(authHeader(token))
+      .send({ result: 'failure' });
+    expect(late.body.payment.status).toBe('SUCCESS');
+
+    const status = await request.get(`/api/orders/${orderId}/payment`).set(authHeader(token));
+    expect(status.body.payment.status).toBe('SUCCESS');
+    expect(status.body.orderStatus).toBe('NEW');
+  });
+
   it('refuses to pay an order that is already paid', async () => {
     const { dishId } = await cookWithDish();
     const { token, orderId } = await buyerWithOrder(dishId);

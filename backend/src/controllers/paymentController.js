@@ -13,7 +13,16 @@ import {
 async function applyPaymentResult({ payment, monoStatus, transactionId, raw }) {
   const mapped = mapInvoiceStatus(monoStatus);
 
-  const order = await prisma.$transaction(async (tx) => {
+  const { order, effective } = await prisma.$transaction(async (tx) => {
+    const cur = await tx.payment.findUnique({ where: { id: payment.id } });
+    if (!cur) return { order: null, effective: mapped.payment };
+
+    // Never let a late/duplicate/out-of-order callback downgrade a completed
+    // payment. A SUCCESS may only progress to REFUNDED (a reversal).
+    if (cur.status === 'SUCCESS' && mapped.payment !== 'SUCCESS' && mapped.payment !== 'REFUNDED') {
+      return { order: null, effective: cur.status };
+    }
+
     await tx.payment.update({
       where: { id: payment.id },
       data: {
@@ -36,17 +45,17 @@ async function applyPaymentResult({ payment, monoStatus, transactionId, raw }) {
           },
         });
         await tx.orderEvent.create({ data: { orderId: payment.orderId, status: 'NEW' } });
-        return updated;
+        return { order: updated, effective: mapped.payment };
       }
     }
-    return null;
+    return { order: null, effective: mapped.payment };
   });
 
   // Notify the cook outside the transaction (best-effort).
   if (order) {
     await notifyNewOrder({ cook: order.cook, order }).catch(() => {});
   }
-  return mapped;
+  return { payment: effective, paid: mapped.paid && effective === 'SUCCESS' };
 }
 
 // POST /api/orders/:id/pay — create (or reuse) a MonoPay invoice for an order.

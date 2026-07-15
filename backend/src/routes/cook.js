@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authGuard, requireRole } from '../middleware/authGuard.js';
 import { loadCook, requireActiveCook } from '../middleware/cookGuard.js';
-import { imageUpload, docUpload, videoUpload, handleUploadError } from '../lib/upload.js';
+import { imageUpload, docUpload, videoUpload, handleUploadError, verifyFileSignature } from '../lib/upload.js';
 import {
   getMyCookProfile,
   updateMyCookProfile,
@@ -36,7 +36,7 @@ router.use(authGuard, requireRole('COOK'), loadCook);
 
 router.get('/me', getMyCookProfile);
 router.put('/profile', updateMyCookProfile);
-router.post('/profile/photo', imageUpload.single('photo'), handleUploadError, uploadProfilePhoto);
+router.post('/profile/photo', imageUpload.single('photo'), handleUploadError, verifyFileSignature, uploadProfilePhoto);
 
 // Phone verification (stub provider — see lib/sms.js).
 router.post('/verification/phone/request', requestPhoneVerification);
@@ -47,6 +47,7 @@ router.post(
   '/verification/document',
   docUpload.single('document'),
   handleUploadError,
+  verifyFileSignature,
   uploadVerificationDocument,
 );
 
@@ -55,12 +56,13 @@ router.post(
   '/verification/identity',
   docUpload.single('document'),
   handleUploadError,
+  verifyFileSignature,
   uploadIdentityDocument,
 );
 
 // Optional kitchen photo & video — build buyer trust.
-router.post('/kitchen/photo', imageUpload.single('photo'), handleUploadError, uploadKitchenPhoto);
-router.post('/kitchen/video', videoUpload.single('video'), handleUploadError, uploadKitchenVideo);
+router.post('/kitchen/photo', imageUpload.single('photo'), handleUploadError, verifyFileSignature, uploadKitchenPhoto);
+router.post('/kitchen/video', videoUpload.single('video'), handleUploadError, verifyFileSignature, uploadKitchenVideo);
 
 // --- Menu management (Module 3.2) ------------------------------------------
 // Viewing the own menu is allowed while pending; publishing/editing requires a
@@ -74,6 +76,7 @@ router.post(
   requireActiveCook,
   imageUpload.array('photos', 8),
   handleUploadError,
+  verifyFileSignature,
   addDishPhotos,
 );
 router.delete('/dishes/:id/photos/:photoId', requireActiveCook, deleteDishPhoto);

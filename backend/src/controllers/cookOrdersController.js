@@ -86,7 +86,11 @@ export async function updateOrderStatus(req, res, next) {
   }
 }
 
-// GET /api/cook/stats — simple dashboard stats.
+// Orders excluded from revenue/volume stats (unpaid + cancelled).
+const STATS_EXCLUDED = ['CANCELLED', 'AWAITING_PAYMENT'];
+
+// GET /api/cook/stats — dashboard stats, aggregated in the database so a cook
+// with a large order history doesn't have to be loaded into memory.
 export async function cookStats(req, res, next) {
   try {
     const cookId = req.cook.id;
@@ -95,37 +99,39 @@ export async function cookStats(req, res, next) {
     const startWeek = new Date(startToday);
     startWeek.setDate(startWeek.getDate() - 6); // last 7 days, inclusive
 
-    const orders = await prisma.order.findMany({ where: { cookId }, include: { items: true } });
-    // Exclude unpaid and cancelled orders from stats.
-    const active = orders.filter((o) => o.status !== 'CANCELLED' && o.status !== 'AWAITING_PAYMENT');
-    // Revenue is the cook's net earnings — after the 10% app commission.
-    const sum = (arr) => Number(arr.reduce((s, o) => s + o.cookPayout, 0).toFixed(2));
+    const activeWhere = { cookId, status: { notIn: STATS_EXCLUDED } };
+    const round = (n) => Number((n || 0).toFixed(2));
+    // Revenue is the cook's net earnings (cookPayout) — after the app commission.
+    const agg = (where) =>
+      prisma.order.aggregate({ where, _count: { _all: true }, _sum: { cookPayout: true } });
 
-    const todayOrders = active.filter((o) => o.createdAt >= startToday);
-    const weekOrders = active.filter((o) => o.createdAt >= startWeek);
+    const [total, today, week, statusGroups, dishGroups] = await Promise.all([
+      agg(activeWhere),
+      agg({ ...activeWhere, createdAt: { gte: startToday } }),
+      agg({ ...activeWhere, createdAt: { gte: startWeek } }),
+      prisma.order.groupBy({ by: ['status'], where: { cookId }, _count: { _all: true } }),
+      prisma.orderItem.groupBy({
+        by: ['nameSnapshot'],
+        where: { order: { is: activeWhere } },
+        _sum: { quantity: true },
+        orderBy: { _sum: { quantity: 'desc' } },
+        take: 5,
+      }),
+    ]);
 
-    // Top dishes by quantity across non-cancelled orders.
-    const counts = {};
-    for (const o of active) {
-      for (const i of o.items) counts[i.nameSnapshot] = (counts[i.nameSnapshot] || 0) + i.quantity;
-    }
-    const topDishes = Object.entries(counts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([name, qty]) => ({ name, qty }));
-
-    // Counts by status (for dashboard badges).
     const byStatus = {};
-    for (const o of orders) byStatus[o.status] = (byStatus[o.status] || 0) + 1;
+    for (const g of statusGroups) byStatus[g.status] = g._count._all;
+
+    const topDishes = dishGroups.map((g) => ({ name: g.nameSnapshot, qty: g._sum.quantity || 0 }));
 
     res.json({
       newCount: byStatus.NEW || 0,
-      ordersToday: todayOrders.length,
-      ordersWeek: weekOrders.length,
-      ordersTotal: active.length,
-      revenueToday: sum(todayOrders),
-      revenueWeek: sum(weekOrders),
-      revenueTotal: sum(active),
+      ordersToday: today._count._all,
+      ordersWeek: week._count._all,
+      ordersTotal: total._count._all,
+      revenueToday: round(today._sum.cookPayout),
+      revenueWeek: round(week._sum.cookPayout),
+      revenueTotal: round(total._sum.cookPayout),
       topDishes,
       byStatus,
     });

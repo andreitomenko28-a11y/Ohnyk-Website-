@@ -118,7 +118,7 @@ export async function confirmPhoneVerification(req, res, next) {
 export async function uploadVerificationDocument(req, res, next) {
   try {
     if (!req.file) throw httpError(400, 'Файл документа не надано');
-    const url = await saveDocument(req.file.buffer, 'verification', req.file.originalname);
+    const url = await saveDocument(req.file.buffer, 'verification', req.file.originalname, { private: true });
     const prev = req.cook.verificationDocUrl;
     const cook = await prisma.cook.update({
       where: { id: req.cook.id },
@@ -139,7 +139,7 @@ export async function uploadVerificationDocument(req, res, next) {
 export async function uploadIdentityDocument(req, res, next) {
   try {
     if (!req.file) throw httpError(400, 'Файл документа не надано');
-    const url = await saveDocument(req.file.buffer, 'identity', req.file.originalname);
+    const url = await saveDocument(req.file.buffer, 'identity', req.file.originalname, { private: true });
     const prev = req.cook.identityDocUrl;
     const cook = await prisma.cook.update({
       where: { id: req.cook.id },
