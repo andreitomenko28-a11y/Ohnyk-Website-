@@ -94,6 +94,7 @@ model User {
   cart           Cart?
   passwordResets PasswordReset[]
   orders         Order[] // orders placed as a buyer
+  reviews        Review[] // reviews written as a buyer
 }
 
 model Cook {
@@ -126,8 +127,9 @@ model Cook {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  dishes Dish[]
-  orders Order[] // incoming orders for this cook
+  dishes  Dish[]
+  orders  Order[] // incoming orders for this cook
+  reviews Review[]
 }
 
 model Address {
@@ -241,11 +243,33 @@ model Order {
 
   items  OrderItem[]
   events OrderEvent[]
+  review Review? // buyer's review, once delivered
 
   @@index([cookId, status])
   @@index([buyerId])
   @@index([courierId, status])
   @@index([status])
+}
+
+// A buyer's review of a cook, tied to a delivered order (verified purchase).
+// One review per order; it aggregates into Cook.rating / Cook.reviewCount.
+model Review {
+  id        String   @id @default(uuid())
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  cookId    String
+  cook      Cook     @relation(fields: [cookId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  rating    Int // 1..5
+  comment   String? // optional free text
+  reply     String? // optional cook response (Module 5.3)
+  repliedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([cookId])
+  @@index([authorId])
 }
 
 // Append-only status history for an order (the delivery timeline).

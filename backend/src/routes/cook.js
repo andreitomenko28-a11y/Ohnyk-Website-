@@ -27,6 +27,7 @@ import {
   updateOrderStatus,
   cookStats,
 } from '../controllers/cookOrdersController.js';
+import { listOwnReviews, replyToReview, deleteReply } from '../controllers/reviewController.js';
 
 // All routes here operate on the *authenticated* cook's own account.
 // (Public discovery lives under /api/cooks — plural.)
@@ -86,5 +87,10 @@ router.get('/orders', requireActiveCook, listCookOrders);
 router.get('/stats', requireActiveCook, cookStats);
 router.get('/orders/:id', requireActiveCook, getCookOrder);
 router.patch('/orders/:id/status', requireActiveCook, updateOrderStatus);
+
+// --- Reviews: the cook's own reviews + replies (Module 5.3) -----------------
+router.get('/reviews', requireActiveCook, listOwnReviews);
+router.post('/reviews/:id/reply', requireActiveCook, replyToReview);
+router.delete('/reviews/:id/reply', requireActiveCook, deleteReply);
 
 export default router;

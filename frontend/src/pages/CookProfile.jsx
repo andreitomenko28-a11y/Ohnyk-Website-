@@ -5,6 +5,7 @@ import api from '../api/client.js';
 import Menu from '../components/Menu.jsx';
 import FavoriteButton from '../components/FavoriteButton.jsx';
 import { VerifiedBadge, Star, MapPinIcon } from '../components/icons.jsx';
+import CookReviews from '../components/CookReviews.jsx';
 import { useCart } from '../context/CartContext.jsx';
 
 // Cook detail: header card + grouped menu.
@@ -106,6 +107,8 @@ export default function CookProfile() {
         ) : (
           <Menu menu={menu} onConflict={(dish, message) => setConflict({ dish, message })} />
         )}
+
+        <CookReviews cookId={cook.id} />
       </div>
 
       {/* Cross-cook conflict sheet */}

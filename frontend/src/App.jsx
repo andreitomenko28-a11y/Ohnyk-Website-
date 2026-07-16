@@ -11,6 +11,7 @@ import HomePage from './pages/HomePage.jsx';
 import CookOnboarding from './pages/CookOnboarding.jsx';
 import CookMenu from './pages/CookMenu.jsx';
 import CookOrders from './pages/CookOrders.jsx';
+import CookReviewsPage from './pages/CookReviews.jsx';
 import CourierDashboard from './pages/CourierDashboard.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 import Discovery from './pages/Discovery.jsx';
@@ -89,6 +90,7 @@ export default function App() {
                 <Route path="/cook" element={<CookProtected><CookOnboarding /></CookProtected>} />
                 <Route path="/cook/menu" element={<CookProtected><CookMenu /></CookProtected>} />
                 <Route path="/cook/orders" element={<CookProtected><CookOrders /></CookProtected>} />
+                <Route path="/cook/reviews" element={<CookProtected><CookReviewsPage /></CookProtected>} />
 
                 <Route path="/courier" element={<CourierProtected><CourierDashboard /></CourierProtected>} />
 

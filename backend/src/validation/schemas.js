@@ -229,3 +229,24 @@ export const listOrdersSchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 });
 
+// --- Phase 5: reviews & ratings ---------------------------------------------
+
+export const createReviewSchema = z.object({
+  rating: z.coerce.number().int().min(1, 'Оцінка від 1 до 5').max(5, 'Оцінка від 1 до 5'),
+  comment: z
+    .string()
+    .trim()
+    .max(1000, 'Коментар задовгий')
+    .optional()
+    .or(z.literal('').transform(() => undefined)),
+});
+
+export const listReviewsSchema = z.object({
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+export const reviewReplySchema = z.object({
+  reply: z.string().trim().min(1, 'Відповідь не може бути порожньою').max(1000, 'Відповідь задовга'),
+});
+

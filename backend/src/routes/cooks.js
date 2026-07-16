@@ -7,6 +7,7 @@ import {
   listCookDishes,
   getCookMenu,
 } from '../controllers/cookController.js';
+import { listCookReviews } from '../controllers/reviewController.js';
 
 const router = Router();
 
@@ -16,6 +17,7 @@ router.get('/search', searchCooks);
 router.get('/filter', filterCooks);
 router.get('/:cookId/menu', getCookMenu);
 router.get('/:cookId/dishes', listCookDishes);
+router.get('/:id/reviews', listCookReviews); // public review list
 router.get('/:id', getCook);
 
 export default router;
