@@ -121,10 +121,6 @@ export async function login(req, res, next) {
     const { identifier, password } = loginSchema.parse(req.body);
     const isEmail = identifier.includes('@');
 
-    // TEMP DEBUG — remove after auth issue resolved.
-    console.log('[LOGIN DEBUG] identifier=%j len=%d codes=%o', identifier, identifier.length, [...identifier].map((c) => c.charCodeAt(0)));
-    console.log('[LOGIN DEBUG] password len=%d codes=%o', password.length, [...password].map((c) => c.charCodeAt(0)));
-
     const user = await prisma.user.findFirst({
       where: isEmail
         ? { email: identifier.toLowerCase() }
@@ -133,13 +129,9 @@ export async function login(req, res, next) {
     });
 
     // Same generic message whether user is missing or password is wrong.
-    if (!user) {
-      console.log('[LOGIN DEBUG] user NOT FOUND for', identifier);
-      throw httpError(401, 'Невірний email/телефон або пароль');
-    }
+    if (!user) throw httpError(401, 'Невірний email/телефон або пароль');
 
     const ok = await bcrypt.compare(password, user.passwordHash);
-    console.log('[LOGIN DEBUG] user found=%s bcrypt match=%s', user.email, ok);
     if (!ok) throw httpError(401, 'Невірний email/телефон або пароль');
 
     const tokens = issueTokens(user);
