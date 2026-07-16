@@ -10,6 +10,7 @@ const orderInclude = {
   buyer: { select: { fullName: true, phone: true } },
   courier: { include: { user: { select: { fullName: true, phone: true } } } },
   events: { orderBy: { createdAt: 'asc' } },
+  review: true,
 };
 
 export function serializeOrder(order) {
@@ -30,6 +31,11 @@ export function serializeOrder(order) {
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
     timeline: (order.events ?? []).map((e) => ({ status: e.status, at: e.createdAt })),
+    // Buyer's own review + whether they may leave one (delivered, not yet reviewed).
+    review: order.review
+      ? { id: order.review.id, rating: order.review.rating, comment: order.review.comment, reply: order.review.reply }
+      : null,
+    canReview: order.status === 'DELIVERED' && !order.review,
     cook: order.cook
       ? { id: order.cook.id, name: order.cook.displayName || order.cook.user?.fullName || '' }
       : { id: order.cookId },

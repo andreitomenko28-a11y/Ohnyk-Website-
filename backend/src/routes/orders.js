@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authGuard } from '../middleware/authGuard.js';
 import { checkout, listMyOrders, getMyOrder, deliverySlots } from '../controllers/orderController.js';
 import { initPayment, getPaymentStatus, mockComplete } from '../controllers/paymentController.js';
+import { upsertReview, deleteReview } from '../controllers/reviewController.js';
 
 // Buyer-facing orders (checkout + history). Any authenticated user may buy.
 const router = Router();
@@ -17,5 +18,9 @@ router.get('/:id', getMyOrder);
 router.post('/:id/pay', initPayment);
 router.get('/:id/payment', getPaymentStatus);
 router.post('/:id/pay/mock', mockComplete);
+
+// Reviews (Module 5.1) — verified purchase: one review per delivered order.
+router.post('/:id/review', upsertReview);
+router.delete('/:id/review', deleteReview);
 
 export default router;

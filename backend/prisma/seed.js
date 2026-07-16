@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
 import { computePricing } from '../src/lib/pricing.js';
+import { recomputeCookRating } from '../src/lib/reviews.js';
 
 const prisma = new PrismaClient();
 
@@ -278,11 +279,48 @@ async function main() {
     orderCount += 1;
   }
 
+  // --- Phase 5: demo reviews (verified purchases) ---------------------------
+  const reviewData = [
+    { name: 'Марія Іваненко', email: 'maria@example.com', rating: 5, comment: 'Борщ як у бабусі! Приїхало гаряченьким, дуже смачно.' },
+    { name: 'Олег Петренко', email: 'oleg@example.com', rating: 5, comment: 'Найкращі вареники в Черкасах. Замовлятиму ще!' },
+    { name: 'Ірина Коваль', email: 'iryna@example.com', rating: 4, comment: 'Смачно, порції великі. Доставка трохи затрималась.' },
+  ];
+  let reviewCount = 0;
+  for (const rv of reviewData) {
+    const reviewer = await prisma.user.upsert({
+      where: { email: rv.email },
+      update: { fullName: rv.name },
+      create: { email: rv.email, passwordHash, fullName: rv.name, role: 'CUSTOMER' },
+    });
+    const dish = oksanaDishes[0];
+    const p = computePricing(dish.price);
+    const order = await prisma.order.create({
+      data: {
+        buyerId: reviewer.id,
+        cookId: oksanaCookId,
+        status: 'DELIVERED',
+        addressText,
+        subtotal: p.subtotal,
+        serviceFee: p.serviceFee,
+        total: p.total,
+        cookPayout: p.cookPayout,
+        commission: p.commission,
+        items: { create: [{ dishId: dish.id, nameSnapshot: dish.name, priceSnapshot: dish.price, quantity: 1 }] },
+        payment: { create: { status: 'SUCCESS', amount: p.total, provider: 'monopay' } },
+        review: { create: { cookId: oksanaCookId, authorId: reviewer.id, rating: rv.rating, comment: rv.comment } },
+      },
+    });
+    void order;
+    reviewCount += 1;
+  }
+  await recomputeCookRating(oksanaCookId);
+
   console.log('Seeded categories:', Object.keys(categories).length);
   console.log('Seeded admin:', admin.email);
   console.log('Seeded customer:', customer.email);
   console.log('Seeded cooks:', summary.join(', '));
   console.log('Seeded demo orders for Оксана:', orderCount);
+  console.log('Seeded demo reviews for Оксана:', reviewCount);
   console.log('Password for everyone: password123');
 }
 
