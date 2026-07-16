@@ -122,3 +122,53 @@ describe('Reviews & ratings (Module 5.1)', () => {
     expect(list.body.reviews[0].author.name).toBeTruthy();
   });
 });
+
+describe('Cook replies to reviews (Module 5.3)', () => {
+  it('lets the cook list, reply to, and clear a reply on their own review', async () => {
+    const { cookToken, cookId, dishId } = await cookWithDish();
+    const { buyerToken, orderId } = await deliveredOrder(cookToken, dishId);
+    const created = await request.post(`/api/orders/${orderId}/review`).set(authHeader(buyerToken)).send({ rating: 5, comment: 'Смачно' });
+    const reviewId = created.body.review.id;
+
+    // Cook sees it in their own review list.
+    const own = await request.get('/api/cook/reviews').set(authHeader(cookToken));
+    expect(own.body.total).toBe(1);
+    expect(own.body.reviews[0].id).toBe(reviewId);
+
+    // Cook replies.
+    const reply = await request.post(`/api/cook/reviews/${reviewId}/reply`).set(authHeader(cookToken)).send({ reply: 'Дякуємо!' });
+    expect(reply.status).toBe(200);
+    expect(reply.body.review.reply).toBe('Дякуємо!');
+
+    // The reply is visible on the public list.
+    const pub = await request.get(`/api/cooks/${cookId}/reviews`);
+    expect(pub.body.reviews[0].reply).toBe('Дякуємо!');
+
+    // Cook clears the reply.
+    const del = await request.delete(`/api/cook/reviews/${reviewId}/reply`).set(authHeader(cookToken));
+    expect(del.status).toBe(204);
+    const after = await request.get(`/api/cooks/${cookId}/reviews`);
+    expect(after.body.reviews[0].reply).toBe(null);
+  });
+
+  it('forbids a cook from replying to another cook’s review', async () => {
+    const a = await cookWithDish();
+    const { buyerToken, orderId } = await deliveredOrder(a.cookToken, a.dishId);
+    const created = await request.post(`/api/orders/${orderId}/review`).set(authHeader(buyerToken)).send({ rating: 4 });
+    const other = await registerActiveCook();
+
+    const res = await request
+      .post(`/api/cook/reviews/${created.body.review.id}/reply`)
+      .set(authHeader(other.accessToken))
+      .send({ reply: 'Не моє' });
+    expect(res.status).toBe(404);
+  });
+
+  it('rejects an empty reply', async () => {
+    const { cookToken, dishId } = await cookWithDish();
+    const { buyerToken, orderId } = await deliveredOrder(cookToken, dishId);
+    const created = await request.post(`/api/orders/${orderId}/review`).set(authHeader(buyerToken)).send({ rating: 5 });
+    const res = await request.post(`/api/cook/reviews/${created.body.review.id}/reply`).set(authHeader(cookToken)).send({ reply: '' });
+    expect(res.status).toBe(400);
+  });
+});

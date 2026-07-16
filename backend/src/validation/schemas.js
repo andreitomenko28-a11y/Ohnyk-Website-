@@ -246,3 +246,7 @@ export const listReviewsSchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 });
 
+export const reviewReplySchema = z.object({
+  reply: z.string().trim().min(1, 'Відповідь не може бути порожньою').max(1000, 'Відповідь задовга'),
+});
+

@@ -1,6 +1,6 @@
 import { prisma } from '../lib/prisma.js';
 import { httpError } from '../middleware/errorHandler.js';
-import { createReviewSchema, listReviewsSchema } from '../validation/schemas.js';
+import { createReviewSchema, listReviewsSchema, reviewReplySchema } from '../validation/schemas.js';
 import { recomputeCookRating } from '../lib/reviews.js';
 
 export function serializeReview(r) {
@@ -83,6 +83,66 @@ export async function listCookReviews(req, res, next) {
       limit,
       offset,
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// --- Cook side (Module 5.3) -------------------------------------------------
+
+// GET /api/cook/reviews — the authenticated cook's own reviews.
+export async function listOwnReviews(req, res, next) {
+  try {
+    const { limit, offset } = listReviewsSchema.parse(req.query);
+    const where = { cookId: req.cook.id };
+    const [reviews, total, agg] = await Promise.all([
+      prisma.review.findMany({
+        where,
+        include: { author: { select: { fullName: true } } },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset,
+      }),
+      prisma.review.count({ where }),
+      prisma.review.aggregate({ where, _avg: { rating: true } }),
+    ]);
+    res.json({
+      reviews: reviews.map(serializeReview),
+      total,
+      average: agg._avg.rating ? Number(agg._avg.rating.toFixed(1)) : 0,
+      limit,
+      offset,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/cook/reviews/:id/reply — reply to a review on the cook's own cook.
+export async function replyToReview(req, res, next) {
+  try {
+    const { reply } = reviewReplySchema.parse(req.body);
+    const review = await prisma.review.findUnique({ where: { id: req.params.id } });
+    if (!review || review.cookId !== req.cook.id) throw httpError(404, 'Відгук не знайдено');
+
+    const updated = await prisma.review.update({
+      where: { id: review.id },
+      data: { reply, repliedAt: new Date() },
+      include: { author: { select: { fullName: true } } },
+    });
+    res.json({ review: serializeReview(updated) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// DELETE /api/cook/reviews/:id/reply — remove the cook's reply.
+export async function deleteReply(req, res, next) {
+  try {
+    const review = await prisma.review.findUnique({ where: { id: req.params.id } });
+    if (!review || review.cookId !== req.cook.id) throw httpError(404, 'Відгук не знайдено');
+    await prisma.review.update({ where: { id: review.id }, data: { reply: null, repliedAt: null } });
+    res.status(204).send();
   } catch (err) {
     next(err);
   }

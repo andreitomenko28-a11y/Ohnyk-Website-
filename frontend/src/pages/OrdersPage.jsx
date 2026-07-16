@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n/index.jsx';
 import api, { apiError } from '../api/client.js';
+import StarRating from '../components/StarRating.jsx';
+import { Star } from '../components/icons.jsx';
 
 const STATUS_STYLE = {
   AWAITING_PAYMENT: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
@@ -104,6 +106,17 @@ export default function OrdersPage() {
                 </div>
                 <div className="shrink-0 pl-3 font-display text-[15px] font-bold">{o.total}₴</div>
               </div>
+              {o.review ? (
+                <div className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-semibold text-[color:var(--muted)]">
+                  <StarRating value={o.review.rating} size="h-3.5 w-3.5" />
+                </div>
+              ) : (
+                o.canReview && (
+                  <div className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-ember/10 px-2 py-1 text-[11.5px] font-semibold text-ember">
+                    <Star className="h-3.5 w-3.5" /> {t('reviewHint')}
+                  </div>
+                )
+              )}
             </button>
           ))
         )}
