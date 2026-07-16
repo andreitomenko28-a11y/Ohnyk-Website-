@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n/index.jsx';
 import api, { apiError } from '../api/client.js';
 import OrderStatusStepper from '../components/OrderStatusStepper.jsx';
+import ReviewCard from '../components/ReviewCard.jsx';
 
 const LIVE = ['COURIER_ASSIGNED', 'PICKED_UP', 'ON_THE_WAY'];
 
@@ -14,25 +15,22 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    let active = true;
-    const load = async () => {
-      try {
-        const { data } = await api.get(`/orders/${id}`);
-        if (active) setOrder(data.order);
-      } catch (err) {
-        if (active) setError(apiError(err));
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
-    load();
-    const t = setInterval(load, 15000);
-    return () => {
-      active = false;
-      clearInterval(t);
-    };
+  const reload = useCallback(async () => {
+    try {
+      const { data } = await api.get(`/orders/${id}`);
+      setOrder(data.order);
+    } catch (err) {
+      setError(apiError(err));
+    } finally {
+      setLoading(false);
+    }
   }, [id]);
+
+  useEffect(() => {
+    reload();
+    const timer = setInterval(reload, 15000);
+    return () => clearInterval(timer);
+  }, [reload]);
 
   if (loading) return <div className="py-16 text-center text-sm text-[color:var(--muted)]">{t('loading')}</div>;
   if (error || !order) return <div className="py-16 text-center text-sm text-[color:var(--muted)]">{error || t('error')}</div>;
@@ -112,6 +110,11 @@ export default function OrderDetailPage() {
           <div className="rounded-lg bg-elevated px-3 py-2.5 text-[12.5px] text-[color:var(--muted)]">
             {t('orderNote')}: {order.note}
           </div>
+        )}
+
+        {/* Review (delivered orders only) */}
+        {order.status === 'DELIVERED' && (
+          <ReviewCard orderId={order.id} review={order.review} cookName={order.cook?.name} onChange={reload} />
         )}
       </div>
     </div>
