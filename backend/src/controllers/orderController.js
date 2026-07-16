@@ -31,11 +31,13 @@ export function serializeOrder(order) {
     createdAt: order.createdAt,
     updatedAt: order.updatedAt,
     timeline: (order.events ?? []).map((e) => ({ status: e.status, at: e.createdAt })),
-    // Buyer's own review + whether they may leave one (delivered, not yet reviewed).
+    // Buyer's own review + whether they may leave one (delivered, not yet
+    // reviewed). Only meaningful when the review relation was loaded — for
+    // cook/courier serializations it isn't, so canReview stays false there.
     review: order.review
       ? { id: order.review.id, rating: order.review.rating, comment: order.review.comment, reply: order.review.reply }
       : null,
-    canReview: order.status === 'DELIVERED' && !order.review,
+    canReview: order.review !== undefined && order.status === 'DELIVERED' && !order.review,
     cook: order.cook
       ? { id: order.cook.id, name: order.cook.displayName || order.cook.user?.fullName || '' }
       : { id: order.cookId },

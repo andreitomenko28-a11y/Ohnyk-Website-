@@ -60,29 +60,34 @@ export async function deleteReview(req, res, next) {
   }
 }
 
+// Shared paginated review listing (public cook profile + cook's own page).
+async function listReviewsForCook(cookId, query) {
+  const { limit, offset } = listReviewsSchema.parse(query);
+  const where = { cookId };
+  const [reviews, total, agg] = await Promise.all([
+    prisma.review.findMany({
+      where,
+      include: { author: { select: { fullName: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
+    }),
+    prisma.review.count({ where }),
+    prisma.review.aggregate({ where, _avg: { rating: true } }),
+  ]);
+  return {
+    reviews: reviews.map(serializeReview),
+    total,
+    average: agg._avg.rating ? Number(agg._avg.rating.toFixed(1)) : 0,
+    limit,
+    offset,
+  };
+}
+
 // GET /api/cooks/:id/reviews — public, paginated, newest first.
 export async function listCookReviews(req, res, next) {
   try {
-    const { limit, offset } = listReviewsSchema.parse(req.query);
-    const where = { cookId: req.params.id };
-    const [reviews, total, agg] = await Promise.all([
-      prisma.review.findMany({
-        where,
-        include: { author: { select: { fullName: true } } },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip: offset,
-      }),
-      prisma.review.count({ where }),
-      prisma.review.aggregate({ where, _avg: { rating: true } }),
-    ]);
-    res.json({
-      reviews: reviews.map(serializeReview),
-      total,
-      average: agg._avg.rating ? Number(agg._avg.rating.toFixed(1)) : 0,
-      limit,
-      offset,
-    });
+    res.json(await listReviewsForCook(req.params.id, req.query));
   } catch (err) {
     next(err);
   }
@@ -93,26 +98,7 @@ export async function listCookReviews(req, res, next) {
 // GET /api/cook/reviews — the authenticated cook's own reviews.
 export async function listOwnReviews(req, res, next) {
   try {
-    const { limit, offset } = listReviewsSchema.parse(req.query);
-    const where = { cookId: req.cook.id };
-    const [reviews, total, agg] = await Promise.all([
-      prisma.review.findMany({
-        where,
-        include: { author: { select: { fullName: true } } },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip: offset,
-      }),
-      prisma.review.count({ where }),
-      prisma.review.aggregate({ where, _avg: { rating: true } }),
-    ]);
-    res.json({
-      reviews: reviews.map(serializeReview),
-      total,
-      average: agg._avg.rating ? Number(agg._avg.rating.toFixed(1)) : 0,
-      limit,
-      offset,
-    });
+    res.json(await listReviewsForCook(req.cook.id, req.query));
   } catch (err) {
     next(err);
   }

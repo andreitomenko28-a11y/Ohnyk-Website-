@@ -112,9 +112,16 @@ export default function OrderDetailPage() {
           </div>
         )}
 
-        {/* Review (delivered orders only) */}
+        {/* Review (delivered orders only). Keyed on the review so an external
+            change (poll refetch / another tab) re-initialises the form state. */}
         {order.status === 'DELIVERED' && (
-          <ReviewCard orderId={order.id} review={order.review} cookName={order.cook?.name} onChange={reload} />
+          <ReviewCard
+            key={order.review?.id || 'new'}
+            orderId={order.id}
+            review={order.review}
+            cookName={order.cook?.name}
+            onChange={reload}
+          />
         )}
       </div>
     </div>
