@@ -77,6 +77,11 @@ export const dict = {
     myAddresses: 'Мої адреси',
     bio: 'Про себе',
     photoUrl: 'Фото (URL)',
+    photo: 'Фото',
+    choosePhoto: 'Завантажити фото',
+    changePhoto: 'Змінити фото',
+    removePhoto: 'Видалити',
+    photoTooLarge: 'Не вдалося обробити зображення. Спробуйте інше фото.',
     // Addresses
     addressesTitle: 'Адреси',
     addAddress: 'Додати адресу',
@@ -401,6 +406,11 @@ export const dict = {
     myAddresses: 'My addresses',
     bio: 'About',
     photoUrl: 'Photo (URL)',
+    photo: 'Photo',
+    choosePhoto: 'Upload photo',
+    changePhoto: 'Change photo',
+    removePhoto: 'Remove',
+    photoTooLarge: 'Could not process the image. Please try another photo.',
     // Addresses
     addressesTitle: 'Addresses',
     addAddress: 'Add address',

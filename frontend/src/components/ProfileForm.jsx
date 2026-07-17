@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useI18n } from '../i18n/index.jsx';
 import api, { apiError } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { fileToCompressedDataUrl } from '../lib/image.js';
 
 // Inline profile editor. Cooks additionally get bio + city fields.
 export default function ProfileForm({ onDone }) {
@@ -18,6 +19,20 @@ export default function ProfileForm({ onDone }) {
   });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const fileRef = useRef(null);
+
+  async function onPickPhoto(e) {
+    const file = e.target.files?.[0];
+    if (fileRef.current) fileRef.current.value = ''; // allow re-picking the same file
+    if (!file) return;
+    setError('');
+    try {
+      const dataUrl = await fileToCompressedDataUrl(file);
+      setForm((f) => ({ ...f, avatar: dataUrl }));
+    } catch {
+      setError(t('photoTooLarge'));
+    }
+  }
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -50,8 +65,41 @@ export default function ProfileForm({ onDone }) {
       <label className="field-label">{t('phone')}</label>
       <input className="field-input" type="tel" placeholder="+380" value={form.phone} onChange={set('phone')} />
 
-      <label className="field-label">{t('photoUrl')}</label>
-      <input className="field-input" placeholder="https://..." value={form.avatar} onChange={set('avatar')} />
+      <label className="field-label">{t('photo')}</label>
+      <div className="flex items-center gap-3">
+        {form.avatar ? (
+          <img src={form.avatar} alt="" className="h-16 w-16 rounded-full object-cover" />
+        ) : (
+          <div className="grid h-16 w-16 place-items-center rounded-full bg-elevated text-2xl text-[color:var(--muted)]">
+            {(form.fullName || '·').charAt(0).toUpperCase()}
+          </div>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="rounded-xl border-[1.5px] border-[color:var(--line)] px-4 py-2.5 text-[13px] font-semibold"
+          >
+            {form.avatar ? t('changePhoto') : t('choosePhoto')}
+          </button>
+          {form.avatar && (
+            <button
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, avatar: '' }))}
+              className="rounded-xl px-3 py-2.5 text-[13px] font-semibold text-red-500 hover:underline"
+            >
+              {t('removePhoto')}
+            </button>
+          )}
+        </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={onPickPhoto}
+        />
+      </div>
 
       {isCook && (
         <>
