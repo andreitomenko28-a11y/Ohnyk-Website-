@@ -153,7 +153,7 @@ export const dict = {
     uploadDoc: 'Завантажити документ',
     changeDoc: 'Замінити документ',
     saveProfile: 'Зберегти профіль',
-    profileSaved: 'Збережено',
+    notSet: 'Не вказано',
     verifyPendingNote:
       'Профіль на перевірці. Публікація меню та отримання замовлень стануть доступні після підтвердження адміністратором.',
     verifyVerifiedNote:
@@ -482,7 +482,7 @@ export const dict = {
     uploadDoc: 'Upload document',
     changeDoc: 'Replace document',
     saveProfile: 'Save profile',
-    profileSaved: 'Saved',
+    notSet: 'Not set',
     verifyPendingNote:
       'Your profile is under review. Publishing a menu and receiving orders unlock once an admin approves it.',
     verifyVerifiedNote:
