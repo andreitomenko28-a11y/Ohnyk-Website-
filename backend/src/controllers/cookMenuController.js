@@ -6,7 +6,9 @@ import { createDishSchema, updateDishSchema } from '../validation/schemas.js';
 const MAX_PHOTOS = 8;
 
 const dishInclude = {
-  category: { select: { id: true, name: true, slug: true, emoji: true } },
+  category: {
+    select: { id: true, name: true, slug: true, parent: { select: { id: true, name: true, slug: true } } },
+  },
   photos: { orderBy: { sortOrder: 'asc' } },
 };
 
@@ -17,7 +19,9 @@ function serializeDish(dish) {
     description: dish.description,
     price: dish.price,
     image: dish.image, // cover
-    category: dish.category ?? null,
+    category: dish.category
+      ? { id: dish.category.id, name: dish.category.name, slug: dish.category.slug, parent: dish.category.parent ?? null }
+      : null,
     categoryId: dish.categoryId,
     isAvailable: dish.isAvailable,
     availableDays: dish.availableDays ?? [],

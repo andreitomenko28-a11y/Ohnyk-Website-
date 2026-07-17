@@ -89,7 +89,7 @@ export async function filterCooks(req, res, next) {
 
     // Build a dish filter used to select cooks that have a matching dish.
     const dishWhere = { isAvailable: true };
-    if (category) dishWhere.category = { is: { slug: category } };
+    if (category) dishWhere.category = categorySlugWhere(category);
     if (minPrice !== undefined || maxPrice !== undefined) {
       dishWhere.price = {};
       if (minPrice !== undefined) dishWhere.price.gte = minPrice;
@@ -137,19 +137,26 @@ export async function getCook(req, res, next) {
   }
 }
 
+// Match a dish whose subcategory slug equals `slug`, or whose subcategory's
+// parent (top-level category) slug equals `slug` — so tapping a top-level chip
+// returns every dish across its subcategories.
+function categorySlugWhere(slug) {
+  return { is: { OR: [{ slug }, { parent: { is: { slug } } }] } };
+}
+
 // Shared dish loader for menu/dishes endpoints.
 async function loadDishes(cookId, { category, available, limit, offset }) {
   const cook = await prisma.cook.findUnique({ where: { id: cookId } });
   if (!cook) throw httpError(404, 'Кухаря не знайдено');
 
   const where = { cookId };
-  if (category) where.category = { is: { slug: category } };
+  if (category) where.category = categorySlugWhere(category);
   if (available !== undefined) where.isAvailable = available;
 
   const dishes = await prisma.dish.findMany({
     where,
     include: {
-      category: { select: { id: true, name: true, slug: true, emoji: true } },
+      category: { select: { id: true, name: true, slug: true } },
       photos: { orderBy: { sortOrder: 'asc' }, select: { id: true, url: true, sortOrder: true } },
     },
     orderBy: { createdAt: 'asc' },
@@ -184,7 +191,7 @@ export async function getCookMenu(req, res, next) {
       const key = dish.category?.slug ?? 'other';
       if (!groups.has(key)) {
         groups.set(key, {
-          category: dish.category ?? { id: null, name: 'Інше', slug: 'other', emoji: '🍽️' },
+          category: dish.category ?? { id: null, name: 'Інше', slug: 'other' },
           dishes: [],
         });
       }
