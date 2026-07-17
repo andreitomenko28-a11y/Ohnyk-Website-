@@ -5,8 +5,10 @@ import api, { apiError } from '../api/client.js';
 import CourierShell from '../components/CourierShell.jsx';
 import { MapPinIcon, BoxIcon } from '../components/icons.jsx';
 import { getSocket } from '../lib/socket.js';
+import { fileToCompressedDataUrl } from '../lib/image.js';
 
 const LIVE_STATUSES = ['COURIER_ASSIGNED', 'PICKED_UP', 'ON_THE_WAY'];
+const TRANSPORTS = ['WALKING', 'BICYCLE', 'MOTORBIKE', 'CAR'];
 
 const STATUS_STYLE = {
   READY: 'bg-sky-500/15 text-sky-600 dark:text-sky-400',
@@ -174,6 +176,9 @@ export default function CourierDashboard() {
         </button>
       </section>
 
+      {/* Profile — avatar, name, phone, transport */}
+      <CourierProfile t={t} onTransportChange={setTransport} />
+
       {geo !== 'off' && (
         <div
           className={`mb-4 flex items-center gap-2 rounded-lg px-3 py-2 text-[12.5px] font-semibold ${
@@ -303,6 +308,163 @@ function OrderCard({ order, lang, t, children, muted }) {
 
       {children}
     </div>
+  );
+}
+
+// Collapsible courier profile: avatar, name, phone, transport. Saves the user
+// fields via /users/profile and the transport via /courier/status.
+function CourierProfile({ t, onTransportChange }) {
+  const { user, setUser, refreshUser } = useAuth();
+  const fileRef = useRef(null);
+  const initial = () => ({
+    fullName: user.fullName || '',
+    phone: user.phone || '',
+    avatar: user.avatar || '',
+    transport: user.courier?.transport || null,
+  });
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState(initial);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  async function onPickPhoto(e) {
+    const file = e.target.files?.[0];
+    if (fileRef.current) fileRef.current.value = '';
+    if (!file) return;
+    setErr('');
+    try {
+      const dataUrl = await fileToCompressedDataUrl(file);
+      setForm((f) => ({ ...f, avatar: dataUrl }));
+    } catch {
+      setErr(t('photoTooLarge'));
+    }
+  }
+
+  function startEditing() {
+    setForm(initial());
+    setErr('');
+    setEditing(true);
+  }
+
+  function cancel() {
+    setForm(initial());
+    setErr('');
+    setEditing(false);
+  }
+
+  async function save(e) {
+    e.preventDefault();
+    setErr('');
+    setBusy(true);
+    try {
+      const { data } = await api.patch('/users/profile', {
+        fullName: form.fullName,
+        phone: form.phone,
+        avatar: form.avatar,
+      });
+      setUser(data.user);
+      if (form.transport) {
+        await api.patch('/courier/status', { transport: form.transport });
+        onTransportChange?.(form.transport);
+      }
+      await refreshUser();
+      setEditing(false);
+    } catch (e2) {
+      setErr(apiError(e2));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const initialsLetter = (user.fullName || '·').charAt(0).toUpperCase();
+  const avatarNode = (src) =>
+    src ? (
+      <img src={src} alt="" className="h-14 w-14 rounded-full object-cover" />
+    ) : (
+      <div className="grid h-14 w-14 place-items-center rounded-full bg-elevated text-xl text-[color:var(--muted)]">
+        {initialsLetter}
+      </div>
+    );
+
+  const sectionCls = 'mb-5 rounded-card border border-[color:var(--line)] bg-surface p-4 shadow-card';
+
+  if (!editing) {
+    return (
+      <section className={sectionCls}>
+        <div className="flex items-center gap-3">
+          {avatarNode(user.avatar)}
+          <div className="min-w-0 flex-1">
+            <div className="truncate font-display text-[15px] font-bold">{user.fullName}</div>
+            <div className="truncate text-[12.5px] text-[color:var(--muted)]">
+              {user.phone || t('notSet')} ·{' '}
+              {user.courier?.transport ? t(`transport${user.courier.transport}`) : t('courierNoTransport')}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={startEditing}
+            className="shrink-0 rounded-lg border border-[color:var(--line)] px-3.5 py-2 text-[13px] font-semibold transition-colors hover:border-ember hover:text-ember"
+          >
+            {t('editProfile')}
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <form onSubmit={save} className={sectionCls}>
+      <h2 className="mb-4 font-display text-[16px] font-bold">{t('courierProfileTitle')}</h2>
+
+      <label className="field-label">{t('photo')}</label>
+      <div className="flex items-center gap-3">
+        {avatarNode(form.avatar)}
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => fileRef.current?.click()} className="rounded-xl border-[1.5px] border-[color:var(--line)] px-4 py-2.5 text-[13px] font-semibold">
+            {form.avatar ? t('changePhoto') : t('choosePhoto')}
+          </button>
+          {form.avatar && (
+            <button type="button" onClick={() => setForm((f) => ({ ...f, avatar: '' }))} className="rounded-xl px-3 py-2.5 text-[13px] font-semibold text-red-500 hover:underline">
+              {t('removePhoto')}
+            </button>
+          )}
+        </div>
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onPickPhoto} />
+      </div>
+
+      <label className="field-label">{t('name')}</label>
+      <input className="field-input" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} required />
+
+      <label className="field-label">{t('phone')}</label>
+      <input className="field-input" type="tel" placeholder="+380" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+
+      <label className="field-label">{t('transportLabel')}</label>
+      <div className="flex flex-wrap gap-2">
+        {TRANSPORTS.map((tr) => (
+          <button
+            key={tr}
+            type="button"
+            onClick={() => setForm({ ...form, transport: tr })}
+            className={`rounded-xl border-[1.5px] px-4 py-2.5 text-[13px] font-semibold transition-colors ${
+              form.transport === tr ? 'border-ember bg-ember text-white' : 'border-[color:var(--line)] text-fg'
+            }`}
+          >
+            {t(`transport${tr}`)}
+          </button>
+        ))}
+      </div>
+
+      {err && <p className="mt-3 text-[12.5px] text-red-500">{err}</p>}
+
+      <div className="mt-5 flex items-center gap-2.5">
+        <button className="btn-primary !w-auto !px-5" disabled={busy}>
+          {busy ? t('loading') : t('save')}
+        </button>
+        <button type="button" onClick={cancel} disabled={busy} className="rounded-lg border border-[color:var(--line)] px-4 py-2.5 text-[13px] font-semibold text-[color:var(--muted)] disabled:opacity-60">
+          {t('cancel')}
+        </button>
+      </div>
+    </form>
   );
 }
 

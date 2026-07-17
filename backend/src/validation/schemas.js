@@ -22,13 +22,13 @@ export const registerSchema = z
     kitchenAddress: z.string().trim().min(3).max(200).optional(),
     deliveryZone: z.string().trim().max(200).optional(),
     // Optional courier field, applied only when role === 'COURIER'.
-    transport: z.enum(['WALKING', 'BICYCLE', 'CAR']).optional(),
+    transport: z.enum(['WALKING', 'BICYCLE', 'MOTORBIKE', 'CAR']).optional(),
   });
 
 // Courier: toggle availability and choose transport.
 export const courierStatusSchema = z.object({
   status: z.enum(['ONLINE', 'OFFLINE']).optional(),
-  transport: z.enum(['WALKING', 'BICYCLE', 'CAR']).optional(),
+  transport: z.enum(['WALKING', 'BICYCLE', 'MOTORBIKE', 'CAR']).optional(),
 });
 
 // Courier-driven delivery transitions.
