@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useI18n } from '../i18n/index.jsx';
 import api from '../api/client.js';
 import SearchBar from '../components/SearchBar.jsx';
@@ -8,9 +9,14 @@ import CookCard from '../components/CookCard.jsx';
 // Discovery — browse, search and filter cooks.
 export default function Discovery() {
   const { t } = useI18n();
+  const [searchParams] = useSearchParams();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState(null);
-  const [filters, setFilters] = useState({});
+  // Seed the city filter from a ?city= deep link (e.g. the Home city badge).
+  const [filters, setFilters] = useState(() => {
+    const city = searchParams.get('city');
+    return city ? { city } : {};
+  });
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const [cooks, setCooks] = useState([]);

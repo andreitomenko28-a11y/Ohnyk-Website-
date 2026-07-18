@@ -3,8 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n/index.jsx';
 import api, { apiError } from '../api/client.js';
 import AddressCard from '../components/AddressCard.jsx';
+import CitySelect from '../components/CitySelect.jsx';
+import { MVP_CITY } from '../lib/cities.js';
 
-const BLANK = { city: '', street: '', building: '', apartment: '', postalCode: '' };
+const BLANK = { city: MVP_CITY, street: '', building: '', apartment: '', postalCode: '' };
 
 export default function Addresses() {
   const { t } = useI18n();
@@ -104,7 +106,7 @@ export default function Addresses() {
             className="rounded-card border border-[color:var(--line)] bg-surface p-4 shadow-card"
           >
             <label className="field-label">{t('cityLabel')}</label>
-            <input className="field-input" value={form.city} onChange={set('city')} required />
+            <CitySelect value={form.city} onChange={(v) => setForm((f) => ({ ...f, city: v }))} />
             <label className="field-label">{t('street')}</label>
             <input className="field-input" value={form.street} onChange={set('street')} required />
             <div className="flex gap-2.5">
