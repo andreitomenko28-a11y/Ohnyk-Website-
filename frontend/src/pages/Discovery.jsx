@@ -27,10 +27,11 @@ export default function Discovery() {
       let res;
       if (query.trim()) {
         res = await api.get('/cooks/search', { params: { q: query.trim() } });
-      } else if (category || filters.minPrice || filters.maxPrice || filters.minRating) {
+      } else if (category || filters.city || filters.minPrice || filters.maxPrice || filters.minRating) {
         res = await api.get('/cooks/filter', {
           params: {
             ...(category && { category }),
+            ...(filters.city && { city: filters.city }),
             ...(filters.minPrice && { minPrice: filters.minPrice }),
             ...(filters.maxPrice && { maxPrice: filters.maxPrice }),
             ...(filters.minRating && { minRating: filters.minRating }),

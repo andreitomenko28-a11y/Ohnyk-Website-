@@ -3,6 +3,8 @@ import { useI18n } from '../i18n/index.jsx';
 import api, { apiError } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { fileToCompressedDataUrl } from '../lib/image.js';
+import CitySelect from './CitySelect.jsx';
+import { MVP_CITY } from '../lib/cities.js';
 
 // Inline profile editor. Cooks additionally get bio + city fields.
 export default function ProfileForm({ onDone }) {
@@ -15,7 +17,7 @@ export default function ProfileForm({ onDone }) {
     phone: user.phone || '',
     avatar: user.avatar || '',
     bio: user.cook?.bio || '',
-    city: user.cook?.city || '',
+    city: user.cook?.city || MVP_CITY,
   });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -107,7 +109,7 @@ export default function ProfileForm({ onDone }) {
           <input className="field-input" value={form.bio} onChange={set('bio')} />
 
           <label className="field-label">{t('cityLabel')}</label>
-          <input className="field-input" value={form.city} onChange={set('city')} />
+          <CitySelect value={form.city} onChange={(v) => setForm({ ...form, city: v })} />
         </>
       )}
 
