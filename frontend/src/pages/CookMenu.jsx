@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useI18n } from '../i18n/index.jsx';
@@ -130,7 +130,7 @@ function DishCard({ dish, lang, t, onEdit }) {
         </div>
         {dish.category && (
           <span className="mt-0.5 inline-block text-[12px] text-[color:var(--muted)]">
-            {dish.category.emoji} {dish.category.name}
+            {dish.category.parent ? `${dish.category.parent.name} · ${dish.category.name}` : dish.category.name}
           </span>
         )}
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -174,7 +174,25 @@ function DishForm({ dish, categories, t, lang, onClose, onSaved, onDeleted }) {
   const [staged, setStaged] = useState([]); // File objects to upload
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [pickerOpen, setPickerOpen] = useState(false);
   const labels = DAY_LABELS[lang] || DAY_LABELS.uk;
+
+  // Flat id → { name, parentName } index over the category tree, for showing
+  // the current selection as "Category · Dish".
+  const catIndex = useMemo(() => {
+    const m = new Map();
+    for (const root of categories) {
+      m.set(root.id, { name: root.name, parentName: null });
+      for (const ch of root.children || []) m.set(ch.id, { name: ch.name, parentName: root.name });
+    }
+    return m;
+  }, [categories]);
+  const selected = catIndex.get(form.categoryId);
+  const selectionLabel = selected
+    ? selected.parentName
+      ? `${selected.parentName} · ${selected.name}`
+      : selected.name
+    : '';
 
   function toggleDay(d) {
     setForm((f) => ({
@@ -243,6 +261,17 @@ function DishForm({ dish, categories, t, lang, onClose, onSaved, onDeleted }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-6" onClick={onClose}>
+      {pickerOpen && (
+        <DishCategoryPicker
+          tree={categories}
+          t={t}
+          onClose={() => setPickerOpen(false)}
+          onPick={({ categoryId, name }) => {
+            setForm((f) => ({ ...f, categoryId, ...(name ? { name } : {}) }));
+            setPickerOpen(false);
+          }}
+        />
+      )}
       <div
         className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-card border border-[color:var(--line)] bg-surface p-5 shadow-card sm:rounded-card"
         onClick={(e) => e.stopPropagation()}
@@ -259,23 +288,22 @@ function DishForm({ dish, categories, t, lang, onClose, onSaved, onDeleted }) {
           <label className="field-label">{t('dishDesc')}</label>
           <textarea className="field-input min-h-[64px] resize-y" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={1000} />
 
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="field-label">{t('dishPrice')}</label>
-              <input className="field-input" type="number" min="1" step="1" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
-            </div>
-            <div className="flex-1">
-              <label className="field-label">{t('dishCategory')}</label>
-              <select className="field-input" value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })}>
-                <option value="">{t('noCategory')}</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.emoji} {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+          <label className="field-label">{t('dishPrice')}</label>
+          <input className="field-input" type="number" min="1" step="1" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
+
+          <label className="field-label">{t('categoryAndDish')}</label>
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            className="field-input flex items-center justify-between gap-2 text-left"
+          >
+            <span className={selectionLabel ? 'truncate' : 'text-[color:var(--muted)]'}>
+              {selectionLabel || t('notChosen')}
+            </span>
+            <span className="shrink-0 text-[13px] font-semibold text-ember">
+              {selectionLabel ? t('changeSelection') : '+'}
+            </span>
+          </button>
 
           {/* Availability toggle */}
           <label className="mt-4 flex items-center gap-2.5 text-[14px] font-semibold">
@@ -364,6 +392,87 @@ function DishForm({ dish, categories, t, lang, onClose, onSaved, onDeleted }) {
             )}
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+// Two-step picker overlay: choose a top-level category, then a specific dish
+// (or "custom name"). Rendered above the dish form.
+function DishCategoryPicker({ tree, t, onClose, onPick }) {
+  const [root, setRoot] = useState(null); // chosen top-level category
+  const [q, setQ] = useState('');
+
+  const children = root?.children || [];
+  const filtered = q
+    ? children.filter((c) => c.name.toLowerCase().includes(q.trim().toLowerCase()))
+    : children;
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-6"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-t-card border border-[color:var(--line)] bg-surface shadow-card sm:rounded-card"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-2 border-b border-[color:var(--line)] p-4">
+          {root && (
+            <button onClick={() => { setRoot(null); setQ(''); }} className="text-[color:var(--muted)] hover:text-fg" aria-label={t('back')}>
+              ‹
+            </button>
+          )}
+          <h2 className="font-display text-[16px] font-bold">
+            {root ? root.name : t('chooseCategory')}
+          </h2>
+          <button onClick={onClose} className="ml-auto text-[color:var(--muted)] hover:text-fg">✕</button>
+        </div>
+
+        {!root ? (
+          <div className="overflow-y-auto p-2">
+            {tree.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setRoot(c)}
+                className="flex w-full items-center justify-between rounded-lg px-3 py-3 text-left text-[14px] font-semibold hover:bg-elevated"
+              >
+                <span>{c.name}</span>
+                <span className="text-[color:var(--muted)]">›</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="flex min-h-0 flex-col">
+            <div className="p-3">
+              <input
+                autoFocus
+                className="field-input !mt-0"
+                placeholder={t('searchDish')}
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
+            </div>
+            <div className="overflow-y-auto px-2 pb-2">
+              {/* Custom name: classify under the category, let the cook type their own name. */}
+              <button
+                onClick={() => onPick({ categoryId: root.id })}
+                className="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-3 text-left text-[14px] font-semibold text-ember hover:bg-elevated"
+              >
+                + {t('customDishName')}
+              </button>
+              {filtered.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => onPick({ categoryId: c.id, name: c.name })}
+                  className="flex w-full items-center rounded-lg px-3 py-2.5 text-left text-[14px] hover:bg-elevated"
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

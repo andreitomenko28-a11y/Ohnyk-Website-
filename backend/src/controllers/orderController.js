@@ -35,7 +35,13 @@ export function serializeOrder(order) {
     // reviewed). Only meaningful when the review relation was loaded — for
     // cook/courier serializations it isn't, so canReview stays false there.
     review: order.review
-      ? { id: order.review.id, rating: order.review.rating, comment: order.review.comment, reply: order.review.reply }
+      ? {
+          id: order.review.id,
+          rating: order.review.rating,
+          comment: order.review.comment,
+          photos: order.review.photos ?? [],
+          reply: order.review.reply,
+        }
       : null,
     canReview: order.review !== undefined && order.status === 'DELIVERED' && !order.review,
     cook: order.cook

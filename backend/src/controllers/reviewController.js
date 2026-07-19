@@ -2,12 +2,17 @@ import { prisma } from '../lib/prisma.js';
 import { httpError } from '../middleware/errorHandler.js';
 import { createReviewSchema, listReviewsSchema, reviewReplySchema } from '../validation/schemas.js';
 import { recomputeCookRating } from '../lib/reviews.js';
+import { saveImage, deleteByUrl } from '../lib/storage.js';
+import { createNotification } from '../lib/notify.js';
+
+const MAX_REVIEW_PHOTOS = 5;
 
 export function serializeReview(r) {
   return {
     id: r.id,
     rating: r.rating,
     comment: r.comment,
+    photos: r.photos ?? [],
     reply: r.reply,
     repliedAt: r.repliedAt,
     author: r.author ? { name: r.author.fullName } : undefined,
@@ -17,7 +22,9 @@ export function serializeReview(r) {
 }
 
 // POST /api/orders/:id/review — create or update the buyer's review of a
-// delivered order (verified purchase; one review per order).
+// delivered order (verified purchase; one review per order). Accepts an
+// optional multipart `photos[]` (re-encoded to webp) plus a `keepPhotos` JSON
+// array of already-stored URLs to retain when editing.
 export async function upsertReview(req, res, next) {
   try {
     const { rating, comment } = createReviewSchema.parse(req.body);
@@ -26,16 +33,53 @@ export async function upsertReview(req, res, next) {
     if (!order || order.buyerId !== req.user.id) throw httpError(404, 'Замовлення не знайдено');
     if (order.status !== 'DELIVERED') throw httpError(409, 'Відгук можна залишити лише після доставки замовлення');
 
+    const existing = await prisma.review.findUnique({ where: { orderId: order.id } });
+    const prevPhotos = existing?.photos ?? [];
+
+    // Which already-stored photos to keep (edit path). Defaults to all existing.
+    let keep = prevPhotos;
+    if (req.body.keepPhotos !== undefined) {
+      try {
+        const parsed = JSON.parse(req.body.keepPhotos);
+        if (Array.isArray(parsed)) keep = parsed.filter((u) => prevPhotos.includes(u));
+      } catch {
+        /* ignore malformed keepPhotos */
+      }
+    }
+
+    // Persist any newly uploaded images (outside the DB transaction).
+    const room = Math.max(0, MAX_REVIEW_PHOTOS - keep.length);
+    const newUrls = [];
+    for (const file of (req.files ?? []).slice(0, room)) {
+      newUrls.push(await saveImage(file.buffer, 'reviews'));
+    }
+    const photos = [...keep, ...newUrls].slice(0, MAX_REVIEW_PHOTOS);
+
     const review = await prisma.$transaction(async (tx) => {
       const r = await tx.review.upsert({
         where: { orderId: order.id },
-        create: { orderId: order.id, cookId: order.cookId, authorId: req.user.id, rating, comment: comment || null },
-        update: { rating, comment: comment || null },
+        create: { orderId: order.id, cookId: order.cookId, authorId: req.user.id, rating, comment: comment || null, photos },
+        update: { rating, comment: comment || null, photos },
         include: { author: { select: { fullName: true } } },
       });
       await recomputeCookRating(order.cookId, tx);
       return r;
     });
+
+    // Best-effort cleanup of dropped photos.
+    for (const url of prevPhotos.filter((u) => !photos.includes(u))) {
+      deleteByUrl(url).catch(() => {});
+    }
+
+    // Notify the cook of a brand-new review (not on edits).
+    if (!existing) {
+      const c = await prisma.cook.findUnique({ where: { id: order.cookId }, select: { userId: true } });
+      await createNotification({
+        userId: c?.userId,
+        type: 'REVIEW_RECEIVED',
+        payload: { reviewId: review.id, rating, title: 'Новий відгук', body: `Оцінка ${rating}★` },
+      }).catch(() => {});
+    }
 
     res.status(201).json({ review: serializeReview(review) });
   } catch (err) {
@@ -53,6 +97,8 @@ export async function deleteReview(req, res, next) {
       await tx.review.delete({ where: { id: review.id } });
       await recomputeCookRating(review.cookId, tx);
     });
+
+    for (const url of review.photos ?? []) deleteByUrl(url).catch(() => {});
 
     res.status(204).send();
   } catch (err) {

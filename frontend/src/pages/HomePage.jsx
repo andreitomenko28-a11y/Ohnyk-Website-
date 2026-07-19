@@ -6,7 +6,12 @@ import api from '../api/client.js';
 import CookCard from '../components/CookCard.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import BrandMark from '../components/BrandMark.jsx';
+import NotificationBell from '../components/NotificationBell.jsx';
+import CitySelect from '../components/CitySelect.jsx';
+import { MVP_CITY } from '../lib/cities.js';
 import { Star, SearchIcon, MapPinIcon, ChevronDownIcon } from '../components/icons.jsx';
+
+const CITY_KEY = 'ohnyk_city';
 
 function initialOf(name) {
   return (name || '?').trim().charAt(0).toUpperCase();
@@ -21,6 +26,15 @@ export default function HomePage() {
   const [categories, setCategories] = useState([]);
   const [cooks, setCooks] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Buyer's chosen delivery city (persisted). Defaults to the MVP city.
+  const [city, setCity] = useState(() => localStorage.getItem(CITY_KEY) || user?.cook?.city || MVP_CITY);
+
+  function pickCity(v) {
+    if (!v) return;
+    setCity(v);
+    localStorage.setItem(CITY_KEY, v);
+    navigate(`/discovery?city=${encodeURIComponent(v)}`);
+  }
 
   useEffect(() => {
     let active = true;
@@ -48,6 +62,7 @@ export default function HomePage() {
         <div className="mb-4 flex items-center justify-between lg:hidden">
           <BrandMark className="text-[22px]" markClassName="h-7 w-7" />
           <div className="flex items-center gap-2">
+            <NotificationBell />
             <ThemeToggle />
             <button
               onClick={() => navigate('/profile')}
@@ -69,9 +84,16 @@ export default function HomePage() {
             <div className="text-xs text-[color:var(--muted)]">
               {t('hi')}, {user?.fullName?.split(' ')[0] || t('friend')}
             </div>
-            <div className="flex items-center gap-1 font-display text-lg font-bold">
-              <MapPinIcon className="h-4 w-4 text-ember" /> {user?.cook?.city || 'Черкаси'}
+            <div className="relative inline-flex items-center gap-1 font-display text-lg font-bold">
+              <MapPinIcon className="h-4 w-4 text-ember" /> {city}
               <ChevronDownIcon className="h-4 w-4 text-[color:var(--muted)]" />
+              {/* Transparent native select over the badge — tapping opens the city list. */}
+              <CitySelect
+                value={city}
+                onChange={pickCity}
+                aria-label={t('cityLabel')}
+                className="absolute inset-0 !mt-0 cursor-pointer opacity-0"
+              />
             </div>
           </div>
         </div>

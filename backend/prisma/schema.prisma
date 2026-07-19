@@ -67,6 +67,7 @@ enum CourierStatus {
 enum TransportType {
   WALKING
   BICYCLE
+  MOTORBIKE
   CAR
 }
 
@@ -74,6 +75,14 @@ enum DeliveryMethod {
   PICKUP // customer collects from the cook
   COOK_DELIVERY // the cook delivers themselves
   COURIER // a third-party courier delivers
+}
+
+// Phase 6.3 — notification kinds.
+enum NotificationType {
+  ORDER_STATUS // order status advanced (to the buyer)
+  NEW_ORDER // a new paid order (to the cook)
+  NEW_MESSAGE // a chat message while the recipient was offline
+  REVIEW_RECEIVED // a new review (to the cook)
 }
 
 model User {
@@ -88,6 +97,10 @@ model User {
   favoriteCookIds String[] @default([])
   createdAt    DateTime @default(now())
 
+  // Phase 6.3 — Telegram notification channel (optional).
+  telegramChatId    String?
+  telegramLinkToken String? @unique // short-lived token for the /start deep link
+
   cookProfile    Cook?
   courierProfile CourierProfile?
   addresses      Address[]
@@ -95,6 +108,12 @@ model User {
   passwordResets PasswordReset[]
   orders         Order[] // orders placed as a buyer
   reviews        Review[] // reviews written as a buyer
+
+  // Phase 6.1: in-app chat
+  conversations  Conversation[] @relation("BuyerConversations") // chats as the buyer
+  sentMessages   Message[]      @relation("SentMessages")
+
+  notifications  Notification[] // Phase 6.3
 }
 
 model Cook {
@@ -130,6 +149,8 @@ model Cook {
   dishes  Dish[]
   orders  Order[] // incoming orders for this cook
   reviews Review[]
+
+  conversations Conversation[] // Phase 6.1: in-app chat
 }
 
 model Address {
@@ -146,11 +167,21 @@ model Address {
 }
 
 model Category {
-  id     String @id @default(uuid())
-  name   String @unique
-  slug   String @unique
-  emoji  String // 🥣 Борщ
+  id        String  @id @default(uuid())
+  name      String
+  slug      String  @unique
+  emoji     String? // deprecated — kept nullable for back-compat, no longer shown
+  sortOrder Int     @default(0)
+
+  // Two-level tree: top-level categories (parentId = null) hold dish
+  // subcategories as children. Dishes link to a subcategory (a leaf).
+  parentId String?
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children Category[] @relation("CategoryTree")
+
   dishes Dish[]
+
+  @@index([parentId])
 }
 
 model Dish {
@@ -244,6 +275,7 @@ model Order {
   items  OrderItem[]
   events OrderEvent[]
   review Review? // buyer's review, once delivered
+  conversation Conversation? // Phase 6.1: in-app chat
 
   @@index([cookId, status])
   @@index([buyerId])
@@ -263,6 +295,7 @@ model Review {
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   rating    Int // 1..5
   comment   String? // optional free text
+  photos    String[]  @default([]) // Module 6.2 — review photos (webp URLs)
   reply     String? // optional cook response (Module 5.3)
   repliedAt DateTime?
   createdAt DateTime @default(now())
@@ -270,6 +303,53 @@ model Review {
 
   @@index([cookId])
   @@index([authorId])
+}
+
+// Phase 6.1 — In-app chat. One conversation per order, between the order's
+// buyer and its cook. Messages are delivered live over socket.io but persisted
+// here (REST is the source of truth; the socket is delivery-only).
+model Conversation {
+  id            String   @id @default(uuid())
+  orderId       String   @unique
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  buyerId       String
+  buyer         User     @relation("BuyerConversations", fields: [buyerId], references: [id], onDelete: Cascade)
+  cookId        String
+  cook          Cook     @relation(fields: [cookId], references: [id], onDelete: Cascade)
+  lastMessageAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  messages Message[]
+
+  @@index([buyerId])
+  @@index([cookId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String // User.id — the buyer or the cook's user
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  text           String
+  readAt         DateTime? // read receipts (optional for MVP)
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+// Phase 6.3 — in-app notification. Always written (the in-app centre works
+// regardless of any external channel); optionally mirrored to Telegram.
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  payload   Json // { orderId?, status?, conversationId?, reviewId?, title, body }
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read, createdAt])
 }
 
 // Append-only status history for an order (the delivery timeline).

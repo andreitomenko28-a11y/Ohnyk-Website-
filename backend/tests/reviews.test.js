@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
+import sharp from 'sharp';
 import { request, registerUser, registerActiveCook, authHeader, payOrder } from './helpers.js';
+
+const jpeg = (color) => sharp({ create: { width: 8, height: 8, channels: 3, background: color } }).jpeg().toBuffer();
 
 async function cookWithDish() {
   const { accessToken, cook } = await registerActiveCook();
@@ -170,5 +173,59 @@ describe('Cook replies to reviews (Module 5.3)', () => {
     const created = await request.post(`/api/orders/${orderId}/review`).set(authHeader(buyerToken)).send({ rating: 5 });
     const res = await request.post(`/api/cook/reviews/${created.body.review.id}/reply`).set(authHeader(cookToken)).send({ reply: '' });
     expect(res.status).toBe(400);
+  });
+});
+
+describe('Review photos (Module 6.2)', () => {
+  it('attaches uploaded photos (re-encoded to webp) and exposes them publicly', async () => {
+    const { cookToken, cookId, dishId } = await cookWithDish();
+    const { buyerToken, orderId } = await deliveredOrder(cookToken, dishId);
+
+    const res = await request
+      .post(`/api/orders/${orderId}/review`)
+      .set(authHeader(buyerToken))
+      .field('rating', '5')
+      .field('comment', 'Смачно, з фото')
+      .attach('photos', await jpeg('red'), 'a.jpg')
+      .attach('photos', await jpeg('green'), 'b.jpg');
+
+    expect(res.status).toBe(201);
+    expect(res.body.review.photos).toHaveLength(2);
+    expect(res.body.review.photos.every((u) => u.endsWith('.webp'))).toBe(true);
+
+    const pub = await request.get(`/api/cooks/${cookId}/reviews`);
+    expect(pub.body.reviews[0].photos).toHaveLength(2);
+  });
+
+  it('keeps only the selected photos when editing', async () => {
+    const { cookToken, dishId } = await cookWithDish();
+    const { buyerToken, orderId } = await deliveredOrder(cookToken, dishId);
+
+    const first = await request
+      .post(`/api/orders/${orderId}/review`)
+      .set(authHeader(buyerToken))
+      .field('rating', '4')
+      .attach('photos', await jpeg('red'), 'a.jpg')
+      .attach('photos', await jpeg('blue'), 'b.jpg');
+    const [keep] = first.body.review.photos;
+
+    const edited = await request
+      .post(`/api/orders/${orderId}/review`)
+      .set(authHeader(buyerToken))
+      .field('rating', '4')
+      .field('keepPhotos', JSON.stringify([keep]));
+
+    expect(edited.body.review.photos).toEqual([keep]);
+  });
+
+  it('rejects more than 5 photos', async () => {
+    const { cookToken, dishId } = await cookWithDish();
+    const { buyerToken, orderId } = await deliveredOrder(cookToken, dishId);
+
+    let req = request.post(`/api/orders/${orderId}/review`).set(authHeader(buyerToken)).field('rating', '5');
+    for (let i = 0; i < 6; i++) req = req.attach('photos', await jpeg('red'), `p${i}.jpg`);
+    const res = await req;
+
+    expect(res.status).toBe(400); // multer maxCount=5 → hard limit
   });
 });

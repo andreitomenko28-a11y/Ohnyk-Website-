@@ -22,13 +22,13 @@ export const registerSchema = z
     kitchenAddress: z.string().trim().min(3).max(200).optional(),
     deliveryZone: z.string().trim().max(200).optional(),
     // Optional courier field, applied only when role === 'COURIER'.
-    transport: z.enum(['WALKING', 'BICYCLE', 'CAR']).optional(),
+    transport: z.enum(['WALKING', 'BICYCLE', 'MOTORBIKE', 'CAR']).optional(),
   });
 
 // Courier: toggle availability and choose transport.
 export const courierStatusSchema = z.object({
   status: z.enum(['ONLINE', 'OFFLINE']).optional(),
-  transport: z.enum(['WALKING', 'BICYCLE', 'CAR']).optional(),
+  transport: z.enum(['WALKING', 'BICYCLE', 'MOTORBIKE', 'CAR']).optional(),
 });
 
 // Courier-driven delivery transitions.
@@ -250,3 +250,19 @@ export const reviewReplySchema = z.object({
   reply: z.string().trim().min(1, 'Відповідь не може бути порожньою').max(1000, 'Відповідь задовга'),
 });
 
+
+// --- Phase 6.1: in-app chat -------------------------------------------------
+export const sendMessageSchema = z.object({
+  text: z.string().trim().min(1, 'Повідомлення порожнє').max(2000, 'Повідомлення задовге'),
+});
+
+export const listMessagesSchema = z.object({
+  cursor: z.string().optional(), // ISO date of the oldest loaded message
+  limit: z.coerce.number().int().min(1).max(50).default(30),
+});
+
+// --- Phase 6.3: notifications -----------------------------------------------
+export const listNotificationsSchema = z.object({
+  cursor: z.string().optional(), // ISO date of the oldest loaded notification
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});

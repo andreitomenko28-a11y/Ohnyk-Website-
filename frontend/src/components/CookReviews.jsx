@@ -51,6 +51,13 @@ export default function CookReviews({ cookId }) {
               </div>
               <StarRating value={r.rating} size="h-3.5 w-3.5" />
               {r.comment && <p className="mt-1.5 text-[13.5px] leading-relaxed">{r.comment}</p>}
+              {r.photos?.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {r.photos.map((url) => (
+                    <img key={url} src={url} alt="" className="h-16 w-16 rounded-lg object-cover" />
+                  ))}
+                </div>
+              )}
               {r.reply && (
                 <div className="mt-2 rounded-lg bg-elevated px-3 py-2 text-[12.5px] leading-relaxed">
                   <span className="font-semibold text-ember">{t('cookReply')}:</span> {r.reply}

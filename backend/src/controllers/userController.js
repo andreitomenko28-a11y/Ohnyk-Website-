@@ -20,7 +20,7 @@ export async function getProfile(req, res, next) {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      include: { cookProfile: true },
+      include: { cookProfile: true, courierProfile: true },
     });
     if (!user) throw httpError(404, 'Користувача не знайдено');
     res.json({ user: publicUser(user) });
@@ -43,7 +43,7 @@ export async function updateProfile(req, res, next) {
           cookProfile: { update: cookData },
         }),
       },
-      include: { cookProfile: true },
+      include: { cookProfile: true, courierProfile: true },
     });
 
     res.json({ user: publicUser(user) });
@@ -81,13 +81,13 @@ export async function addFavorite(req, res, next) {
 
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      include: { cookProfile: true },
+      include: { cookProfile: true, courierProfile: true },
     });
     if (!user.favoriteCookIds.includes(cookId)) {
       const updated = await prisma.user.update({
         where: { id: req.user.id },
         data: { favoriteCookIds: { set: [...user.favoriteCookIds, cookId] } },
-        include: { cookProfile: true },
+        include: { cookProfile: true, courierProfile: true },
       });
       return res.json({ user: publicUser(updated) });
     }
@@ -103,12 +103,12 @@ export async function removeFavorite(req, res, next) {
     const { cookId } = req.params;
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      include: { cookProfile: true },
+      include: { cookProfile: true, courierProfile: true },
     });
     const updated = await prisma.user.update({
       where: { id: req.user.id },
       data: { favoriteCookIds: { set: user.favoriteCookIds.filter((id) => id !== cookId) } },
-      include: { cookProfile: true },
+      include: { cookProfile: true, courierProfile: true },
     });
     res.json({ user: publicUser(updated) });
   } catch (err) {
@@ -121,7 +121,7 @@ export async function getUser(req, res, next) {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.params.id },
-      include: { cookProfile: true },
+      include: { cookProfile: true, courierProfile: true },
     });
     if (!user) throw httpError(404, 'Користувача не знайдено');
     res.json({ user: publicUser(user) });
@@ -149,7 +149,7 @@ export async function updateUser(req, res, next) {
           cookProfile: { update: cookData },
         }),
       },
-      include: { cookProfile: true },
+      include: { cookProfile: true, courierProfile: true },
     });
 
     res.json({ user: publicUser(user) });

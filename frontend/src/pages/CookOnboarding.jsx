@@ -5,6 +5,7 @@ import { useI18n } from '../i18n/index.jsx';
 import api, { apiError } from '../api/client.js';
 import CookShell from '../components/CookShell.jsx';
 import LangSwitch from '../components/LangSwitch.jsx';
+import TelegramConnect from '../components/TelegramConnect.jsx';
 import { ChefHatIcon, VerifiedBadge, MapPinIcon, FoodIcon, CartIcon } from '../components/icons.jsx';
 
 // Small inline check for completed steps.
@@ -87,6 +88,10 @@ export default function CookOnboarding() {
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
           <LockedCard Icon={FoodIcon} label={verified ? t('menuOpenHint') : t('menuSoon')} enabled={verified} to={verified ? '/cook/menu' : undefined} />
           <LockedCard Icon={CartIcon} label={verified ? t('ordersOpenHint') : t('ordersSoon')} enabled={verified} to={verified ? '/cook/orders' : undefined} />
+        </div>
+
+        <div className="mt-6">
+          <TelegramConnect />
         </div>
 
         <div className="mt-6">
@@ -328,26 +333,25 @@ function IdentityStep({ cook, refreshUser, t }) {
 }
 
 function ProfileSection({ cook, refreshUser, t }) {
-  const [form, setForm] = useState({
+  const initial = {
     displayName: cook.displayName || '',
     kitchenAddress: cook.kitchenAddress || '',
     deliveryZone: cook.deliveryZone || '',
     bio: cook.bio || '',
-  });
+  };
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState(initial);
   const [busy, setBusy] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [err, setErr] = useState('');
 
   async function save(e) {
     e.preventDefault();
     setErr('');
-    setSaved(false);
     setBusy(true);
     try {
       await api.put('/cook/profile', form);
       await refreshUser();
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
+      setEditing(false); // collapse after a successful save, like the buyer form
     } catch (er) {
       setErr(apiError(er));
     } finally {
@@ -355,12 +359,55 @@ function ProfileSection({ cook, refreshUser, t }) {
     }
   }
 
+  function startEditing() {
+    setForm(initial); // seed the form from the latest saved values
+    setErr('');
+    setEditing(true);
+  }
+
+  function cancel() {
+    setForm(initial); // discard unsaved edits
+    setErr('');
+    setEditing(false);
+  }
+
+  const sectionCls = 'mt-6 rounded-card border border-[color:var(--line)] bg-surface p-5 shadow-card';
+  const header = (
+    <h2 className="flex items-center gap-2 font-display text-[16px] font-bold">
+      <MapPinIcon className="h-5 w-5 text-ember" />
+      {t('cookProfileSection')}
+    </h2>
+  );
+
+  // Collapsed: read-only summary + an edit button (mirrors the buyer profile).
+  if (!editing) {
+    return (
+      <section className={sectionCls}>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          {header}
+          <button
+            type="button"
+            onClick={startEditing}
+            className="rounded-lg border border-[color:var(--line)] px-3.5 py-2 text-[13px] font-semibold transition-colors hover:border-ember hover:text-ember"
+          >
+            {t('editProfile')}
+          </button>
+        </div>
+        <dl className="space-y-2.5">
+          <SummaryRow label={t('name')} value={cook.displayName} t={t} />
+          <SummaryRow label={t('cookKitchenAddress')} value={cook.kitchenAddress} t={t} />
+          <SummaryRow label={t('cookDeliveryZone')} value={cook.deliveryZone} t={t} />
+          <SummaryRow label={t('cookBioLabel')} value={cook.bio} t={t} />
+        </dl>
+        <KitchenMedia cook={cook} refreshUser={refreshUser} t={t} />
+      </section>
+    );
+  }
+
+  // Expanded: the editable form with Save + Cancel.
   return (
-    <form onSubmit={save} className="mt-6 rounded-card border border-[color:var(--line)] bg-surface p-5 shadow-card">
-      <h2 className="mb-4 flex items-center gap-2 font-display text-[16px] font-bold">
-        <MapPinIcon className="h-5 w-5 text-ember" />
-        {t('cookProfileSection')}
-      </h2>
+    <form onSubmit={save} className={sectionCls}>
+      <div className="mb-4">{header}</div>
 
       <label className="field-label">{t('name')}</label>
       <input
@@ -403,9 +450,26 @@ function ProfileSection({ cook, refreshUser, t }) {
         <button className="btn-primary !w-auto !px-5" disabled={busy}>
           {busy ? t('loading') : t('saveProfile')}
         </button>
-        {saved && <span className="text-[13px] font-semibold text-emerald-600 dark:text-emerald-400">{t('profileSaved')}</span>}
+        <button
+          type="button"
+          onClick={cancel}
+          disabled={busy}
+          className="rounded-lg border border-[color:var(--line)] px-4 py-2.5 text-[13px] font-semibold text-[color:var(--muted)] disabled:opacity-60"
+        >
+          {t('cancel')}
+        </button>
       </div>
     </form>
+  );
+}
+
+// One label/value row in the collapsed profile summary.
+function SummaryRow({ label, value, t }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <dt className="text-[12px] font-semibold uppercase tracking-wide text-[color:var(--muted)]">{label}</dt>
+      <dd className="text-[14px]">{value || <span className="text-[color:var(--muted)]">{t('notSet')}</span>}</dd>
+    </div>
   );
 }
 

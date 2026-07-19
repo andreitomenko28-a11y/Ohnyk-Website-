@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useI18n } from '../i18n/index.jsx';
 import api from '../api/client.js';
 import SearchBar from '../components/SearchBar.jsx';
@@ -8,9 +9,14 @@ import CookCard from '../components/CookCard.jsx';
 // Discovery — browse, search and filter cooks.
 export default function Discovery() {
   const { t } = useI18n();
+  const [searchParams] = useSearchParams();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState(null);
-  const [filters, setFilters] = useState({});
+  // Seed the city filter from a ?city= deep link (e.g. the Home city badge).
+  const [filters, setFilters] = useState(() => {
+    const city = searchParams.get('city');
+    return city ? { city } : {};
+  });
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const [cooks, setCooks] = useState([]);
@@ -27,10 +33,11 @@ export default function Discovery() {
       let res;
       if (query.trim()) {
         res = await api.get('/cooks/search', { params: { q: query.trim() } });
-      } else if (category || filters.minPrice || filters.maxPrice || filters.minRating) {
+      } else if (category || filters.city || filters.minPrice || filters.maxPrice || filters.minRating) {
         res = await api.get('/cooks/filter', {
           params: {
             ...(category && { category }),
+            ...(filters.city && { city: filters.city }),
             ...(filters.minPrice && { minPrice: filters.minPrice }),
             ...(filters.maxPrice && { maxPrice: filters.maxPrice }),
             ...(filters.minRating && { minRating: filters.minRating }),

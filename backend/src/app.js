@@ -13,6 +13,8 @@ import cartRoutes from './routes/cart.js';
 import orderRoutes from './routes/orders.js';
 import paymentRoutes from './routes/payments.js';
 import courierRoutes from './routes/courier.js';
+import conversationRoutes from './routes/conversations.js';
+import notificationRoutes from './routes/notifications.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 import { UPLOAD_ROOT } from './lib/storage.js';
 
@@ -65,6 +67,8 @@ export function createApp() {
   app.use('/api/orders', orderRoutes);
   app.use('/api/payments', paymentRoutes);
   app.use('/api/courier', courierRoutes);
+  app.use('/api/conversations', conversationRoutes);
+  app.use('/api/notifications', notificationRoutes);
 
   // 404 + error handling.
   app.use(notFound);

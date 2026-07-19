@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useI18n } from '../i18n/index.jsx';
 import { SlidersIcon, Star } from './icons.jsx';
+import CitySelect from './CitySelect.jsx';
 
 // Filter panel: price range + minimum rating.
 // `open`/`onToggle` are optional — when omitted the panel manages its own state.
@@ -12,7 +13,7 @@ export default function FilterPanel({ value, onApply, onReset, open, onToggle, s
   const [draft, setDraft] = useState(value);
 
   const activeCount =
-    (value.minPrice ? 1 : 0) + (value.maxPrice ? 1 : 0) + (value.minRating ? 1 : 0);
+    (value.city ? 1 : 0) + (value.minPrice ? 1 : 0) + (value.maxPrice ? 1 : 0) + (value.minRating ? 1 : 0);
 
   return (
     <div className="mt-3">
@@ -32,6 +33,15 @@ export default function FilterPanel({ value, onApply, onReset, open, onToggle, s
 
       {isOpen && (
         <div className="mt-3 rounded-2xl border border-line bg-surface p-4">
+          <div className="mb-1.5 text-[13px] font-semibold">{t('cityLabel')}</div>
+          <div className="mb-4">
+            <CitySelect
+              includeAll
+              value={draft.city ?? ''}
+              onChange={(v) => setDraft({ ...draft, city: v || undefined })}
+            />
+          </div>
+
           <div className="mb-1.5 text-[13px] font-semibold">{t('priceRange')}</div>
           <div className="mb-4 flex items-center gap-2">
             <input
@@ -79,7 +89,7 @@ export default function FilterPanel({ value, onApply, onReset, open, onToggle, s
           <div className="flex gap-2.5">
             <button
               onClick={() => {
-                const cleared = { minPrice: undefined, maxPrice: undefined, minRating: undefined };
+                const cleared = { city: undefined, minPrice: undefined, maxPrice: undefined, minRating: undefined };
                 setDraft(cleared);
                 onReset?.();
               }}

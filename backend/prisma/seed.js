@@ -5,15 +5,42 @@ import { recomputeCookRating } from '../src/lib/reviews.js';
 
 const prisma = new PrismaClient();
 
-// Categories shared across cooks.
-const CATEGORIES = [
-  { name: 'Борщ', slug: 'borshch', emoji: '🥣' },
-  { name: 'Варенички', slug: 'varenyky', emoji: '🥟' },
-  { name: 'Шашлики', slug: 'shashlyk', emoji: '🍢' },
-  { name: 'Салати', slug: 'salads', emoji: '🥗' },
-  { name: 'Десерти', slug: 'desserts', emoji: '🍰' },
-  { name: 'Випічка', slug: 'bakery', emoji: '🍞' },
+// Two-level dish taxonomy: top-level category → list of dish subcategories.
+// Cooks pick a subcategory when adding a dish; buyers browse/filter by either.
+const TAXONOMY = [
+  { name: 'Сніданки', children: ['Омлети', 'Яєчня', 'Варені яйця', 'Каші', 'Сирники', 'Млинці', 'Оладки', 'Тости', 'Сендвічі', 'Домашня гранола'] },
+  { name: 'Перші страви', children: ['Борщ', 'Капусняк', 'Розсольник', 'Солянка', 'Супи', 'Бульйони', 'Крем-супи', 'Юшка', 'Окрошка'] },
+  { name: 'Основні страви', children: ['Страви з курки', 'Страви зі свинини', 'Страви з яловичини', 'Страви з індички', 'Страви з риби', 'Котлети', 'Відбивні', 'Тушковане м’ясо', 'Голубці', 'Фаршировані овочі', 'Плов', 'Печеня', 'Рагу', 'Запіканки'] },
+  { name: 'Гарніри', children: ['Картопля', 'Картопляне пюре', 'Смажена картопля', 'Запечена картопля', 'Рис', 'Гречка', 'Макарони', 'Булгур', 'Кус-кус', 'Перлова каша', 'Пшоняна каша', 'Овочі на пару', 'Запечені овочі'] },
+  { name: 'Салати', children: ['Овочеві', 'М’ясні', 'Рибні', 'Фруктові', 'Листові салати', 'Салати з крупами'] },
+  { name: 'Закуски', children: ['Бутерброди', 'Канапки', 'Намазки', 'Паштети', 'Рулетики', 'Домашні чіпси', 'Мариновані овочі'] },
+  { name: 'Випічка', children: ['Хліб', 'Булочки', 'Батони', 'Пироги', 'Пиріжки', 'Піцца', 'Лаваш', 'Фокача', 'Пампушки'] },
+  { name: 'Десерти', children: ['Торти', 'Тістечка', 'Печиво', 'Кекси', 'Мафіни', 'Желе', 'Морозиво', 'Пудинги', 'Муси', 'Панакота', 'Шарлотка'] },
+  { name: 'Напої', children: ['Компот', 'Узвар', 'Морс', 'Лимонад', 'Чай', 'Кава', 'Какао', 'Смузі', 'Молочні коктейлі'] },
+  { name: 'Соуси', children: ['Кетчуп', 'Майонез', 'Гірчиця', 'Песто', 'Часниковий соус', 'Сирний соус', 'Томатний соус', 'Сметанний соус'] },
+  { name: 'Молочні продукти', children: ['Домашній сир', 'Йогурт', 'Кефір', 'Ряжанка', 'Масло', 'Сметана', 'Вершки'] },
+  { name: 'Заготовки', children: ['Варення', 'Джеми', 'Повидло', 'Консервовані овочі', 'Соління', 'Маринади', 'Заморожені овочі', 'Заморожені ягоди', 'Заморожені фрукти'] },
+  { name: 'Перекуси', children: ['Горіхи', 'Сухофрукти', 'Насіння', 'Домашні батончики', 'Енергетичні кульки', 'Попкорн'] },
+  { name: 'Напівфабрикати', children: ['Пельмені', 'Вареники', 'Голубці', 'Котлети', 'Фрикадельки', 'Млинці з начинкою', 'Заморожене тісто', 'Заморожена піца'] },
 ];
+
+// Transliterate a Ukrainian name into a URL-safe slug.
+const TRANSLIT = {
+  а: 'a', б: 'b', в: 'v', г: 'h', ґ: 'g', д: 'd', е: 'e', є: 'ie', ж: 'zh', з: 'z',
+  и: 'y', і: 'i', ї: 'i', й: 'i', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p',
+  р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'kh', ц: 'ts', ч: 'ch', ш: 'sh',
+  щ: 'shch', ь: '', ю: 'iu', я: 'ia', "’": '', "'": '',
+};
+function slugify(name) {
+  const base = name
+    .toLowerCase()
+    .split('')
+    .map((ch) => (ch in TRANSLIT ? TRANSLIT[ch] : /[a-z0-9]/.test(ch) ? ch : '-'))
+    .join('')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  return base || 'cat';
+}
 
 async function main() {
   const passwordHash = await bcrypt.hash('password123', 10);
@@ -23,15 +50,34 @@ async function main() {
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
 
-  // --- Categories ------------------------------------------------------------
-  const categories = {};
-  for (const c of CATEGORIES) {
-    const cat = await prisma.category.upsert({
-      where: { slug: c.slug },
-      update: { name: c.name, emoji: c.emoji },
-      create: c,
+  // --- Categories (two-level tree) -------------------------------------------
+  // Reset the whole taxonomy so re-seeds reflect the latest TAXONOMY. Dishes
+  // reference categories, so clear dishes first to avoid FK conflicts.
+  await prisma.dish.deleteMany();
+  await prisma.category.deleteMany();
+
+  const usedSlugs = new Set();
+  const uniqueSlug = (name) => {
+    let s = slugify(name);
+    while (usedSlugs.has(s)) s = `${slugify(name)}-${usedSlugs.size}`;
+    usedSlugs.add(s);
+    return s;
+  };
+
+  const subByName = {}; // subcategory name → category record (for dish linking)
+  for (let i = 0; i < TAXONOMY.length; i++) {
+    const top = TAXONOMY[i];
+    const parent = await prisma.category.create({
+      data: { name: top.name, slug: uniqueSlug(top.name), sortOrder: i },
     });
-    categories[c.slug] = cat;
+    for (let j = 0; j < top.children.length; j++) {
+      const childName = top.children[j];
+      const child = await prisma.category.create({
+        data: { name: childName, slug: uniqueSlug(childName), sortOrder: j, parentId: parent.id },
+      });
+      // First writer wins for duplicate child names (e.g. Голубці, Котлети).
+      if (!subByName[childName]) subByName[childName] = child;
+    }
   }
 
   // --- Admin (verifies cooks; Phase 3 admin API) -----------------------------
@@ -107,10 +153,10 @@ async function main() {
         longitude: 32.0598,
       }),
       dishes: [
-        { name: 'Червоний борщ', description: 'На яловичому бульйоні, зі сметаною', price: 95, slug: 'borshch', availableDays: ['MON', 'TUE', 'WED', 'THU', 'FRI'] },
-        { name: 'Зелений борщ', description: 'Зі щавлем та яйцем', price: 90, slug: 'borshch', availableDays: ['SAT', 'SUN'] },
-        { name: 'Вареники з картоплею', description: '10 шт, зі смаженою цибулею', price: 85, slug: 'varenyky' },
-        { name: 'Вареники з вишнею', description: '10 шт, зі сметаною', price: 95, slug: 'varenyky' },
+        { name: 'Червоний борщ', description: 'На яловичому бульйоні, зі сметаною', price: 95, sub: 'Борщ', availableDays: ['MON', 'TUE', 'WED', 'THU', 'FRI'] },
+        { name: 'Зелений борщ', description: 'Зі щавлем та яйцем', price: 90, sub: 'Борщ', availableDays: ['SAT', 'SUN'] },
+        { name: 'Вареники з картоплею', description: '10 шт, зі смаженою цибулею', price: 85, sub: 'Вареники' },
+        { name: 'Вареники з вишнею', description: '10 шт, зі сметаною', price: 95, sub: 'Вареники' },
       ],
     },
     {
@@ -129,9 +175,9 @@ async function main() {
         longitude: 32.0621,
       }),
       dishes: [
-        { name: 'Шашлик зі свинини', description: '300 г, з маринованою цибулею', price: 180, slug: 'shashlyk' },
-        { name: 'Шашлик з курки', description: '300 г, у соєвому маринаді', price: 150, slug: 'shashlyk' },
-        { name: 'Овочі гриль', description: 'Перець, кабачок, баклажан', price: 90, slug: 'salads' },
+        { name: 'Шашлик зі свинини', description: '300 г, з маринованою цибулею', price: 180, sub: 'Страви зі свинини' },
+        { name: 'Шашлик з курки', description: '300 г, у соєвому маринаді', price: 150, sub: 'Страви з курки' },
+        { name: 'Овочі гриль', description: 'Перець, кабачок, баклажан', price: 90, sub: 'Запечені овочі' },
       ],
     },
     {
@@ -150,9 +196,9 @@ async function main() {
         longitude: 32.0489,
       }),
       dishes: [
-        { name: 'Наполеон', description: 'Класичний, 1 кг', price: 350, slug: 'desserts' },
-        { name: 'Медовик', description: 'Зі сметанним кремом, 1 кг', price: 320, slug: 'desserts' },
-        { name: 'Чізкейк', description: 'Нью-Йорк, 8 шматочків', price: 280, slug: 'desserts' },
+        { name: 'Наполеон', description: 'Класичний, 1 кг', price: 350, sub: 'Торти' },
+        { name: 'Медовик', description: 'Зі сметанним кремом, 1 кг', price: 320, sub: 'Торти' },
+        { name: 'Чізкейк', description: 'Нью-Йорк, 8 шматочків', price: 280, sub: 'Тістечка' },
       ],
     },
     {
@@ -176,9 +222,9 @@ async function main() {
         longitude: 32.07,
       },
       dishes: [
-        { name: 'Хліб на заквасці', description: 'Пшенично-житній, 700 г', price: 75, slug: 'bakery' },
-        { name: 'Пампушки з часником', description: '6 шт, до борщу', price: 45, slug: 'bakery' },
-        { name: 'Синнабони', description: '4 шт, з корицею', price: 120, slug: 'desserts' },
+        { name: 'Хліб на заквасці', description: 'Пшенично-житній, 700 г', price: 75, sub: 'Хліб' },
+        { name: 'Пампушки з часником', description: '6 шт, до борщу', price: 45, sub: 'Пампушки' },
+        { name: 'Синнабони', description: '4 шт, з корицею', price: 120, sub: 'Булочки' },
       ],
     },
   ];
@@ -217,7 +263,7 @@ async function main() {
           name: d.name,
           description: d.description,
           price: d.price,
-          categoryId: categories[d.slug]?.id ?? null,
+          categoryId: subByName[d.sub]?.id ?? null,
           availableDays: d.availableDays ?? [],
         },
       });
@@ -315,7 +361,7 @@ async function main() {
   }
   await recomputeCookRating(oksanaCookId);
 
-  console.log('Seeded categories:', Object.keys(categories).length);
+  console.log('Seeded categories:', TAXONOMY.length, 'top-level +', Object.keys(subByName).length, 'subcategories');
   console.log('Seeded admin:', admin.email);
   console.log('Seeded customer:', customer.email);
   console.log('Seeded cooks:', summary.join(', '));

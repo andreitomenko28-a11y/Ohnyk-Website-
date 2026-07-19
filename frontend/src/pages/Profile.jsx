@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n/index.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import ProfileForm from '../components/ProfileForm.jsx';
+import TelegramConnect from '../components/TelegramConnect.jsx';
 import LangSwitch from '../components/LangSwitch.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import {
@@ -77,6 +78,11 @@ export default function Profile() {
             <ThemeIcon className="h-5 w-5 text-[color:var(--muted)]" /> {t('appearance')}
           </span>
           <ThemeToggle variant="segmented" />
+        </div>
+
+        {/* Notifications — Telegram channel */}
+        <div className="mt-4">
+          <TelegramConnect />
         </div>
 
         <LangSwitch />

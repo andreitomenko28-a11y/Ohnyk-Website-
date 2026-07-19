@@ -11,7 +11,7 @@ const cartInclude = {
   items: {
     include: {
       dish: {
-        include: { category: { select: { id: true, name: true, slug: true, emoji: true } } },
+        include: { category: { select: { id: true, name: true, slug: true } } },
       },
     },
     orderBy: { id: 'asc' },
