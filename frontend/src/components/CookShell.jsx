@@ -4,6 +4,7 @@ import { useI18n } from '../i18n/index.jsx';
 import { FlameMark } from './Logo.jsx';
 import Wordmark from './Wordmark.jsx';
 import ThemeToggle from './ThemeToggle.jsx';
+import NotificationBell from './NotificationBell.jsx';
 import { LogoutIcon, ProfileIcon, FoodIcon, CartIcon, Star } from './icons.jsx';
 
 // Shared shell for the cook area: static top bar (no sticky overlap) + tab nav.
@@ -27,6 +28,7 @@ export default function CookShell({ children }) {
               <Wordmark />
             </span>
             <div className="flex items-center gap-2">
+              <NotificationBell />
               <ThemeToggle />
               <button
                 onClick={logout}

@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import BrandMark from './BrandMark.jsx';
 import LangSwitch from './LangSwitch.jsx';
 import ThemeToggle from './ThemeToggle.jsx';
+import NotificationBell from './NotificationBell.jsx';
 import { HomeIcon, SearchIcon, CartIcon, ProfileIcon, HeartIcon, BoxIcon } from './icons.jsx';
 
 // Desktop navigation rail (visible at lg+). Mobile uses BottomNav instead.
@@ -81,7 +82,10 @@ export default function Sidebar() {
 
         <div className="flex items-center justify-between px-1">
           <LangSwitch className="!mt-0" />
-          <ThemeToggle />
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </aside>

@@ -77,6 +77,14 @@ enum DeliveryMethod {
   COURIER // a third-party courier delivers
 }
 
+// Phase 6.3 — notification kinds.
+enum NotificationType {
+  ORDER_STATUS // order status advanced (to the buyer)
+  NEW_ORDER // a new paid order (to the cook)
+  NEW_MESSAGE // a chat message while the recipient was offline
+  REVIEW_RECEIVED // a new review (to the cook)
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -89,6 +97,10 @@ model User {
   favoriteCookIds String[] @default([])
   createdAt    DateTime @default(now())
 
+  // Phase 6.3 — Telegram notification channel (optional).
+  telegramChatId    String?
+  telegramLinkToken String? @unique // short-lived token for the /start deep link
+
   cookProfile    Cook?
   courierProfile CourierProfile?
   addresses      Address[]
@@ -100,6 +112,8 @@ model User {
   // Phase 6.1: in-app chat
   conversations  Conversation[] @relation("BuyerConversations") // chats as the buyer
   sentMessages   Message[]      @relation("SentMessages")
+
+  notifications  Notification[] // Phase 6.3
 }
 
 model Cook {
@@ -322,6 +336,20 @@ model Message {
   createdAt      DateTime     @default(now())
 
   @@index([conversationId, createdAt])
+}
+
+// Phase 6.3 — in-app notification. Always written (the in-app centre works
+// regardless of any external channel); optionally mirrored to Telegram.
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  payload   Json // { orderId?, status?, conversationId?, reviewId?, title, body }
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read, createdAt])
 }
 
 // Append-only status history for an order (the delivery timeline).

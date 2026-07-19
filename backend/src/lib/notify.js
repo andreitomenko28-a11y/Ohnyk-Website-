@@ -1,25 +1,68 @@
-// Notifications — STUB.
+// Notifications (Phase 6.3).
 //
-// New-order alerts to the cook are not delivered anywhere real yet. For now we
-// just log them. The function signature is what the rest of the app depends on,
-// so wiring a real channel later is a drop-in change here.
-//
-// TODO(Phase 4+): deliver via
-//   - Push: Web Push / FCM (store the cook's device token, send on new order)
-//   - Email: nodemailer / a transactional provider (Postmark, Resend)
-//   - SMS: reuse lib/sms.js provider
-// Consider a small outbox table + worker so delivery survives restarts.
+// Every notification is persisted (the in-app centre always works), pushed live
+// to the user's socket room, and — if the user linked Telegram — mirrored there.
+// The order/new-order helpers keep their original signatures so existing call
+// sites (payment, cook, courier controllers) need no change.
+import { prisma } from './prisma.js';
+import { emitNotification } from '../realtime/hub.js';
+import { sendTelegram } from './telegram.js';
 
-export async function notifyNewOrder({ cook, order }) {
-  // TODO: replace with real push/email delivery.
-  console.log(
-    `[notify:stub] new order ${order.id} for cook ${cook.id} — ${order.items?.length ?? 0} item(s), total ${order.total}₴`,
-  );
-  return { delivered: false, channel: 'stub' };
+export function serializeNotification(n) {
+  return { id: n.id, type: n.type, payload: n.payload, read: n.read, createdAt: n.createdAt };
 }
 
+// Persist + live-push + external mirror. Best-effort on the external channel.
+export async function createNotification({ userId, type, payload }) {
+  if (!userId) return null;
+  const n = await prisma.notification.create({ data: { userId, type, payload } });
+  emitNotification(userId, serializeNotification(n));
+
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { telegramChatId: true } });
+  if (user?.telegramChatId) {
+    sendTelegram(user.telegramChatId, `${payload.title}\n${payload.body ?? ''}`.trim()).catch(() => {});
+  }
+  return n;
+}
+
+// Human-readable status line (used for Telegram + as an in-app fallback).
+const STATUS_TEXT = {
+  NEW: 'Замовлення оплачено',
+  CONFIRMED: 'Кухар прийняв замовлення',
+  PREPARING: 'Кухар готує замовлення',
+  READY: 'Замовлення готове',
+  COURIER_ASSIGNED: 'Кур’єр прийняв замовлення',
+  PICKED_UP: 'Кур’єр забрав замовлення',
+  ON_THE_WAY: 'Кур’єр прямує до вас',
+  DELIVERED: 'Замовлення доставлено',
+  CANCELLED: 'Замовлення скасовано',
+};
+
+// A new paid order — notify the cook.
+export async function notifyNewOrder({ cook, order }) {
+  console.log(`[notify] new order ${order.id} for cook ${cook?.id ?? order.cookId} — total ${order.total}₴`);
+  const cookUserId =
+    cook?.userId ?? (await prisma.cook.findUnique({ where: { id: order.cookId }, select: { userId: true } }))?.userId;
+  await createNotification({
+    userId: cookUserId,
+    type: 'NEW_ORDER',
+    payload: { orderId: order.id, title: 'Нове замовлення', body: `Замовлення на ${order.total}₴` },
+  });
+  return { delivered: true, channel: 'inapp' };
+}
+
+// The order status advanced — notify the buyer.
 export async function notifyOrderStatus({ order }) {
-  // TODO: notify the buyer when the cook advances the order status.
-  console.log(`[notify:stub] order ${order.id} status → ${order.status}`);
-  return { delivered: false, channel: 'stub' };
+  console.log(`[notify] order ${order.id} status → ${order.status}`);
+  await createNotification({
+    userId: order.buyerId,
+    type: 'ORDER_STATUS',
+    payload: {
+      orderId: order.id,
+      status: order.status,
+      title: 'Оновлення замовлення',
+      body: STATUS_TEXT[order.status] ?? order.status,
+    },
+  });
+  return { delivered: true, channel: 'inapp' };
 }

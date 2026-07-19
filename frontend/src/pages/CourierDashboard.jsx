@@ -6,6 +6,7 @@ import CourierShell from '../components/CourierShell.jsx';
 import { MapPinIcon, BoxIcon } from '../components/icons.jsx';
 import { getSocket } from '../lib/socket.js';
 import { fileToCompressedDataUrl } from '../lib/image.js';
+import TelegramConnect from '../components/TelegramConnect.jsx';
 
 const LIVE_STATUSES = ['COURIER_ASSIGNED', 'PICKED_UP', 'ON_THE_WAY'];
 const TRANSPORTS = ['WALKING', 'BICYCLE', 'MOTORBIKE', 'CAR'];
@@ -178,6 +179,10 @@ export default function CourierDashboard() {
 
       {/* Profile — avatar, name, phone, transport */}
       <CourierProfile t={t} onTransportChange={setTransport} />
+
+      <div className="mb-5">
+        <TelegramConnect />
+      </div>
 
       {geo !== 'off' && (
         <div

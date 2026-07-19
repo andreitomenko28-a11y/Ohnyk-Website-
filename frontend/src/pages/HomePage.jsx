@@ -6,6 +6,7 @@ import api from '../api/client.js';
 import CookCard from '../components/CookCard.jsx';
 import ThemeToggle from '../components/ThemeToggle.jsx';
 import BrandMark from '../components/BrandMark.jsx';
+import NotificationBell from '../components/NotificationBell.jsx';
 import CitySelect from '../components/CitySelect.jsx';
 import { MVP_CITY } from '../lib/cities.js';
 import { Star, SearchIcon, MapPinIcon, ChevronDownIcon } from '../components/icons.jsx';
@@ -61,6 +62,7 @@ export default function HomePage() {
         <div className="mb-4 flex items-center justify-between lg:hidden">
           <BrandMark className="text-[22px]" markClassName="h-7 w-7" />
           <div className="flex items-center gap-2">
+            <NotificationBell />
             <ThemeToggle />
             <button
               onClick={() => navigate('/profile')}

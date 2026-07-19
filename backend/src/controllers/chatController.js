@@ -2,7 +2,8 @@ import { prisma } from '../lib/prisma.js';
 import { httpError } from '../middleware/errorHandler.js';
 import { sendMessageSchema, listMessagesSchema } from '../validation/schemas.js';
 import { isConversationParticipant } from '../realtime/chat.js';
-import { emitChatMessage } from '../realtime/hub.js';
+import { emitChatMessage, isUserOnline } from '../realtime/hub.js';
+import { createNotification } from '../lib/notify.js';
 
 function serializeConversation(c) {
   return {
@@ -90,7 +91,7 @@ export async function listMessages(req, res, next) {
 export async function sendMessage(req, res, next) {
   try {
     const { text } = sendMessageSchema.parse(req.body);
-    await participantConversationOrThrow(req.params.id, req.user.id);
+    const conv = await participantConversationOrThrow(req.params.id, req.user.id);
 
     const message = await prisma.message.create({
       data: { conversationId: req.params.id, senderId: req.user.id, text },
@@ -102,6 +103,17 @@ export async function sendMessage(req, res, next) {
 
     const serialized = serializeMessage(message);
     emitChatMessage(req.params.id, serialized); // live-deliver to the room
+
+    // Notify the other participant only when they aren't currently connected.
+    const recipientId = conv.buyerId === req.user.id ? conv.cook?.userId : conv.buyerId;
+    if (recipientId && !isUserOnline(recipientId)) {
+      createNotification({
+        userId: recipientId,
+        type: 'NEW_MESSAGE',
+        payload: { conversationId: conv.id, orderId: conv.orderId, title: 'Нове повідомлення', body: text.slice(0, 80) },
+      }).catch(() => {});
+    }
+
     res.status(201).json({ message: serialized });
   } catch (err) {
     next(err);

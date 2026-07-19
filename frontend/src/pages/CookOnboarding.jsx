@@ -5,6 +5,7 @@ import { useI18n } from '../i18n/index.jsx';
 import api, { apiError } from '../api/client.js';
 import CookShell from '../components/CookShell.jsx';
 import LangSwitch from '../components/LangSwitch.jsx';
+import TelegramConnect from '../components/TelegramConnect.jsx';
 import { ChefHatIcon, VerifiedBadge, MapPinIcon, FoodIcon, CartIcon } from '../components/icons.jsx';
 
 // Small inline check for completed steps.
@@ -87,6 +88,10 @@ export default function CookOnboarding() {
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
           <LockedCard Icon={FoodIcon} label={verified ? t('menuOpenHint') : t('menuSoon')} enabled={verified} to={verified ? '/cook/menu' : undefined} />
           <LockedCard Icon={CartIcon} label={verified ? t('ordersOpenHint') : t('ordersSoon')} enabled={verified} to={verified ? '/cook/orders' : undefined} />
+        </div>
+
+        <div className="mt-6">
+          <TelegramConnect />
         </div>
 
         <div className="mt-6">

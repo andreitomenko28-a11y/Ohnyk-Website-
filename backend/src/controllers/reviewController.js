@@ -3,6 +3,7 @@ import { httpError } from '../middleware/errorHandler.js';
 import { createReviewSchema, listReviewsSchema, reviewReplySchema } from '../validation/schemas.js';
 import { recomputeCookRating } from '../lib/reviews.js';
 import { saveImage, deleteByUrl } from '../lib/storage.js';
+import { createNotification } from '../lib/notify.js';
 
 const MAX_REVIEW_PHOTOS = 5;
 
@@ -68,6 +69,16 @@ export async function upsertReview(req, res, next) {
     // Best-effort cleanup of dropped photos.
     for (const url of prevPhotos.filter((u) => !photos.includes(u))) {
       deleteByUrl(url).catch(() => {});
+    }
+
+    // Notify the cook of a brand-new review (not on edits).
+    if (!existing) {
+      const c = await prisma.cook.findUnique({ where: { id: order.cookId }, select: { userId: true } });
+      await createNotification({
+        userId: c?.userId,
+        type: 'REVIEW_RECEIVED',
+        payload: { reviewId: review.id, rating, title: 'Новий відгук', body: `Оцінка ${rating}★` },
+      }).catch(() => {});
     }
 
     res.status(201).json({ review: serializeReview(review) });

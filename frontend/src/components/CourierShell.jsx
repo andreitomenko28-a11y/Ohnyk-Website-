@@ -3,6 +3,7 @@ import { useI18n } from '../i18n/index.jsx';
 import { FlameMark } from './Logo.jsx';
 import Wordmark from './Wordmark.jsx';
 import ThemeToggle from './ThemeToggle.jsx';
+import NotificationBell from './NotificationBell.jsx';
 import { LogoutIcon, CourierIcon } from './icons.jsx';
 
 // Shell for the courier area: static top bar with brand + logout.
@@ -20,6 +21,7 @@ export default function CourierShell({ children }) {
               <Wordmark />
             </span>
             <div className="flex items-center gap-2">
+              <NotificationBell />
               <ThemeToggle />
               <button
                 onClick={logout}
