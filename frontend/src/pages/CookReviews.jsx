@@ -118,6 +118,13 @@ function ReviewRow({ review, lang, t, onChange }) {
       </div>
       <StarRating value={review.rating} size="h-3.5 w-3.5" />
       {review.comment && <p className="mt-1.5 text-[13.5px] leading-relaxed">{review.comment}</p>}
+      {review.photos?.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {review.photos.map((url) => (
+            <img key={url} src={url} alt="" className="h-16 w-16 rounded-lg object-cover" />
+          ))}
+        </div>
+      )}
 
       {/* Reply */}
       {review.reply && !editing ? (

@@ -281,6 +281,7 @@ model Review {
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   rating    Int // 1..5
   comment   String? // optional free text
+  photos    String[]  @default([]) // Module 6.2 — review photos (webp URLs)
   reply     String? // optional cook response (Module 5.3)
   repliedAt DateTime?
   createdAt DateTime @default(now())
