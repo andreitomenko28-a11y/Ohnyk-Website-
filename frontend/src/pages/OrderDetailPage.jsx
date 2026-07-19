@@ -4,6 +4,7 @@ import { useI18n } from '../i18n/index.jsx';
 import api, { apiError } from '../api/client.js';
 import OrderStatusStepper from '../components/OrderStatusStepper.jsx';
 import ReviewCard from '../components/ReviewCard.jsx';
+import OrderChat from '../components/OrderChat.jsx';
 
 const LIVE = ['COURIER_ASSIGNED', 'PICKED_UP', 'ON_THE_WAY'];
 
@@ -14,6 +15,7 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [chatOpen, setChatOpen] = useState(false);
 
   const reload = useCallback(async () => {
     try {
@@ -56,11 +58,19 @@ export default function OrderDetailPage() {
             </span>
           </div>
           <OrderStatusStepper deliveryMethod={order.deliveryMethod} status={order.status} timeline={order.timeline} />
-          {canTrack && (
-            <button onClick={() => navigate(`/track/${order.id}`)} className="btn-primary mt-4">
-              {t('trackOrder')}
+          <div className="mt-4 flex flex-wrap gap-2">
+            {canTrack && (
+              <button onClick={() => navigate(`/track/${order.id}`)} className="btn-primary !w-auto !px-5">
+                {t('trackOrder')}
+              </button>
+            )}
+            <button
+              onClick={() => setChatOpen(true)}
+              className="rounded-xl border-[1.5px] border-[color:var(--line)] px-5 py-3 text-sm font-semibold hover:border-ember hover:text-ember"
+            >
+              {t('chatOpen')}
             </button>
-          )}
+          </div>
         </section>
 
         {/* Delivery */}
@@ -124,6 +134,8 @@ export default function OrderDetailPage() {
           />
         )}
       </div>
+
+      {chatOpen && <OrderChat orderId={order.id} title={t('chatTitleBuyer')} onClose={() => setChatOpen(false)} />}
     </div>
   );
 }

@@ -250,3 +250,13 @@ export const reviewReplySchema = z.object({
   reply: z.string().trim().min(1, 'Відповідь не може бути порожньою').max(1000, 'Відповідь задовга'),
 });
 
+
+// --- Phase 6.1: in-app chat -------------------------------------------------
+export const sendMessageSchema = z.object({
+  text: z.string().trim().min(1, 'Повідомлення порожнє').max(2000, 'Повідомлення задовге'),
+});
+
+export const listMessagesSchema = z.object({
+  cursor: z.string().optional(), // ISO date of the oldest loaded message
+  limit: z.coerce.number().int().min(1).max(50).default(30),
+});

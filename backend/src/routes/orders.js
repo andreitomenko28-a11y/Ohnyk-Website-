@@ -3,6 +3,7 @@ import { authGuard } from '../middleware/authGuard.js';
 import { checkout, listMyOrders, getMyOrder, deliverySlots } from '../controllers/orderController.js';
 import { initPayment, getPaymentStatus, mockComplete } from '../controllers/paymentController.js';
 import { upsertReview, deleteReview } from '../controllers/reviewController.js';
+import { getOrderConversation } from '../controllers/chatController.js';
 
 // Buyer-facing orders (checkout + history). Any authenticated user may buy.
 const router = Router();
@@ -22,5 +23,8 @@ router.post('/:id/pay/mock', mockComplete);
 // Reviews (Module 5.1) — verified purchase: one review per delivered order.
 router.post('/:id/review', upsertReview);
 router.delete('/:id/review', deleteReview);
+
+// Chat (Module 6.1) — get or create the order's buyer↔cook conversation.
+router.get('/:orderId/conversation', getOrderConversation);
 
 export default router;

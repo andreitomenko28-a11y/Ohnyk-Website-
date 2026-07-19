@@ -96,6 +96,10 @@ model User {
   passwordResets PasswordReset[]
   orders         Order[] // orders placed as a buyer
   reviews        Review[] // reviews written as a buyer
+
+  // Phase 6.1: in-app chat
+  conversations  Conversation[] @relation("BuyerConversations") // chats as the buyer
+  sentMessages   Message[]      @relation("SentMessages")
 }
 
 model Cook {
@@ -131,6 +135,8 @@ model Cook {
   dishes  Dish[]
   orders  Order[] // incoming orders for this cook
   reviews Review[]
+
+  conversations Conversation[] // Phase 6.1: in-app chat
 }
 
 model Address {
@@ -255,6 +261,7 @@ model Order {
   items  OrderItem[]
   events OrderEvent[]
   review Review? // buyer's review, once delivered
+  conversation Conversation? // Phase 6.1: in-app chat
 
   @@index([cookId, status])
   @@index([buyerId])
@@ -281,6 +288,39 @@ model Review {
 
   @@index([cookId])
   @@index([authorId])
+}
+
+// Phase 6.1 — In-app chat. One conversation per order, between the order's
+// buyer and its cook. Messages are delivered live over socket.io but persisted
+// here (REST is the source of truth; the socket is delivery-only).
+model Conversation {
+  id            String   @id @default(uuid())
+  orderId       String   @unique
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  buyerId       String
+  buyer         User     @relation("BuyerConversations", fields: [buyerId], references: [id], onDelete: Cascade)
+  cookId        String
+  cook          Cook     @relation(fields: [cookId], references: [id], onDelete: Cascade)
+  lastMessageAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  messages Message[]
+
+  @@index([buyerId])
+  @@index([cookId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String // User.id — the buyer or the cook's user
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  text           String
+  readAt         DateTime? // read receipts (optional for MVP)
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
 }
 
 // Append-only status history for an order (the delivery timeline).

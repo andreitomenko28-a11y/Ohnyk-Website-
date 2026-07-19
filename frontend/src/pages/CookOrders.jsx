@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useI18n } from '../i18n/index.jsx';
 import api, { apiError } from '../api/client.js';
 import CookShell from '../components/CookShell.jsx';
+import OrderChat from '../components/OrderChat.jsx';
 import { CartIcon } from '../components/icons.jsx';
 
 // Cook-actionable next statuses (mirrors the backend), per delivery method.
@@ -170,6 +171,7 @@ function StatsRow({ stats, t }) {
 function OrderCard({ order, t, lang, onChanged }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [chatOpen, setChatOpen] = useState(false);
 
   async function advance(status) {
     setErr('');
@@ -240,6 +242,15 @@ function OrderCard({ order, t, lang, onChanged }) {
 
       {err && <p className="mt-2 text-[12.5px] text-red-500">{err}</p>}
 
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          onClick={() => setChatOpen(true)}
+          className="rounded-lg border border-[color:var(--line)] px-3.5 py-2 text-[13px] font-semibold text-[color:var(--muted)] transition-colors hover:border-ember hover:text-ember"
+        >
+          {t('chatOpen')}
+        </button>
+      </div>
+
       {nextFor(order).length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
           {nextFor(order).map((s) => (
@@ -258,6 +269,8 @@ function OrderCard({ order, t, lang, onChanged }) {
           ))}
         </div>
       )}
+
+      {chatOpen && <OrderChat orderId={order.id} title={t('chatTitleCook')} onClose={() => setChatOpen(false)} />}
     </div>
   );
 }
