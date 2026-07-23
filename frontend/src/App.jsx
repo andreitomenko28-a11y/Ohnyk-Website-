@@ -25,6 +25,9 @@ import OrderDetailPage from './pages/OrderDetailPage.jsx';
 import Profile from './pages/Profile.jsx';
 import Addresses from './pages/Addresses.jsx';
 import Favorites from './pages/Favorites.jsx';
+import AdminAnalytics from './pages/AdminAnalytics.jsx';
+import AdminUsers from './pages/AdminUsers.jsx';
+import AdminCooks from './pages/AdminCooks.jsx';
 
 // Wraps a page in the auth guard + the responsive app shell (sidebar/bottom nav).
 // Cooks are redirected to their own area — the customer shell isn't for them.
@@ -42,6 +45,22 @@ function CustomerOnly({ children }) {
   const { user } = useAuth();
   if (user?.role === 'COOK') return <Navigate to="/cook" replace />;
   if (user?.role === 'COURIER') return <Navigate to="/courier" replace />;
+  if (user?.role === 'ADMIN') return <Navigate to="/admin" replace />;
+  return children;
+}
+
+// Admin-only area (own shell).
+function AdminProtected({ children }) {
+  return (
+    <ProtectedRoute>
+      <AdminOnly>{children}</AdminOnly>
+    </ProtectedRoute>
+  );
+}
+
+function AdminOnly({ children }) {
+  const { user } = useAuth();
+  if (user?.role !== 'ADMIN') return <Navigate to="/" replace />;
   return children;
 }
 
@@ -93,6 +112,11 @@ export default function App() {
                 <Route path="/cook/reviews" element={<CookProtected><CookReviewsPage /></CookProtected>} />
 
                 <Route path="/courier" element={<CourierProtected><CourierDashboard /></CourierProtected>} />
+
+                <Route path="/admin" element={<Navigate to="/admin/analytics" replace />} />
+                <Route path="/admin/analytics" element={<AdminProtected><AdminAnalytics /></AdminProtected>} />
+                <Route path="/admin/users" element={<AdminProtected><AdminUsers /></AdminProtected>} />
+                <Route path="/admin/cooks" element={<AdminProtected><AdminCooks /></AdminProtected>} />
 
                 <Route path="/" element={<Protected><HomePage /></Protected>} />
                 <Route path="/discovery" element={<Protected><Discovery /></Protected>} />
