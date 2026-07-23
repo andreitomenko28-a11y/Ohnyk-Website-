@@ -286,3 +286,10 @@ export const listAdminCooksSchema = z.object({
 export const blockUserSchema = z.object({
   reason: z.string().trim().max(300).optional(),
 });
+
+// --- Phase 7.2: admin analytics ---------------------------------------------
+export const analyticsSchema = z.object({
+  period: z.enum(['7d', '30d', '90d', 'all']).optional(),
+  dateFrom: z.string().datetime().optional().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
+  dateTo: z.string().datetime().optional().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
+});

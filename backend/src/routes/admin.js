@@ -9,6 +9,7 @@ import {
   blockUser,
   unblockUser,
 } from '../controllers/adminController.js';
+import { adminAnalytics } from '../controllers/analyticsController.js';
 
 // Admin-only endpoints. Cook verification queue (Phase 3) + user/cook
 // moderation (Phase 7.1). The ADMIN role guard applies to the whole router.
@@ -26,5 +27,8 @@ router.get('/users', listUsers);
 router.get('/cooks', listCooks);
 router.patch('/users/:id/block', blockUser);
 router.patch('/users/:id/unblock', unblockUser);
+
+// Analytics (Phase 7.2).
+router.get('/analytics', adminAnalytics);
 
 export default router;
