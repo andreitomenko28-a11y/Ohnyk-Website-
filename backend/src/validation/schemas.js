@@ -266,3 +266,23 @@ export const listNotificationsSchema = z.object({
   cursor: z.string().optional(), // ISO date of the oldest loaded notification
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
+
+// --- Phase 7.1: admin moderation --------------------------------------------
+export const listUsersSchema = z.object({
+  q: z.string().trim().optional(), // name / email search
+  role: z.enum(['CUSTOMER', 'COOK', 'COURIER', 'ADMIN']).optional(),
+  blocked: z.enum(['true', 'false']).optional().transform((v) => (v === undefined ? undefined : v === 'true')),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+export const listAdminCooksSchema = z.object({
+  status: z.enum(['PENDING', 'VERIFIED', 'REJECTED']).optional(), // verificationStatus
+  q: z.string().trim().optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+export const blockUserSchema = z.object({
+  reason: z.string().trim().max(300).optional(),
+});

@@ -1,8 +1,11 @@
 import { verifyAccessToken } from '../lib/jwt.js';
+import { prisma } from '../lib/prisma.js';
 import { httpError } from './errorHandler.js';
 
 // Requires a valid Bearer access token. Attaches { id, role } to req.user.
-export function authGuard(req, res, next) {
+// Also enforces moderation: a blocked account (Phase 7.1) is rejected on every
+// request, so a block takes effect immediately (not only on next login).
+export async function authGuard(req, res, next) {
   const header = req.headers.authorization || '';
   const [scheme, token] = header.split(' ');
 
@@ -10,12 +13,24 @@ export function authGuard(req, res, next) {
     return next(httpError(401, 'Потрібна авторизація'));
   }
 
+  let payload;
   try {
-    const payload = verifyAccessToken(token);
+    payload = verifyAccessToken(token);
+  } catch {
+    return next(httpError(401, 'Недійсний або прострочений токен'));
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { isBlocked: true },
+    });
+    if (!user) return next(httpError(401, 'Недійсний або прострочений токен'));
+    if (user.isBlocked) return next(httpError(403, 'Ваш акаунт заблоковано'));
     req.user = { id: payload.sub, role: payload.role };
     next();
-  } catch {
-    next(httpError(401, 'Недійсний або прострочений токен'));
+  } catch (err) {
+    next(err);
   }
 }
 

@@ -101,6 +101,12 @@ model User {
   telegramChatId    String?
   telegramLinkToken String? @unique // short-lived token for the /start deep link
 
+  // Phase 7.1 — admin moderation.
+  isBlocked        Boolean   @default(false)
+  blockReason      String?
+  blockedAt        DateTime?
+  blockedByAdminId String?
+
   cookProfile    Cook?
   courierProfile CourierProfile?
   addresses      Address[]
@@ -114,6 +120,22 @@ model User {
   sentMessages   Message[]      @relation("SentMessages")
 
   notifications  Notification[] // Phase 6.3
+  adminLogs      AdminLog[] // Phase 7.1 — actions performed as an admin
+}
+
+// Phase 7.1 — audit trail of admin moderation actions.
+model AdminLog {
+  id         String   @id @default(uuid())
+  adminId    String
+  admin      User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  action     String // 'cook.verify' | 'cook.reject' | 'user.block' | 'user.unblock'
+  targetType String // 'cook' | 'user'
+  targetId   String
+  meta       Json?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([targetType, targetId])
 }
 
 model Cook {
