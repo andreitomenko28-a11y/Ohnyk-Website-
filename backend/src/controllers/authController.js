@@ -134,6 +134,8 @@ export async function login(req, res, next) {
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) throw httpError(401, 'Невірний email/телефон або пароль');
 
+    if (user.isBlocked) throw httpError(403, 'Ваш акаунт заблоковано');
+
     const tokens = issueTokens(user);
     res.json({ user: publicUser(user), ...tokens });
   } catch (err) {
@@ -158,6 +160,7 @@ export async function refresh(req, res, next) {
       include: { cookProfile: true, courierProfile: true },
     });
     if (!user) throw httpError(401, 'Користувача не знайдено');
+    if (user.isBlocked) throw httpError(403, 'Ваш акаунт заблоковано');
 
     const tokens = issueTokens(user);
     res.json({ user: publicUser(user), ...tokens });
