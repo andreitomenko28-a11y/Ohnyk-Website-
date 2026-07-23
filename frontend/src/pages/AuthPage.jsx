@@ -12,6 +12,7 @@ import { BagIcon, ChefHatIcon, CourierIcon } from '../components/icons.jsx';
 function homeFor(role) {
   if (role === 'COOK') return '/cook';
   if (role === 'COURIER') return '/courier';
+  if (role === 'ADMIN') return '/admin';
   return '/';
 }
 
