@@ -19,6 +19,40 @@ function isProd() {
   return process.env.NODE_ENV === 'production';
 }
 
+const DEV_CORS_DEFAULT = 'http://localhost:5173';
+
+// Parsed, cleaned allow-list of frontend origins for CORS. Falls back to the
+// dev origin outside production; in production the value must be set explicitly
+// (enforced by collectConfigProblems).
+export function corsOrigins() {
+  return (process.env.CORS_ORIGIN || DEV_CORS_DEFAULT)
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+}
+
+// Non-secret configuration that is unsafe in production if wrong.
+export function collectConfigProblems() {
+  const problems = [];
+
+  if (isProd()) {
+    if (!process.env.CORS_ORIGIN || !process.env.CORS_ORIGIN.trim()) {
+      problems.push('CORS_ORIGIN must be set in production (no localhost fallback)');
+    }
+    const origins = corsOrigins();
+    if (origins.includes('*')) {
+      problems.push("CORS_ORIGIN must not be '*' with credentialed requests");
+    }
+    for (const o of origins) {
+      if (o !== '*' && !/^https?:\/\/.+/i.test(o)) {
+        problems.push(`CORS_ORIGIN entry is not a valid origin: ${o}`);
+      }
+    }
+  }
+
+  return problems;
+}
+
 // Returns a list of human-readable problems with the current secret config.
 export function collectSecretProblems() {
   const problems = [];
@@ -42,12 +76,12 @@ export function collectSecretProblems() {
 }
 
 // Call once at process startup (server.js). Throws in production if any secret
-// is missing/insecure; otherwise logs a warning and continues.
+// or config value is missing/insecure; otherwise logs a warning and continues.
 export function assertSecureEnv() {
-  const problems = collectSecretProblems();
+  const problems = [...collectSecretProblems(), ...collectConfigProblems()];
   if (problems.length === 0) return;
 
-  const header = 'Insecure secret configuration:';
+  const header = 'Insecure configuration:';
   const detail = problems.map((p) => `  • ${p}`).join('\n');
 
   if (isProd()) {
