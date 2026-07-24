@@ -23,7 +23,8 @@ export const registerSchema = z
     deliveryZone: z.string().trim().max(200).optional(),
     // Optional courier field, applied only when role === 'COURIER'.
     transport: z.enum(['WALKING', 'BICYCLE', 'MOTORBIKE', 'CAR']).optional(),
-  });
+  })
+  .strict();
 
 // Courier: toggle availability and choose transport.
 export const courierStatusSchema = z.object({
@@ -57,7 +58,7 @@ export const updateUserSchema = z.object({
   avatar: z.string().trim().max(500_000).optional(), // URL or base64
   bio: z.string().trim().max(500).optional(),
   city: z.string().trim().min(1).optional(), // cook city
-});
+}).strict();
 
 export const createAddressSchema = z.object({
   city: z.string().trim().min(1, 'Вкажіть місто'),
@@ -66,7 +67,7 @@ export const createAddressSchema = z.object({
   apartment: z.string().trim().optional(),
   postalCode: z.string().trim().optional(),
   isDefault: z.boolean().optional().default(false),
-});
+}).strict();
 
 // All fields optional for PATCH; at least one must be present.
 export const updateAddressSchema = z
@@ -78,6 +79,7 @@ export const updateAddressSchema = z
     postalCode: z.string().trim().optional(),
     isDefault: z.boolean().optional(),
   })
+  .strict()
   .refine((d) => Object.keys(d).length > 0, {
     message: 'Немає полів для оновлення',
   });
@@ -151,6 +153,7 @@ export const cookProfileUpdateSchema = z
     deliveryZone: z.string().trim().max(200).optional().or(z.literal('')),
     city: z.string().trim().min(1).max(80).optional(),
   })
+  .strict()
   .refine((d) => Object.keys(d).length > 0, { message: 'Немає полів для оновлення' });
 
 export const phoneVerifyConfirmSchema = z.object({
@@ -188,10 +191,11 @@ export const createDishSchema = z.object({
   price: z.coerce.number({ invalid_type_error: 'Вкажіть ціну' }).positive('Ціна має бути більшою за 0'),
   isAvailable: z.coerce.boolean().optional().default(true),
   availableDays: z.array(z.enum(DAYS)).max(7).optional().default([]),
-});
+}).strict();
 
 export const updateDishSchema = z
   .object(dishOptional)
+  .strict()
   .refine((d) => Object.keys(d).length > 0, { message: 'Немає полів для оновлення' });
 
 // --- Phase 3.3: orders & dashboard ------------------------------------------
@@ -217,7 +221,7 @@ export const createOrderSchema = z.object({
   note: z.string().trim().max(500).optional().or(z.literal('')),
   scheduledFor: z.string().datetime({ message: 'Некоректний час доставки' }).optional(),
   deliveryMethod: z.enum(['PICKUP', 'COOK_DELIVERY', 'COURIER']).default('COURIER'),
-});
+}).strict();
 
 export const updateOrderStatusSchema = z.object({
   status: z.enum(ORDER_STATUSES),
@@ -239,6 +243,8 @@ export const createReviewSchema = z.object({
     .max(1000, 'Коментар задовгий')
     .optional()
     .or(z.literal('').transform(() => undefined)),
+  // NB: not .strict() — the multipart edit form also carries `keepPhotos`,
+  // which the controller reads separately from this schema.
 });
 
 export const listReviewsSchema = z.object({

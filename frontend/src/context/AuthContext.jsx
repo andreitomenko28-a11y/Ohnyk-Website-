@@ -54,6 +54,10 @@ export function AuthProvider({ children }) {
   );
 
   const logout = useCallback(() => {
+    // Revoke the refresh-token family server-side (best-effort; don't block the
+    // UI on it). Then clear local state.
+    const refreshToken = tokenStore.getRefresh();
+    if (refreshToken) api.post('/auth/logout', { refreshToken }).catch(() => {});
     tokenStore.clear();
     setUser(null);
     // Drop the realtime connection so it can't stay authenticated as this user.

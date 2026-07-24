@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 
 import { globalLimiter } from './middleware/rateLimit.js';
+import { corsOrigins } from './config/env.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import addressRoutes from './routes/addresses.js';
@@ -40,12 +41,20 @@ export function createApp() {
     }),
   );
 
-  // CORS — allow the frontend origin (comma-separated list supported).
-  const origins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
-    .split(',')
-    .map((o) => o.trim());
-
-  app.use(cors({ origin: origins, credentials: true }));
+  // CORS — reflect only origins on the explicit allow-list (comma-separated
+  // CORS_ORIGIN; dev fallback to localhost). Requests with no Origin (curl,
+  // server-to-server, same-origin) are allowed; a disallowed browser origin is
+  // rejected. Production requires CORS_ORIGIN to be set (see assertSecureEnv).
+  const origins = corsOrigins();
+  app.use(
+    cors({
+      origin(origin, cb) {
+        if (!origin || origins.includes(origin)) return cb(null, true);
+        return cb(null, false);
+      },
+      credentials: true,
+    }),
+  );
 
   // Generic API-wide flood ceiling. Route-specific limiters (auth, upload,
   // order) are mounted on their routers for tighter, targeted limits.

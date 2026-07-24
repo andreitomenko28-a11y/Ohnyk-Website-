@@ -3,6 +3,7 @@ import {
   register,
   login,
   refresh,
+  logout,
   me,
   passwordReset,
   passwordResetConfirm,
@@ -15,6 +16,7 @@ const router = Router();
 router.post('/register', registerLimiter, register);
 router.post('/login', authLimiter, login);
 router.post('/refresh', authLimiter, refresh);
+router.post('/logout', logout);
 router.get('/me', authGuard, me);
 router.post('/password-reset', authLimiter, passwordReset);
 router.post('/password-reset-confirm', authLimiter, passwordResetConfirm);
