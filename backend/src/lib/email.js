@@ -2,6 +2,8 @@
 //
 // Without BREVO_API_KEY we log instead of sending, so admin flows are testable
 // with no provider. Wire Brevo (or any provider) here later — a drop-in change.
+import { logger } from './logger.js';
+
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const FROM = process.env.EMAIL_FROM || 'Ohnyk <no-reply@ohnyk.app>';
 
@@ -11,7 +13,9 @@ export function emailEnabled() {
 
 export async function sendEmail({ to, subject, text }) {
   if (!emailEnabled()) {
-    console.log(`[email:stub] → ${to} | ${subject} | ${text?.replace(/\n/g, ' ')}`);
+    // Body may contain reset links/tokens — the logger redacts secret-shaped
+    // strings before anything reaches stdout.
+    logger.info('email:stub', { to, subject, text: text?.replace(/\n/g, ' ') });
     return { delivered: false, channel: 'stub' };
   }
   await fetch('https://api.brevo.com/v3/smtp/email', {

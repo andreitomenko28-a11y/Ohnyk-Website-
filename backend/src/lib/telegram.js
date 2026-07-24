@@ -4,6 +4,8 @@
 // and messages are logged, so the whole flow is testable with no real bot. Set
 // TELEGRAM_BOT_TOKEN (+ optionally TELEGRAM_BOT_USERNAME) to go live — sending
 // then hits the Bot API, and the /start webhook links a user's chat id.
+import { logger } from './logger.js';
+
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || 'OhnykBot';
 
@@ -23,7 +25,7 @@ export function linkUrl(token) {
 // Send a message to a linked chat. No-op log in stub mode.
 export async function sendTelegram(chatId, text) {
   if (!telegramEnabled()) {
-    console.log(`[telegram:stub] → chat ${chatId}: ${text.replace(/\n/g, ' | ')}`);
+    logger.info('telegram:stub', { chatId, text: text.replace(/\n/g, ' | ') });
     return { delivered: false, channel: 'stub' };
   }
   await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {

@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 
+import { globalLimiter } from './middleware/rateLimit.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import addressRoutes from './routes/addresses.js';
@@ -23,12 +25,31 @@ import { UPLOAD_ROOT } from './lib/storage.js';
 export function createApp() {
   const app = express();
 
+  // Behind a reverse proxy (prod) the client IP is in X-Forwarded-For; without
+  // this, rate limiting would bucket every request under the proxy's IP.
+  if (process.env.TRUST_PROXY) {
+    app.set('trust proxy', Number(process.env.TRUST_PROXY) || 1);
+  }
+
+  // Security headers (CSP, HSTS, X-Frame-Options, nosniff, …). The API serves
+  // JSON + uploaded media, not HTML, so the restrictive CSP default is fine and
+  // cross-origin resource loading is left enabled for the separate frontend.
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
+
   // CORS — allow the frontend origin (comma-separated list supported).
   const origins = (process.env.CORS_ORIGIN || 'http://localhost:5173')
     .split(',')
     .map((o) => o.trim());
 
   app.use(cors({ origin: origins, credentials: true }));
+
+  // Generic API-wide flood ceiling. Route-specific limiters (auth, upload,
+  // order) are mounted on their routers for tighter, targeted limits.
+  app.use('/api', globalLimiter);
   // Larger limit accommodates base64 avatar/dish images. Keep the raw bytes so
   // the payment webhook can verify the provider's signature over the exact body.
   app.use(

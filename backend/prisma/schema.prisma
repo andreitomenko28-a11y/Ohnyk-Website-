@@ -121,6 +121,25 @@ model User {
 
   notifications  Notification[] // Phase 6.3
   adminLogs      AdminLog[] // Phase 7.1 — actions performed as an admin
+
+  phoneVerification PhoneVerification? // active phone-verification challenge
+}
+
+// Phone verification challenge — one active row per user (upserted on request).
+// The code is stored only as an HMAC hash; a wrong guess increments `attempts`
+// (locked past a cap), the code expires, and a successful check consumes it so
+// it can't be replayed. Protects against brute-forcing the short numeric code.
+model PhoneVerification {
+  id         String    @id @default(uuid())
+  userId     String    @unique
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone      String // the number the code was sent to
+  codeHash   String // HMAC-SHA256 of the code — never the plaintext
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  lastSentAt DateTime  @default(now())
+  createdAt  DateTime  @default(now())
 }
 
 // Phase 7.1 — audit trail of admin moderation actions.

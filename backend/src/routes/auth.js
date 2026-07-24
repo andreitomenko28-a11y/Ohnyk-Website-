@@ -8,14 +8,15 @@ import {
   passwordResetConfirm,
 } from '../controllers/authController.js';
 import { authGuard } from '../middleware/authGuard.js';
+import { authLimiter, registerLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
 
-router.post('/register', register);
-router.post('/login', login);
-router.post('/refresh', refresh);
+router.post('/register', registerLimiter, register);
+router.post('/login', authLimiter, login);
+router.post('/refresh', authLimiter, refresh);
 router.get('/me', authGuard, me);
-router.post('/password-reset', passwordReset);
-router.post('/password-reset-confirm', passwordResetConfirm);
+router.post('/password-reset', authLimiter, passwordReset);
+router.post('/password-reset-confirm', authLimiter, passwordResetConfirm);
 
 export default router;

@@ -80,12 +80,12 @@ export async function uploadProfilePhoto(req, res, next) {
   }
 }
 
-// POST /api/cook/verification/phone/request  — STUB (see lib/sms.js)
+// POST /api/cook/verification/phone/request  — issues a hashed, expiring code.
 export async function requestPhoneVerification(req, res, next) {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.user.id } });
     if (!user?.phone) throw httpError(400, 'Спершу додайте номер телефону в профілі');
-    const result = await sendVerificationCode(user.phone);
+    const result = await sendVerificationCode(user.id, user.phone);
     res.json({
       message: 'Код підтвердження надіслано на ваш номер.',
       ...result, // includes devCode outside production
@@ -95,13 +95,27 @@ export async function requestPhoneVerification(req, res, next) {
   }
 }
 
-// POST /api/cook/verification/phone/confirm  — STUB accepts fixed code "0000"
+// Maps a check failure reason to an HTTP status + message. A locked/expired
+// challenge is a distinct, actionable state (re-request), not a plain 400.
+function verificationError(reason) {
+  switch (reason) {
+    case 'locked':
+      return httpError(429, 'Забагато невдалих спроб. Запитайте новий код.');
+    case 'expired':
+    case 'consumed':
+    case 'no_code':
+      return httpError(400, 'Код недійсний або застарілий. Запитайте новий код.');
+    default: // 'mismatch'
+      return httpError(400, 'Невірний код підтвердження');
+  }
+}
+
+// POST /api/cook/verification/phone/confirm  — attempts are capped (see sms.js).
 export async function confirmPhoneVerification(req, res, next) {
   try {
     const { code } = phoneVerifyConfirmSchema.parse(req.body);
-    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
-    const ok = await checkVerificationCode(user?.phone, code);
-    if (!ok) throw httpError(400, 'Невірний код підтвердження');
+    const { ok, reason } = await checkVerificationCode(req.user.id, code);
+    if (!ok) throw verificationError(reason);
     const cook = await prisma.cook.update({
       where: { id: req.cook.id },
       data: { phoneVerified: true },
