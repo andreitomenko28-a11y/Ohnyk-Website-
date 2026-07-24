@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authGuard, requireRole } from '../middleware/authGuard.js';
 import { loadCook, requireActiveCook } from '../middleware/cookGuard.js';
 import { imageUpload, docUpload, videoUpload, handleUploadError, verifyFileSignature } from '../lib/upload.js';
-import { uploadLimiter } from '../middleware/rateLimit.js';
+import { uploadLimiter, verifyLimiter } from '../middleware/rateLimit.js';
 import {
   getMyCookProfile,
   updateMyCookProfile,
@@ -40,9 +40,10 @@ router.get('/me', getMyCookProfile);
 router.put('/profile', updateMyCookProfile);
 router.post('/profile/photo', uploadLimiter, imageUpload.single('photo'), handleUploadError, verifyFileSignature, uploadProfilePhoto);
 
-// Phone verification (stub provider — see lib/sms.js).
-router.post('/verification/phone/request', requestPhoneVerification);
-router.post('/verification/phone/confirm', confirmPhoneVerification);
+// Phone verification (stub provider — see lib/sms.js). Rate-limited on top of
+// the per-challenge attempt cap to curb SMS spam and attempt-reset loops.
+router.post('/verification/phone/request', verifyLimiter, requestPhoneVerification);
+router.post('/verification/phone/confirm', verifyLimiter, confirmPhoneVerification);
 
 // Document upload for manual admin review — personal medical record.
 router.post(

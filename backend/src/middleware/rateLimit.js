@@ -84,6 +84,16 @@ export const uploadLimiter = guard(
   }),
 );
 
+// Phone-verification request/confirm. Caps how often codes are sent (SMS cost)
+// and closes the loop where an attacker re-requests a code to reset the
+// per-challenge attempt counter and keep guessing.
+export const verifyLimiter = guard(
+  makeRateLimiter({
+    windowMs: num('RATE_VERIFY_WINDOW_MS', 15 * MIN),
+    max: num('RATE_VERIFY_MAX', 15),
+  }),
+);
+
 // Generic ceiling for the whole API, catching anything not covered above.
 export const globalLimiter = guard(
   makeRateLimiter({
