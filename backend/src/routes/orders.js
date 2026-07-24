@@ -5,6 +5,7 @@ import { initPayment, getPaymentStatus, mockComplete } from '../controllers/paym
 import { upsertReview, deleteReview } from '../controllers/reviewController.js';
 import { getOrderConversation } from '../controllers/chatController.js';
 import { imageUpload, handleUploadError, verifyFileSignature } from '../lib/upload.js';
+import { orderLimiter, uploadLimiter } from '../middleware/rateLimit.js';
 
 // Buyer-facing orders (checkout + history). Any authenticated user may buy.
 const router = Router();
@@ -12,7 +13,7 @@ const router = Router();
 router.use(authGuard);
 
 router.get('/delivery-slots', deliverySlots);
-router.post('/', checkout);
+router.post('/', orderLimiter, checkout);
 router.get('/', listMyOrders);
 router.get('/:id', getMyOrder);
 
@@ -23,7 +24,7 @@ router.post('/:id/pay/mock', mockComplete);
 
 // Reviews (Module 5.1) — verified purchase: one review per delivered order.
 // Module 6.2: optional multipart `photos[]` (re-encoded to webp).
-router.post('/:id/review', imageUpload.array('photos', 5), handleUploadError, verifyFileSignature, upsertReview);
+router.post('/:id/review', uploadLimiter, imageUpload.array('photos', 5), handleUploadError, verifyFileSignature, upsertReview);
 router.delete('/:id/review', deleteReview);
 
 // Chat (Module 6.1) — get or create the order's buyer↔cook conversation.

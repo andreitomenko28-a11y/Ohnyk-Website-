@@ -2,6 +2,10 @@ import 'dotenv/config';
 import http from 'node:http';
 import { createApp } from './app.js';
 import { initRealtime } from './realtime/index.js';
+import { assertSecureEnv } from './config/env.js';
+
+// Fail fast on insecure secrets before binding the port (throws in production).
+assertSecureEnv();
 
 const app = createApp();
 const PORT = process.env.PORT || 4000;

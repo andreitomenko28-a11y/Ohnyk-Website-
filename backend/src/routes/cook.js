@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authGuard, requireRole } from '../middleware/authGuard.js';
 import { loadCook, requireActiveCook } from '../middleware/cookGuard.js';
 import { imageUpload, docUpload, videoUpload, handleUploadError, verifyFileSignature } from '../lib/upload.js';
+import { uploadLimiter } from '../middleware/rateLimit.js';
 import {
   getMyCookProfile,
   updateMyCookProfile,
@@ -37,7 +38,7 @@ router.use(authGuard, requireRole('COOK'), loadCook);
 
 router.get('/me', getMyCookProfile);
 router.put('/profile', updateMyCookProfile);
-router.post('/profile/photo', imageUpload.single('photo'), handleUploadError, verifyFileSignature, uploadProfilePhoto);
+router.post('/profile/photo', uploadLimiter, imageUpload.single('photo'), handleUploadError, verifyFileSignature, uploadProfilePhoto);
 
 // Phone verification (stub provider — see lib/sms.js).
 router.post('/verification/phone/request', requestPhoneVerification);
@@ -46,6 +47,7 @@ router.post('/verification/phone/confirm', confirmPhoneVerification);
 // Document upload for manual admin review — personal medical record.
 router.post(
   '/verification/document',
+  uploadLimiter,
   docUpload.single('document'),
   handleUploadError,
   verifyFileSignature,
@@ -55,6 +57,7 @@ router.post(
 // Identity document (passport / driver's licence) for identity verification.
 router.post(
   '/verification/identity',
+  uploadLimiter,
   docUpload.single('document'),
   handleUploadError,
   verifyFileSignature,
@@ -62,8 +65,8 @@ router.post(
 );
 
 // Optional kitchen photo & video — build buyer trust.
-router.post('/kitchen/photo', imageUpload.single('photo'), handleUploadError, verifyFileSignature, uploadKitchenPhoto);
-router.post('/kitchen/video', videoUpload.single('video'), handleUploadError, verifyFileSignature, uploadKitchenVideo);
+router.post('/kitchen/photo', uploadLimiter, imageUpload.single('photo'), handleUploadError, verifyFileSignature, uploadKitchenPhoto);
+router.post('/kitchen/video', uploadLimiter, videoUpload.single('video'), handleUploadError, verifyFileSignature, uploadKitchenVideo);
 
 // --- Menu management (Module 3.2) ------------------------------------------
 // Viewing the own menu is allowed while pending; publishing/editing requires a
@@ -75,6 +78,7 @@ router.delete('/dishes/:id', requireActiveCook, deleteDish);
 router.post(
   '/dishes/:id/photos',
   requireActiveCook,
+  uploadLimiter,
   imageUpload.array('photos', 8),
   handleUploadError,
   verifyFileSignature,
