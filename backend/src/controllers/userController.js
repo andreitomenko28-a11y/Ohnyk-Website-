@@ -116,9 +116,13 @@ export async function removeFavorite(req, res, next) {
   }
 }
 
-// GET /api/users/:id  (public profile)
+// GET /api/users/:id  (protected — owner or admin only; exposes email/phone).
+// Returns 404 (not 403) to others so ids can't be enumerated.
 export async function getUser(req, res, next) {
   try {
+    if (req.user.id !== req.params.id && req.user.role !== 'ADMIN') {
+      throw httpError(404, 'Користувача не знайдено');
+    }
     const user = await prisma.user.findUnique({
       where: { id: req.params.id },
       include: { cookProfile: true, courierProfile: true },

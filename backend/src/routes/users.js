@@ -26,8 +26,9 @@ router.get('/favorites', authGuard, listFavorites);
 router.put('/favorites/:cookId', authGuard, addFavorite);
 router.delete('/favorites/:cookId', authGuard, removeFavorite);
 
-// Public profile by id + owner/admin edit.
-router.get('/:id', getUser);
+// Profile by id — owner/admin only (returns email/phone, so it must not be
+// public). Cook *public* profiles are served separately via /api/cooks/:id.
+router.get('/:id', authGuard, getUser);
 router.patch('/:id', authGuard, updateUser);
 
 export default router;

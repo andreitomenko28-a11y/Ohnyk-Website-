@@ -1,17 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { request, registerUser } from './helpers.js';
+import { request, registerUser, createAdmin, authHeader } from './helpers.js';
 
 describe('Users', () => {
-  it('returns a public profile by id', async () => {
-    const { user } = await registerUser({ email: 'profile@example.com' });
-    const res = await request.get(`/api/users/${user.id}`);
+  it('returns the profile by id to its owner (never the password hash)', async () => {
+    const { user, accessToken } = await registerUser({ email: 'profile@example.com' });
+    const res = await request.get(`/api/users/${user.id}`).set(authHeader(accessToken));
     expect(res.status).toBe(200);
     expect(res.body.user.email).toBe('profile@example.com');
     expect(res.body.user.passwordHash).toBeUndefined();
   });
 
-  it('returns 404 for an unknown user', async () => {
-    const res = await request.get('/api/users/00000000-0000-0000-0000-000000000000');
+  it('returns 404 for an unknown user (to an admin, so the id space is probeable only by admins)', async () => {
+    const admin = await createAdmin();
+    const res = await request
+      .get('/api/users/00000000-0000-0000-0000-000000000000')
+      .set(authHeader(admin.accessToken));
     expect(res.status).toBe(404);
   });
 
