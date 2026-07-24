@@ -123,6 +123,27 @@ model User {
   adminLogs      AdminLog[] // Phase 7.1 — actions performed as an admin
 
   phoneVerification PhoneVerification? // active phone-verification challenge
+  refreshTokens     RefreshToken[] // rotating refresh-token sessions
+}
+
+// Rotating refresh tokens. Each login starts a family; every refresh rotates
+// the token (old one marked used) and issues a new one in the same family.
+// Presenting an already-used/revoked token = reuse → the whole family is
+// revoked (a stolen token can't outlive one silent rotation). Stored as a
+// hash, never the JWT itself.
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique // sha256 of the signed refresh JWT
+  familyId  String // rotation lineage; reuse anywhere revokes the family
+  expiresAt DateTime
+  usedAt    DateTime? // set when rotated
+  revokedAt DateTime? // set on reuse-detection or logout
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@index([familyId])
 }
 
 // Phone verification challenge — one active row per user (upserted on request).

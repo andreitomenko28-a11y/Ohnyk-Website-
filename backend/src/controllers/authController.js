@@ -1,11 +1,8 @@
 import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../lib/prisma.js';
-import {
-  signAccessToken,
-  signRefreshToken,
-  verifyRefreshToken,
-} from '../lib/jwt.js';
+import { verifyRefreshToken } from '../lib/jwt.js';
+import { issueSession, rotateSession, revokeSession } from '../lib/refreshTokens.js';
 import { httpError } from '../middleware/errorHandler.js';
 import { normalizeDocUrl } from '../lib/storage.js';
 import {
@@ -65,13 +62,6 @@ function publicUser(user) {
   };
 }
 
-function issueTokens(user) {
-  const payload = { sub: user.id, role: user.role };
-  return {
-    accessToken: signAccessToken(payload),
-    refreshToken: signRefreshToken(payload),
-  };
-}
 
 // POST /api/auth/register
 export async function register(req, res, next) {
@@ -108,7 +98,7 @@ export async function register(req, res, next) {
       include: { cookProfile: true, courierProfile: true },
     });
 
-    const tokens = issueTokens(user);
+    const tokens = await issueSession(user);
     res.status(201).json({ user: publicUser(user), ...tokens });
   } catch (err) {
     next(err);
@@ -136,14 +126,15 @@ export async function login(req, res, next) {
 
     if (user.isBlocked) throw httpError(403, 'Ваш акаунт заблоковано');
 
-    const tokens = issueTokens(user);
+    const tokens = await issueSession(user);
     res.json({ user: publicUser(user), ...tokens });
   } catch (err) {
     next(err);
   }
 }
 
-// POST /api/auth/refresh
+// POST /api/auth/refresh — verifies the JWT, then rotates the stored token
+// (reuse of an old token revokes the whole family; see lib/refreshTokens.js).
 export async function refresh(req, res, next) {
   try {
     const { refreshToken } = refreshSchema.parse(req.body);
@@ -162,8 +153,19 @@ export async function refresh(req, res, next) {
     if (!user) throw httpError(401, 'Користувача не знайдено');
     if (user.isBlocked) throw httpError(403, 'Ваш акаунт заблоковано');
 
-    const tokens = issueTokens(user);
+    const tokens = await rotateSession(refreshToken, { id: user.id, role: user.role });
     res.json({ user: publicUser(user), ...tokens });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/auth/logout — revoke the presented refresh token's family.
+export async function logout(req, res, next) {
+  try {
+    const { refreshToken } = refreshSchema.parse(req.body);
+    await revokeSession(refreshToken);
+    res.json({ message: 'Ви вийшли з системи.' });
   } catch (err) {
     next(err);
   }
