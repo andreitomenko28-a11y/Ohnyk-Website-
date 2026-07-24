@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma.js';
 import { setIO } from './hub.js';
 import { registerTracking } from './tracking.js';
 import { registerChat } from './chat.js';
+import { installSocketRateLimit } from './rateLimit.js';
 
 // Single socket.io server shared by all realtime features (courier tracking +
 // in-app chat + notifications). A valid access token is required to connect;
@@ -31,6 +32,8 @@ export function initRealtime(httpServer, corsOrigins) {
   });
 
   io.on('connection', (socket) => {
+    // Cap event throughput per socket before wiring feature handlers.
+    installSocketRateLimit(socket);
     // Personal room for per-user pushes (notifications, presence).
     socket.join(`user:${socket.data.user.id}`);
     registerTracking(io, socket);

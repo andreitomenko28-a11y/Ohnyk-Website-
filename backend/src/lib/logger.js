@@ -1,10 +1,12 @@
-// Minimal structured logger with secret redaction.
+// Structured logger (pino) with secret redaction.
 //
 // Everything that logs objects or free text should go through here so that
 // passwords, tokens, reset codes, auth headers and payment payloads never
-// reach stdout in plaintext. Kept dependency-free and small; a fuller logger
-// (pino with transport/levels) can replace the internals later without
-// changing call sites.
+// reach stdout in plaintext. pino provides levels + JSON output; our own
+// redact() runs first so deep keys AND secret-shaped substrings in free text
+// are masked before anything is emitted. Level via LOG_LEVEL (silent in tests).
+
+import pino from 'pino';
 
 // Object keys whose values are always masked (case-insensitive, exact match).
 const SENSITIVE_KEY = /^(password|passwordhash|pass|token|codehash|accesstoken|refreshtoken|authorization|auth|cookie|secret|apikey|api_key|x-token|xtoken|code|otp|cvv|card|cardnumber|pan|jwt|monotoken)$/i;
@@ -37,14 +39,18 @@ export function redact(input, seen = new WeakSet()) {
   return out;
 }
 
-function emit(consoleFn, level, msg, meta) {
-  const parts = [`[${level}] ${msg}`];
-  if (meta !== undefined) parts.push(JSON.stringify(redact(meta)));
-  consoleFn(...parts);
+const level = process.env.LOG_LEVEL || (process.env.NODE_ENV === 'test' ? 'silent' : 'info');
+const base = pino({ level });
+
+// Emit a redacted record. pino takes (mergingObject, message); we pass the
+// redacted meta as the merging object so its keys land as structured fields.
+function emit(fn, msg, meta) {
+  if (meta !== undefined) fn.call(base, redact(meta), msg);
+  else fn.call(base, msg);
 }
 
 export const logger = {
-  info: (msg, meta) => emit(console.log, 'info', msg, meta),
-  warn: (msg, meta) => emit(console.warn, 'warn', msg, meta),
-  error: (msg, meta) => emit(console.error, 'error', msg, meta),
+  info: (msg, meta) => emit(base.info, msg, meta),
+  warn: (msg, meta) => emit(base.warn, msg, meta),
+  error: (msg, meta) => emit(base.error, msg, meta),
 };
