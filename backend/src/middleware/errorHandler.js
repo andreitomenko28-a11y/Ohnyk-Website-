@@ -1,4 +1,5 @@
 import { ZodError } from 'zod';
+import { logger } from '../lib/logger.js';
 
 // 404 for unmatched routes.
 export function notFound(req, res, next) {
@@ -25,7 +26,15 @@ export function errorHandler(err, req, res, next) {
     return res.status(err.status).json({ error: err.message });
   }
 
-  console.error('[error]', err);
+  // Log structured request context + the error, never the request body or
+  // headers (which may carry passwords / Authorization tokens). The logger
+  // redacts any secret-shaped strings that slip into the message or stack.
+  logger.error('unhandled request error', {
+    method: req.method,
+    path: req.originalUrl,
+    message: err?.message,
+    stack: err?.stack,
+  });
   res.status(500).json({ error: 'Внутрішня помилка сервера' });
 }
 

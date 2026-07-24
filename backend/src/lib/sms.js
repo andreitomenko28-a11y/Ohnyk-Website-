@@ -14,6 +14,7 @@
 
 import crypto from 'node:crypto';
 import { prisma } from './prisma.js';
+import { logger } from './logger.js';
 
 // Fixed code in the stub so dev/tests have a deterministic value. A real
 // provider would use `randomCode()` instead.
@@ -39,7 +40,8 @@ function randomCode() {
 
 // Stub SMS "delivery": logs instead of sending. Never logs in production.
 async function deliverSms(phone, code) {
-  if (!isProd()) console.log(`[sms:stub] verification code for ${phone} is ${code}`);
+  // Dev/test only — never log the code in production.
+  if (!isProd()) logger.info('sms:stub', { phone, code });
 }
 
 // Issue a fresh verification code for a user: generates, hashes, stores (one

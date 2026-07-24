@@ -7,6 +7,7 @@
 import { prisma } from './prisma.js';
 import { emitNotification } from '../realtime/hub.js';
 import { sendTelegram } from './telegram.js';
+import { logger } from './logger.js';
 
 export function serializeNotification(n) {
   return { id: n.id, type: n.type, payload: n.payload, read: n.read, createdAt: n.createdAt };
@@ -40,7 +41,7 @@ const STATUS_TEXT = {
 
 // A new paid order — notify the cook.
 export async function notifyNewOrder({ cook, order }) {
-  console.log(`[notify] new order ${order.id} for cook ${cook?.id ?? order.cookId} — total ${order.total}₴`);
+  logger.info('notify:new-order', { orderId: order.id, cookId: cook?.id ?? order.cookId, total: order.total });
   const cookUserId =
     cook?.userId ?? (await prisma.cook.findUnique({ where: { id: order.cookId }, select: { userId: true } }))?.userId;
   await createNotification({
@@ -53,7 +54,7 @@ export async function notifyNewOrder({ cook, order }) {
 
 // The order status advanced — notify the buyer.
 export async function notifyOrderStatus({ order }) {
-  console.log(`[notify] order ${order.id} status → ${order.status}`);
+  logger.info('notify:order-status', { orderId: order.id, status: order.status });
   await createNotification({
     userId: order.buyerId,
     type: 'ORDER_STATUS',
