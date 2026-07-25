@@ -3,8 +3,10 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useI18n } from '../i18n/index.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
-import { placeholder } from '../screens/Placeholder.jsx';
-import ProfileScreen from '../screens/ProfileScreen.jsx';
+import CookMenuStack from './CookMenuStack.jsx';
+import CookOrdersScreen from '../screens/cook/CookOrdersScreen.jsx';
+import CookReviewsScreen from '../screens/cook/CookReviewsScreen.jsx';
+import CookProfileScreen from '../screens/cook/CookProfileScreen.jsx';
 import { tabScreenOptions } from './tabOptions.js';
 
 const Tab = createBottomTabNavigator();
@@ -17,22 +19,22 @@ export default function CookTabs() {
     <Tab.Navigator screenOptions={tabScreenOptions(colors)}>
       <Tab.Screen
         name="CookOrders"
-        component={placeholder(t('navCookOrders'), 'Вхідні замовлення та статуси — модуль 8.3')}
+        component={CookOrdersScreen}
         options={{ title: t('navCookOrders') }}
       />
       <Tab.Screen
         name="CookMenu"
-        component={placeholder(t('navCookMenu'), 'CRUD страв і фото — модуль 8.3')}
+        component={CookMenuStack}
         options={{ title: t('navCookMenu') }}
       />
       <Tab.Screen
         name="CookReviews"
-        component={placeholder(t('navCookReviews'), 'Відгуки та відповіді — модуль 8.3')}
+        component={CookReviewsScreen}
         options={{ title: t('navCookReviews') }}
       />
       <Tab.Screen
         name="CookProfile"
-        component={ProfileScreen}
+        component={CookProfileScreen}
         options={{ title: t('navProfile') }}
       />
     </Tab.Navigator>
