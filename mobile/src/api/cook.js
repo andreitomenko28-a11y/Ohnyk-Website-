@@ -93,3 +93,38 @@ export async function fetchCategories() {
   const { data } = await api.get('/categories');
   return data.categories ?? [];
 }
+
+// --- orders ----------------------------------------------------------------
+
+export async function fetchCookOrders(params = {}) {
+  const { data } = await api.get('/cook/orders', { params });
+  return data;
+}
+
+export async function advanceOrderStatus(orderId, status) {
+  const { data } = await api.patch(`/cook/orders/${orderId}/status`, { status });
+  return data.order;
+}
+
+export async function fetchCookStats() {
+  const { data } = await api.get('/cook/stats');
+  return data;
+}
+
+// --- reviews ---------------------------------------------------------------
+
+export async function fetchCookReviews(params = {}) {
+  const { data } = await api.get('/cook/reviews', { params });
+  return data; // { reviews, total, average, limit, offset }
+}
+
+export async function replyToReview(reviewId, reply) {
+  const { data } = await api.post(`/cook/reviews/${reviewId}/reply`, { reply });
+  return data.review;
+}
+
+// Returns 204 with no body, so there is no updated review to hand back — the
+// caller clears the reply locally.
+export async function deleteReviewReply(reviewId) {
+  await api.delete(`/cook/reviews/${reviewId}/reply`);
+}

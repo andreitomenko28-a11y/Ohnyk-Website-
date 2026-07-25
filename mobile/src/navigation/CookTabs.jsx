@@ -3,8 +3,9 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useI18n } from '../i18n/index.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
-import { placeholder } from '../screens/Placeholder.jsx';
 import CookMenuStack from './CookMenuStack.jsx';
+import CookOrdersScreen from '../screens/cook/CookOrdersScreen.jsx';
+import CookReviewsScreen from '../screens/cook/CookReviewsScreen.jsx';
 import CookProfileScreen from '../screens/cook/CookProfileScreen.jsx';
 import { tabScreenOptions } from './tabOptions.js';
 
@@ -18,7 +19,7 @@ export default function CookTabs() {
     <Tab.Navigator screenOptions={tabScreenOptions(colors)}>
       <Tab.Screen
         name="CookOrders"
-        component={placeholder(t('navCookOrders'), t('outOfPhase8'))}
+        component={CookOrdersScreen}
         options={{ title: t('navCookOrders') }}
       />
       <Tab.Screen
@@ -28,7 +29,7 @@ export default function CookTabs() {
       />
       <Tab.Screen
         name="CookReviews"
-        component={placeholder(t('navCookReviews'), t('outOfPhase8'))}
+        component={CookReviewsScreen}
         options={{ title: t('navCookReviews') }}
       />
       <Tab.Screen
