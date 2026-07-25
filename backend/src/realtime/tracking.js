@@ -1,7 +1,5 @@
 import { prisma } from '../lib/prisma.js';
-
-// Order statuses during which a live location is meaningful.
-const TRACKABLE = ['COURIER_ASSIGNED', 'PICKED_UP', 'ON_THE_WAY'];
+import { recordCourierLocation } from '../lib/tracking.js';
 
 const room = (orderId) => `order:${orderId}`;
 
@@ -48,26 +46,13 @@ export function registerTracking(io, socket) {
     if (orderId) socket.leave(room(orderId));
   });
 
-  // Courier pushes their current position for one of their active orders.
+  // Courier pushes their current position for one of their active orders while
+  // the app is in the foreground. Authorization, persistence and the broadcast
+  // all live in lib/tracking.js, shared with POST /api/courier/location so the
+  // two transports cannot drift apart.
   socket.on('location:update', async (payload = {}) => {
+    if (user.role !== 'COURIER') return;
     const { orderId, lat, lng } = payload;
-    if (user.role !== 'COURIER' || !socket.data.courierId) return;
-    if (typeof lat !== 'number' || typeof lng !== 'number') return;
-
-    const order = await prisma.order.findUnique({ where: { id: String(orderId || '') } });
-    if (!order || order.courierId !== socket.data.courierId || !TRACKABLE.includes(order.status)) return;
-
-    await prisma.courierLocation.upsert({
-      where: { courierId: socket.data.courierId },
-      create: { courierId: socket.data.courierId, lat, lng },
-      update: { lat, lng },
-    });
-
-    io.to(room(order.id)).emit('location:update', {
-      orderId: order.id,
-      lat,
-      lng,
-      updatedAt: new Date().toISOString(),
-    });
+    await recordCourierLocation({ courierId: socket.data.courierId, orderId, lat, lng });
   });
 }

@@ -22,3 +22,9 @@ export function isUserOnline(userId) {
   const room = io?.sockets.adapter.rooms.get(`user:${userId}`);
   return !!room && room.size > 0;
 }
+
+// Broadcast a courier position to an order's tracking room. Lives here so
+// lib/tracking.js can emit without importing the socket server wiring.
+export function emitCourierLocation(orderId, payload) {
+  io?.to(`order:${orderId}`).emit('location:update', payload);
+}

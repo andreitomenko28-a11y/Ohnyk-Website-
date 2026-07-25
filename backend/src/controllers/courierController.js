@@ -1,9 +1,15 @@
 import { prisma } from '../lib/prisma.js';
 import { httpError } from '../middleware/errorHandler.js';
-import { courierStatusSchema, courierAdvanceSchema, listOrdersSchema } from '../validation/schemas.js';
+import {
+  courierStatusSchema,
+  courierAdvanceSchema,
+  courierLocationSchema,
+  listOrdersSchema,
+} from '../validation/schemas.js';
 import { serializeOrder } from './orderController.js';
 import { notifyOrderStatus } from '../lib/notify.js';
 import { recordOrderEvent } from '../lib/orderEvents.js';
+import { newestPosition, recordCourierLocation } from '../lib/tracking.js';
 
 const orderInclude = {
   items: true,
@@ -130,6 +136,32 @@ export async function advanceStatus(req, res, next) {
     await recordOrderEvent(order.id, status);
     await notifyOrderStatus({ order: updated });
     res.json({ order: serializeOrder(updated) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/courier/location — background-safe position reporting.
+//
+// A backgrounded app cannot hold a socket open (the OS suspends the JS
+// runtime), so the location task posts here instead. It sends a batch, since
+// the task is woken in bursts; only the newest position is persisted because
+// CourierLocation keeps one row per courier.
+//
+// A refused report (order finished, reassigned, not this courier's) answers
+// 200 with accepted:false rather than an error status — it is a legitimate
+// outcome, and a background task must not treat it as something to retry.
+export async function reportLocation(req, res, next) {
+  try {
+    const { orderId, positions } = courierLocationSchema.parse(req.body);
+    const latest = newestPosition(positions);
+    const accepted = await recordCourierLocation({
+      courierId: req.courier.id,
+      orderId,
+      lat: latest.lat,
+      lng: latest.lng,
+    });
+    res.json({ accepted });
   } catch (err) {
     next(err);
   }

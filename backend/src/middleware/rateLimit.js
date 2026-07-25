@@ -101,3 +101,18 @@ export const globalLimiter = guard(
     max: num('RATE_GLOBAL_MAX', 200),
   }),
 );
+
+// Courier background position reporting. Keyed by courier, not IP: couriers on
+// mobile data sit behind carrier NAT, so an IP-keyed limit would let one busy
+// courier throttle everyone else on the same operator. Generous, because a
+// background task legitimately reports every few seconds.
+export const locationLimiter = guard(
+  rateLimit({
+    windowMs: num('RATE_LOCATION_WINDOW_MS', 1 * MIN),
+    max: num('RATE_LOCATION_MAX', 60),
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => req.courier?.id ?? req.user?.id ?? 'anonymous',
+    handler: tooMany,
+  }),
+);

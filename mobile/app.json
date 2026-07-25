@@ -37,6 +37,15 @@
           "photosPermission": "Ohnyk використовує галерею, щоб додати фото ваших страв.",
           "cameraPermission": "Ohnyk використовує камеру, щоб сфотографувати ваші страви."
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Ohnyk показує ваше місцезнаходження покупцю, поки триває активна доставка.",
+          "locationWhenInUsePermission": "Ohnyk показує ваше місцезнаходження покупцю, поки триває активна доставка.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
       ]
     ]
   }
