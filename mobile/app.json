@@ -29,6 +29,15 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Ohnyk використовує галерею, щоб додати фото ваших страв.",
+          "cameraPermission": "Ohnyk використовує камеру, щоб сфотографувати ваші страви."
+        }
+      ]
+    ]
   }
 }
