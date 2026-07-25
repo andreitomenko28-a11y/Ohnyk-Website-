@@ -13,6 +13,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import api, { apiError, setAuthFailureHandler, setTokenStore } from '../api/client.js';
 import { secureTokenStore } from './tokenStorage.js';
+import { disconnectSocket } from '../realtime/socket.js';
 
 // Persist tokens securely from here on (replaces the in-memory default).
 setTokenStore(secureTokenStore);
@@ -42,6 +43,7 @@ export function AuthProvider({ children }) {
         // Refresh already ran and failed inside the client; make sure nothing
         // stale is left behind.
         await secureTokenStore.clear();
+        disconnectSocket();
       } finally {
         if (active) setLoading(false);
       }
@@ -83,6 +85,9 @@ export function AuthProvider({ children }) {
     // UI on it (the user may well be offline).
     if (refreshToken) api.post('/auth/logout', { refreshToken }).catch(() => {});
     await secureTokenStore.clear();
+    // Drop the realtime connection so it cannot stay authenticated as the
+    // user who just left (the same guard the web build applies).
+    disconnectSocket();
     setUser(null);
   }, []);
 
