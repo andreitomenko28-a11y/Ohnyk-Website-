@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useI18n } from '../i18n/index.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { placeholder } from '../screens/Placeholder.jsx';
+import ProfileScreen from '../screens/ProfileScreen.jsx';
 import { tabScreenOptions } from './tabOptions.js';
 
 const Tab = createBottomTabNavigator();
@@ -31,7 +32,7 @@ export default function CookTabs() {
       />
       <Tab.Screen
         name="CookProfile"
-        component={placeholder(t('navProfile'), 'Профіль кухаря і верифікація — модуль 8.3')}
+        component={ProfileScreen}
         options={{ title: t('navProfile') }}
       />
     </Tab.Navigator>

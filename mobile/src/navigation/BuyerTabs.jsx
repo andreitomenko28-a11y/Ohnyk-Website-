@@ -5,6 +5,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useI18n } from '../i18n/index.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
 import { placeholder } from '../screens/Placeholder.jsx';
+import ProfileScreen from '../screens/ProfileScreen.jsx';
 import { tabScreenOptions } from './tabOptions.js';
 
 const Tab = createBottomTabNavigator();
@@ -37,7 +38,7 @@ export default function BuyerTabs() {
       />
       <Tab.Screen
         name="Profile"
-        component={placeholder(t('navProfile'), 'Профіль і адреси — модуль 8.2')}
+        component={ProfileScreen}
         options={{ title: t('navProfile') }}
       />
     </Tab.Navigator>
