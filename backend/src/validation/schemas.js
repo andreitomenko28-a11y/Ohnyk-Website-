@@ -299,3 +299,24 @@ export const analyticsSchema = z.object({
   dateFrom: z.string().datetime().optional().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
   dateTo: z.string().datetime().optional().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
 });
+
+// --- Phase 8.5: background courier location reporting ------------------------
+// A background task delivers positions in bursts, so the endpoint takes a
+// batch. `at` is optional because some platforms report without a timestamp.
+export const courierLocationSchema = z
+  .object({
+    orderId: z.string().trim().uuid('Некоректне замовлення'),
+    positions: z
+      .array(
+        z
+          .object({
+            lat: z.number().min(-90).max(90),
+            lng: z.number().min(-180).max(180),
+            at: z.string().datetime().optional(),
+          })
+          .strict(),
+      )
+      .min(1, 'Порожній список координат')
+      .max(50),
+  })
+  .strict();
