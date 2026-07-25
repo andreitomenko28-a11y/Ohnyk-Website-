@@ -5,8 +5,8 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useI18n } from '../i18n/index.jsx';
 import { useTheme } from '../theme/ThemeContext.jsx';
-import { placeholder } from '../screens/Placeholder.jsx';
 import ProfileScreen from '../screens/ProfileScreen.jsx';
+import CourierDashboardScreen from '../screens/courier/CourierDashboardScreen.jsx';
 import { tabScreenOptions } from './tabOptions.js';
 
 const Tab = createBottomTabNavigator();
@@ -19,7 +19,7 @@ export default function CourierTabs() {
     <Tab.Navigator screenOptions={tabScreenOptions(colors)}>
       <Tab.Screen
         name="CourierDashboard"
-        component={placeholder(t('navCourier'), 'Доступні замовлення, GPS-трекінг — модулі 8.5 / 8.6')}
+        component={CourierDashboardScreen}
         options={{ title: t('navCourier') }}
       />
       <Tab.Screen
