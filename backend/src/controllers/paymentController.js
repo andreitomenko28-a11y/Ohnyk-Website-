@@ -7,6 +7,12 @@ import {
   mapInvoiceStatus,
   verifyWebhook,
 } from '../lib/monopay.js';
+import {
+  findPaymentForInvoice,
+  recordInvoice,
+  resolvePaymentStatus,
+  reusableInvoice,
+} from '../lib/payments.js';
 
 // Apply a payment result to an order + its Payment row. Idempotent: a repeated
 // SUCCESS (webhook retries) won't re-notify or re-advance the order.
@@ -17,16 +23,18 @@ async function applyPaymentResult({ payment, monoStatus, transactionId, raw }) {
     const cur = await tx.payment.findUnique({ where: { id: payment.id } });
     if (!cur) return { order: null, effective: mapped.payment };
 
-    // Never let a late/duplicate/out-of-order callback downgrade a completed
-    // payment. A SUCCESS may only progress to REFUNDED (a reversal).
-    if (cur.status === 'SUCCESS' && mapped.payment !== 'SUCCESS' && mapped.payment !== 'REFUNDED') {
-      return { order: null, effective: cur.status };
+    // Never let a late/duplicate/out-of-order callback walk the payment
+    // backwards — see resolvePaymentStatus for the rules.
+    const next = resolvePaymentStatus(cur.status, mapped.payment);
+    if (next !== mapped.payment) {
+      return { order: null, effective: next };
     }
 
     await tx.payment.update({
       where: { id: payment.id },
       data: {
-        status: mapped.payment,
+        status: next,
+        ...(next === 'REFUNDED' && !cur.refundedAt ? { refundedAt: new Date() } : {}),
         ...(transactionId ? { transactionId } : {}),
         ...(raw ? { rawCallback: raw } : {}),
       },
@@ -75,6 +83,15 @@ export async function initPayment(req, res, next) {
         data: { orderId: order.id, amount: order.total, status: 'PENDING', provider: 'monopay' },
       }));
 
+    // Send the buyer back to the invoice they already have rather than minting
+    // a second one. Two live invoices for one order means the buyer can pay
+    // either, and every extra invoice is another way for the two sides to
+    // disagree about what was paid.
+    const existing = await reusableInvoice(payment.id);
+    if (existing) {
+      return res.json({ pageUrl: existing.pageUrl, invoiceId: existing.invoiceId, stub: isStub() });
+    }
+
     const { invoiceId, pageUrl } = await createInvoice({
       amount: order.total,
       orderId: order.id,
@@ -82,10 +99,9 @@ export async function initPayment(req, res, next) {
       destination: 'Замовлення Ohnyk',
     });
 
-    await prisma.payment.update({
-      where: { id: payment.id },
-      data: { providerInvoiceId: invoiceId, status: 'PENDING' },
-    });
+    // Recorded in the ledger, so a callback for this invoice stays resolvable
+    // even after a later one supersedes it.
+    await recordInvoice({ paymentId: payment.id, invoiceId, pageUrl });
 
     res.json({ pageUrl, invoiceId, stub: isStub() });
   } catch (err) {
@@ -151,7 +167,9 @@ export async function webhook(req, res, next) {
     const { invoiceId, status, reference } = req.body || {};
     if (!invoiceId) return res.json({ ok: true });
 
-    const payment = await prisma.payment.findFirst({ where: { providerInvoiceId: invoiceId } });
+    // Resolved through the invoice ledger, so a callback for an invoice that a
+    // later "pay" tap superseded still finds its payment.
+    const payment = await findPaymentForInvoice(invoiceId);
     if (!payment) return res.json({ ok: true }); // unknown invoice — ack and ignore
 
     await applyPaymentResult({

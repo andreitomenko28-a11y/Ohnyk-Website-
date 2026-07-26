@@ -28,6 +28,7 @@ import Favorites from './pages/Favorites.jsx';
 import AdminAnalytics from './pages/AdminAnalytics.jsx';
 import AdminUsers from './pages/AdminUsers.jsx';
 import AdminCooks from './pages/AdminCooks.jsx';
+import AdminRefunds from './pages/AdminRefunds.jsx';
 
 // Wraps a page in the auth guard + the responsive app shell (sidebar/bottom nav).
 // Cooks are redirected to their own area — the customer shell isn't for them.
@@ -117,6 +118,7 @@ export default function App() {
                 <Route path="/admin/analytics" element={<AdminProtected><AdminAnalytics /></AdminProtected>} />
                 <Route path="/admin/users" element={<AdminProtected><AdminUsers /></AdminProtected>} />
                 <Route path="/admin/cooks" element={<AdminProtected><AdminCooks /></AdminProtected>} />
+                <Route path="/admin/refunds" element={<AdminProtected><AdminRefunds /></AdminProtected>} />
 
                 <Route path="/" element={<Protected><HomePage /></Protected>} />
                 <Route path="/discovery" element={<Protected><Discovery /></Protected>} />

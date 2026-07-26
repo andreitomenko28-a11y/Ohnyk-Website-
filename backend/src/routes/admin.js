@@ -8,6 +8,8 @@ import {
   listCooks,
   blockUser,
   unblockUser,
+  listRefunds,
+  markRefundComplete,
 } from '../controllers/adminController.js';
 import { adminAnalytics } from '../controllers/analyticsController.js';
 
@@ -30,5 +32,9 @@ router.patch('/users/:id/unblock', unblockUser);
 
 // Analytics (Phase 7.2).
 router.get('/analytics', adminAnalytics);
+
+// Manual refunds: a cancelled paid order owes the buyer money back.
+router.get('/refunds', listRefunds);
+router.post('/refunds/:paymentId/complete', markRefundComplete);
 
 export default router;

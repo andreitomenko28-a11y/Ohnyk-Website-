@@ -54,6 +54,7 @@ enum PaymentStatus {
   PENDING
   SUCCESS
   FAILED
+  REFUND_PENDING // captured, but the order was cancelled — a refund is owed
   REFUNDED
 }
 
@@ -455,13 +456,41 @@ model Payment {
   status            PaymentStatus @default(PENDING)
   amount            Float // in UAH
   provider          String        @default("monopay")
-  providerInvoiceId String? // MonoPay invoiceId
+  providerInvoiceId String? // the most recent MonoPay invoiceId
   transactionId     String? // provider transaction reference
   rawCallback       Json? // last webhook payload (audit)
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @default(now()) @updatedAt
+
+  // Manual refund bookkeeping. A cancelled order whose money was already
+  // captured lands in REFUND_PENDING and stays there until an admin sends the
+  // money back and marks it REFUNDED.
+  refundReason      String?
+  refundedAt        DateTime?
+  refundedByAdminId String?
+
+  invoices  PaymentInvoice[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@index([providerInvoiceId])
+  @@index([status])
+}
+
+// Every invoice ever issued for a payment.
+//
+// A buyer who taps "pay" twice gets two invoices, and either of them may be the
+// one they actually pay. Keeping only the newest id on Payment meant a webhook
+// for the earlier invoice matched nothing and was silently acked — money taken,
+// order stuck on AWAITING_PAYMENT. One row per invoice makes every callback
+// resolvable.
+model PaymentInvoice {
+  id        String   @id @default(uuid())
+  paymentId String
+  payment   Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  invoiceId String   @unique // provider invoice id — the webhook's lookup key
+  pageUrl   String // hosted page, so a retry can reuse it instead of minting one
+  createdAt DateTime @default(now())
+
+  @@index([paymentId])
 }
 
 model CourierProfile {

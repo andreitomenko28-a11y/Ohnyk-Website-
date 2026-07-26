@@ -15,6 +15,7 @@ export default function AdminShell({ children }) {
     { to: '/admin/analytics', label: t('adminAnalytics') },
     { to: '/admin/users', label: t('adminUsers') },
     { to: '/admin/cooks', label: t('adminCooks') },
+    { to: '/admin/refunds', label: t('refundsTab') },
   ];
 
   return (
