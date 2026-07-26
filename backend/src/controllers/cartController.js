@@ -85,7 +85,9 @@ export async function addToCart(req, res, next) {
 
     const cart = await getOrCreateCart(req.user.id);
 
-    // One cart = one cook at a time.
+    // One cart = one cook at a time. The check is repeated inside the
+    // transaction below against a fresh read — two taps on dishes from
+    // different cooks arriving together would both pass a check made out here.
     if (cart.cookId && cart.cookId !== dish.cookId) {
       throw httpError(
         409,
@@ -94,11 +96,21 @@ export async function addToCart(req, res, next) {
     }
 
     await prisma.$transaction(async (tx) => {
-      if (!cart.cookId) {
+      const current = await tx.cart.findUnique({
+        where: { id: cart.id },
+        include: { items: { select: { id: true, dishId: true, quantity: true } } },
+      });
+      if (current.cookId && current.cookId !== dish.cookId) {
+        throw httpError(
+          409,
+          'У кошику вже є страви іншого кухаря. Очистіть кошик, щоб замовити в іншого.'
+        );
+      }
+      if (!current.cookId) {
         await tx.cart.update({ where: { id: cart.id }, data: { cookId: dish.cookId } });
       }
       // Upsert the line (unique on cartId+dishId) and accumulate quantity.
-      const existing = cart.items.find((i) => i.dishId === dishId);
+      const existing = current.items.find((i) => i.dishId === dishId);
       if (existing) {
         await tx.cartItem.update({
           where: { id: existing.id },

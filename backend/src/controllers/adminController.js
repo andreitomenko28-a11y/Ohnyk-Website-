@@ -13,6 +13,7 @@ import { writeAdminLog } from '../lib/adminLog.js';
 import { sendEmail } from '../lib/email.js';
 import { completeRefund } from '../lib/refunds.js';
 import { createNotification } from '../lib/notify.js';
+import { disconnectUser } from '../realtime/hub.js';
 
 // Shape a user row for the admin users table.
 function adminUser(u) {
@@ -198,6 +199,9 @@ export async function blockUser(req, res, next) {
       data: { isBlocked: true, blockReason: reason || null, blockedAt: new Date(), blockedByAdminId: req.user.id },
     });
     await writeAdminLog({ adminId: req.user.id, action: 'user.block', targetType: 'user', targetId: target.id, meta: reason ? { reason } : undefined });
+    // The handshake check only guards new connections; a socket opened a moment
+    // ago would otherwise keep delivering chat and notifications.
+    disconnectUser(target.id);
     res.json({ user: adminUser(updated) });
   } catch (err) {
     next(err);

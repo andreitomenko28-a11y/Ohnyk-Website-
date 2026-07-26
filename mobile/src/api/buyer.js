@@ -88,9 +88,10 @@ export async function fetchPaymentStatus(orderId) {
 }
 
 // Dev-only: the server exposes this solely in stub mode (no MONO_TOKEN), where
-// there is no real gateway to redirect to.
-export async function mockCompletePayment(orderId, status = 'success') {
-  const { data } = await api.post(`/orders/${orderId}/pay/mock`, { status });
+// there is no real gateway to redirect to. The field is `result` — the server's
+// schema is strict, so anything else is rejected rather than read as a success.
+export async function mockCompletePayment(orderId, result = 'success') {
+  const { data } = await api.post(`/orders/${orderId}/pay/mock`, { result });
   return data;
 }
 
