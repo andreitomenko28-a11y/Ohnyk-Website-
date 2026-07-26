@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import Screen from '../../components/Screen.jsx';
 import { apiError } from '../../api/client.js';
 import { fetchMyOrders } from '../../api/buyer.js';
@@ -10,7 +10,10 @@ import { useI18n } from '../../i18n/index.jsx';
 import { useTheme } from '../../theme/ThemeContext.jsx';
 import { radius, spacing } from '../../theme/tokens.js';
 
-export default function OrdersScreen() {
+// Statuses during which there is a courier position worth showing.
+const TRACKABLE = ['COURIER_ASSIGNED', 'PICKED_UP', 'ON_THE_WAY'];
+
+export default function OrdersScreen({ navigation }) {
   const { t, lang } = useI18n();
   const { colors } = useTheme();
 
@@ -81,6 +84,16 @@ export default function OrdersScreen() {
                 </Text>
               ))}
               <Text style={[styles.total, { color: colors.fg }]}>{item.total} ₴</Text>
+              {TRACKABLE.includes(item.status) && item.deliveryMethod !== 'PICKUP' ? (
+                <Pressable
+                  onPress={() => navigation.navigate('Track', { orderId: item.id })}
+                  style={[styles.track, { backgroundColor: colors.ember }]}
+                >
+                  <Text style={{ color: colors.onAccent, fontWeight: '700', fontSize: 14 }}>
+                    {t('trackOnMap')}
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
           )}
         />
@@ -102,4 +115,5 @@ const styles = StyleSheet.create({
   meta: { fontSize: 12.5, marginTop: spacing.xs },
   item: { fontSize: 14, marginTop: spacing.sm },
   total: { fontSize: 17, fontWeight: '800', marginTop: spacing.md },
+  track: { borderRadius: radius.lg, paddingVertical: spacing.md, alignItems: 'center', marginTop: spacing.md },
 });

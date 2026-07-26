@@ -169,6 +169,15 @@ export const dict = {
     locationForegroundOnly: 'Фоновий доступ не надано, тож місцезнаходження передаватиметься лише поки застосунок відкритий.',
     action_PICKED_UP: 'Забрав замовлення',
 
+    // Map & live tracking (Module 8.6)
+    trackTitle: 'Відстеження',
+    trackOnMap: 'Стежити на карті',
+    waitingForCourier: 'Очікуємо сигнал від курʼєра...',
+    trackingLive: 'Позиція оновлюється наживо',
+    lastSeen: 'Оновлено',
+    minutesAgo: 'хв тому',
+    trackForbidden: 'Це замовлення недоступне для відстеження',
+
     // Buyer tabs
     navHome: 'Головна',
     navSearch: 'Пошук',
@@ -335,6 +344,14 @@ export const dict = {
     locationForegroundOnlyTitle: 'Only while the app is open',
     locationForegroundOnly: 'Background access was not granted, so your location will only be shared while the app is open.',
     action_PICKED_UP: 'Picked up',
+
+    trackTitle: 'Tracking',
+    trackOnMap: 'Track on map',
+    waitingForCourier: 'Waiting for the courier signal...',
+    trackingLive: 'Position updating live',
+    lastSeen: 'Updated',
+    minutesAgo: 'min ago',
+    trackForbidden: 'This order is not available for tracking',
 
     navHome: 'Home',
     navSearch: 'Search',
