@@ -8,6 +8,8 @@ import {
   unlinkTelegram,
   telegramStatus,
   telegramWebhook,
+  registerDevice,
+  unregisterDevice,
 } from '../controllers/notificationController.js';
 
 const router = Router();
@@ -21,6 +23,10 @@ router.use(authGuard);
 router.get('/', listNotifications);
 router.post('/read-all', markAllRead);
 router.patch('/:id/read', markRead);
+
+// Push device registration (Phase 8.7).
+router.post('/device', registerDevice);
+router.delete('/device', unregisterDevice);
 
 router.get('/telegram/status', telegramStatus);
 router.post('/telegram/link', linkTelegram);

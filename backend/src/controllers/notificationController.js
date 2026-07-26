@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { prisma } from '../lib/prisma.js';
+import { deviceTokenSchema, deviceUnregisterSchema } from '../validation/schemas.js';
 import { httpError } from '../middleware/errorHandler.js';
 import { listNotificationsSchema } from '../validation/schemas.js';
 import { serializeNotification } from '../lib/notify.js';
@@ -108,6 +109,38 @@ export async function telegramWebhook(req, res, next) {
       }
     }
     res.json({ ok: true }); // always ack so Telegram stops retrying
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/notifications/device — register this device for push.
+//
+// Upserted by token, not by user: when a different account signs in on the same
+// device the row must MOVE to the new user rather than duplicate, or the
+// previous owner keeps receiving someone else's notifications.
+export async function registerDevice(req, res, next) {
+  try {
+    const { token, platform } = deviceTokenSchema.parse(req.body);
+    await prisma.deviceToken.upsert({
+      where: { token },
+      create: { token, platform, userId: req.user.id },
+      update: { platform, userId: req.user.id, lastSeenAt: new Date() },
+    });
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+}
+
+// DELETE /api/notifications/device — drop this device on logout, so whoever
+// uses the handset next does not receive the previous account's notifications.
+// Scoped to the caller: a token belonging to someone else is left untouched.
+export async function unregisterDevice(req, res, next) {
+  try {
+    const { token } = deviceUnregisterSchema.parse(req.body);
+    await prisma.deviceToken.deleteMany({ where: { token, userId: req.user.id } });
+    res.status(204).send();
   } catch (err) {
     next(err);
   }

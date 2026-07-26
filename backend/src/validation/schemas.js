@@ -320,3 +320,15 @@ export const courierLocationSchema = z
       .max(50),
   })
   .strict();
+
+// --- Phase 8.7: push device registration -------------------------------------
+export const deviceTokenSchema = z
+  .object({
+    token: z.string().trim().min(10, 'Некоректний push-токен').max(255),
+    platform: z.enum(['ios', 'android']),
+  })
+  .strict();
+
+export const deviceUnregisterSchema = z
+  .object({ token: z.string().trim().min(10).max(255) })
+  .strict();

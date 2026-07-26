@@ -7,6 +7,7 @@
 import { prisma } from './prisma.js';
 import { emitNotification } from '../realtime/hub.js';
 import { sendTelegram } from './telegram.js';
+import { sendPush } from './push.js';
 import { logger } from './logger.js';
 
 export function serializeNotification(n) {
@@ -19,9 +20,26 @@ export async function createNotification({ userId, type, payload }) {
   const n = await prisma.notification.create({ data: { userId, type, payload } });
   emitNotification(userId, serializeNotification(n));
 
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { telegramChatId: true } });
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { telegramChatId: true, deviceTokens: { select: { token: true } } },
+  });
   if (user?.telegramChatId) {
     sendTelegram(user.telegramChatId, `${payload.title}\n${payload.body ?? ''}`.trim()).catch(() => {});
+  }
+  // Push rides alongside Telegram, best-effort: a delivery failure must never
+  // break the notification that is already persisted and pushed in-app. Every
+  // notification type gets this for free because they all pass through here.
+  if (user?.deviceTokens?.length) {
+    sendPush(
+      user.deviceTokens.map((d) => d.token),
+      {
+        title: payload.title,
+        body: payload.body,
+        // Enough for the app to deep-link straight to the relevant screen.
+        data: { type, orderId: payload.orderId, conversationId: payload.conversationId },
+      },
+    ).catch(() => {});
   }
   return n;
 }

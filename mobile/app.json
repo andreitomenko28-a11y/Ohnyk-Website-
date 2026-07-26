@@ -39,6 +39,12 @@
         }
       ],
       [
+        "expo-notifications",
+        {
+          "color": "#ea6a2e"
+        }
+      ],
+      [
         "expo-location",
         {
           "locationAlwaysAndWhenInUsePermission": "Ohnyk показує ваше місцезнаходження покупцю, поки триває активна доставка.",
