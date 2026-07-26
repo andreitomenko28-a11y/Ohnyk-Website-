@@ -85,37 +85,38 @@ export async function addToCart(req, res, next) {
 
     const cart = await getOrCreateCart(req.user.id);
 
-    await prisma.$transaction(async (tx) => {
-      // One cart = one cook. Claiming the cart is a single conditional UPDATE
-      // rather than a read followed by a check: under READ COMMITTED two
-      // concurrent adds both read cookId as null and both pass such a check.
-      // Postgres blocks the second UPDATE on the row lock the first holds, then
-      // re-evaluates the WHERE against the committed row — so exactly one of
-      // two simultaneous taps wins and the other gets a clean 409.
-      const claimed = await tx.cart.updateMany({
-        where: { id: cart.id, OR: [{ cookId: null }, { cookId: dish.cookId }] },
-        data: { cookId: dish.cookId },
-      });
-      if (claimed.count === 0) {
-        throw httpError(
-          409,
-          'У кошику вже є страви іншого кухаря. Очистіть кошик, щоб замовити в іншого.'
-        );
-      }
-
-      // Upsert the line (unique on cartId+dishId) and accumulate quantity.
-      const existing = await tx.cartItem.findFirst({ where: { cartId: cart.id, dishId } });
-      if (existing) {
-        await tx.cartItem.update({
-          where: { id: existing.id },
-          data: { quantity: Math.min(99, existing.quantity + quantity) },
-        });
-      } else {
-        await tx.cartItem.create({ data: { cartId: cart.id, dishId, quantity } });
-      }
-      // Touch the cart so updatedAt reflects the change.
-      await tx.cart.update({ where: { id: cart.id }, data: { updatedAt: new Date() } });
+    // One cart = one cook. Claiming the cart is a single conditional UPDATE,
+    // not a read followed by a check: under READ COMMITTED two concurrent adds
+    // both read cookId as null and both pass such a check, and the cart ends up
+    // holding two cooks' dishes. Here Postgres serialises the two statements on
+    // the row lock and the loser matches nothing.
+    //
+    // A standalone statement rather than the first step of an interactive
+    // transaction: the row lock is then held for the statement alone instead of
+    // until commit, so two contending adds never sit on each other. Nothing
+    // after it needs to be atomic with it — the claim is what decides the cook,
+    // and it bumps the cart's updatedAt (@updatedAt) on the way.
+    const claimed = await prisma.cart.updateMany({
+      where: { id: cart.id, OR: [{ cookId: null }, { cookId: dish.cookId }] },
+      data: { cookId: dish.cookId },
     });
+    if (claimed.count === 0) {
+      throw httpError(
+        409,
+        'У кошику вже є страви іншого кухаря. Очистіть кошик, щоб замовити в іншого.'
+      );
+    }
+
+    // Upsert the line (unique on cartId+dishId) and accumulate quantity.
+    const existing = await prisma.cartItem.findFirst({ where: { cartId: cart.id, dishId } });
+    if (existing) {
+      await prisma.cartItem.update({
+        where: { id: existing.id },
+        data: { quantity: Math.min(99, existing.quantity + quantity) },
+      });
+    } else {
+      await prisma.cartItem.create({ data: { cartId: cart.id, dishId, quantity } });
+    }
 
     const fresh = await prisma.cart.findUnique({ where: { userId: req.user.id }, include: cartInclude });
     res.status(201).json({ cart: shapeCart(fresh) });
