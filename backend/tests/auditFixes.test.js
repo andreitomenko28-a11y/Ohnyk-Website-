@@ -174,21 +174,25 @@ describe('One cook per cart survives concurrent adds', () => {
   it('rejects the loser of a race instead of mixing two cooks', async () => {
     const a = await cookWithDish();
     const b = await cookWithDish();
-    const buyer = await registerUser({ role: 'CUSTOMER' });
-    const auth = authHeader(buyer.accessToken);
 
-    // Both requests read an empty cart before either writes cookId.
-    const results = await Promise.allSettled([
-      request.post('/api/cart/add').set(auth).send({ dishId: a.dishId, quantity: 1 }),
-      request.post('/api/cart/add').set(auth).send({ dishId: b.dishId, quantity: 1 }),
-    ]);
-    const codes = results.map((r) => r.value?.status).sort();
-    expect(codes).toContain(201);
+    // Repeated, because whether the two requests actually interleave is up to
+    // the scheduler: a single round can serialise by luck and pass even with
+    // the check done outside the transaction (which is how this shipped).
+    for (let round = 0; round < 5; round += 1) {
+      const buyer = await registerUser({ role: 'CUSTOMER' });
+      const auth = authHeader(buyer.accessToken);
 
-    // Whatever the ordering, the cart must hold exactly one cook's dishes.
-    const cart = await request.get('/api/cart').set(auth);
-    const cookIds = new Set(cart.body.cart.items.map((i) => i.dish.cookId));
-    expect(cookIds.size).toBe(1);
-    expect([a.cookId, b.cookId]).toContain(cart.body.cart.cookId);
+      const results = await Promise.allSettled([
+        request.post('/api/cart/add').set(auth).send({ dishId: a.dishId, quantity: 1 }),
+        request.post('/api/cart/add').set(auth).send({ dishId: b.dishId, quantity: 1 }),
+      ]);
+      expect(results.map((r) => r.value?.status)).toContain(201);
+
+      // Whatever the ordering, the cart must hold exactly one cook's dishes.
+      const cart = await request.get('/api/cart').set(auth);
+      const cookIds = new Set(cart.body.cart.items.map((i) => i.dish.cookId));
+      expect(cookIds.size).toBe(1);
+      expect([a.cookId, b.cookId]).toContain(cart.body.cart.cookId);
+    }
   });
 });
