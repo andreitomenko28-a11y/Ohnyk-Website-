@@ -19,6 +19,7 @@ beforeEach(async () => {
   await prisma.passwordReset.deleteMany();
   await prisma.phoneVerification.deleteMany();
   await prisma.refreshToken.deleteMany();
+  await prisma.deviceToken.deleteMany();
   await prisma.address.deleteMany();
   await prisma.cook.deleteMany();
   await prisma.user.deleteMany();

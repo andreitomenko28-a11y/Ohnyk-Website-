@@ -124,6 +124,28 @@ model User {
 
   phoneVerification PhoneVerification? // active phone-verification challenge
   refreshTokens     RefreshToken[] // rotating refresh-token sessions
+  deviceTokens      DeviceToken[] // Expo push targets (one row per device)
+}
+
+// Push targets for the mobile app (Phase 8.7).
+//
+// A separate table rather than a column on User, because one person can carry
+// several devices (phone + tablet, or a reinstall) — a single column would
+// silently drop notifications to every device but the last.
+//
+// `token` is globally unique so that when a different account signs in on the
+// same device the row *moves* to the new user instead of duplicating, which
+// would otherwise leave the previous owner receiving someone else's alerts.
+model DeviceToken {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token      String   @unique // Expo push token
+  platform   String // 'ios' | 'android'
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 // Rotating refresh tokens. Each login starts a family; every refresh rotates
