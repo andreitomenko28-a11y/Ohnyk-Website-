@@ -6,7 +6,7 @@
 // tracked when there is nothing to track.
 
 import { useCallback, useEffect, useState } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Switch, Text, View } from 'react-native';
 import Screen from '../../components/Screen.jsx';
 import Button from '../../components/Button.jsx';
@@ -29,99 +29,110 @@ import {
 import { setCourierStatus } from '../../api/courier.js';
 import { useI18n } from '../../i18n/index.jsx';
 import { useTheme } from '../../theme/ThemeContext.jsx';
+import { qk } from '../../offline/queryKeys.js';
+import useRefreshOnFocus from '../../offline/useRefreshOnFocus.js';
 import { radius, spacing } from '../../theme/tokens.js';
 
 export default function CourierDashboardScreen() {
   const { t } = useI18n();
   const { colors } = useTheme();
 
-  const [courier, setCourier] = useState(null);
-  const [available, setAvailable] = useState([]);
-  const [mine, setMine] = useState([]);
+  const queryClient = useQueryClient();
   const [tracking, setTracking] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [busyId, setBusyId] = useState(null);
-  const [error, setError] = useState('');
+  // Permission and task failures are local to this screen, not to a request.
+  const [trackingError, setTrackingError] = useState('');
 
+  const profileQuery = useQuery({ queryKey: qk.courierProfile, queryFn: fetchCourierProfile });
+  const availableQuery = useQuery({
+    queryKey: qk.courierAvailable,
+    // The board is closed to an offline courier; an empty list says that
+    // better than an error banner, and the hint below already explains why.
+    queryFn: () => fetchAvailableOrders().catch(() => []),
+  });
+  const deliveriesQuery = useQuery({
+    queryKey: qk.courierDeliveries,
+    queryFn: () => fetchMyDeliveries(),
+  });
+
+  const courier = profileQuery.data ?? null;
+  const available = availableQuery.data ?? [];
+  const mine = deliveriesQuery.data ?? [];
   const active = activeDelivery(mine);
+  const loading = profileQuery.isLoading || deliveriesQuery.isLoading;
 
-  const load = useCallback(async () => {
-    try {
-      const [profile, avail, deliveries] = await Promise.all([
-        fetchCourierProfile(),
-        fetchAvailableOrders().catch(() => []),
-        fetchMyDeliveries(),
-      ]);
-      setCourier(profile);
-      setAvailable(avail);
-      setMine(deliveries);
-      setTracking(await isTracking());
-      setError('');
-    } catch (err) {
-      setError(apiError(err));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
+  // One refresh for the whole board — the three lists are read together.
+  const reload = useCallback(
+    () =>
+      Promise.all([profileQuery.refetch(), availableQuery.refetch(), deliveriesQuery.refetch()]),
+    [profileQuery.refetch, availableQuery.refetch, deliveriesQuery.refetch],
   );
+  useRefreshOnFocus(reload);
+
+  const statusMutation = useMutation({
+    mutationFn: (value) => setCourierStatus({ status: value ? 'ONLINE' : 'OFFLINE' }),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(qk.courierProfile, updated);
+      // Going online is what makes the board non-empty.
+      queryClient.invalidateQueries({ queryKey: qk.courierAvailable });
+    },
+  });
+
+  const claimMutation = useMutation({
+    mutationFn: (order) => claimOrder(order.id),
+    // Settled, not success: a 409 means another courier won the race, and the
+    // board is just as stale then as it is after a win.
+    onSettled: () => reload(),
+  });
+
+  const advanceMutation = useMutation({
+    mutationFn: ({ order, status }) => advanceDelivery(order.id, status),
+    onSuccess: (updated) =>
+      queryClient.setQueryData(qk.courierDeliveries, (list = []) =>
+        list.map((o) => (o.id === updated.id ? updated : o)),
+      ),
+  });
+
+  const busyId = claimMutation.isPending
+    ? claimMutation.variables?.id
+    : advanceMutation.isPending
+      ? advanceMutation.variables?.order?.id
+      : null;
+
+  const error =
+    statusMutation.error ??
+    claimMutation.error ??
+    advanceMutation.error ??
+    profileQuery.error ??
+    deliveriesQuery.error ??
+    null;
 
   // Keep tracking in step with whether a delivery is actually in progress.
+  // Whether the background task runs is OS state, not server state, so it is
+  // read from the task manager rather than cached alongside the queries.
   useEffect(() => {
     if (loading) return;
     (async () => {
-      if (!active && (await isTracking())) {
+      const running = await isTracking().catch(() => false);
+      if (!active && running) {
         await stopTracking();
         setTracking(false);
+        return;
       }
+      setTracking(running);
     })();
   }, [active, loading]);
 
-  async function toggleOnline(value) {
-    try {
-      setCourier(await setCourierStatus({ status: value ? 'ONLINE' : 'OFFLINE' }));
-    } catch (err) {
-      setError(apiError(err));
-    }
-  }
-
-  async function onClaim(order) {
-    setBusyId(order.id);
-    setError('');
-    try {
-      await claimOrder(order.id);
-      await load();
-    } catch (err) {
-      // 409 means another courier got there first — a normal race, not a fault.
-      setError(apiError(err));
-      await load();
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  async function onAdvance(order) {
+  function onAdvance(order) {
     const next = nextDeliveryStatus(order);
     if (!next) return;
-    setBusyId(order.id);
-    setError('');
-    try {
-      const updated = await advanceDelivery(order.id, next);
-      setMine((list) => list.map((o) => (o.id === updated.id ? updated : o)));
-      if (updated.status === 'DELIVERED') {
-        await stopTracking();
-        setTracking(false);
-      }
-    } catch (err) {
-      setError(apiError(err));
-    } finally {
-      setBusyId(null);
-    }
+    advanceMutation.mutate({ order, status: next }, {
+      onSuccess: async (updated) => {
+        if (updated.status === 'DELIVERED') {
+          await stopTracking();
+          setTracking(false);
+        }
+      },
+    });
   }
 
   async function onStartTracking() {
@@ -133,11 +144,12 @@ export default function CourierDashboardScreen() {
     try {
       await startTracking(active.id);
       setTracking(true);
+      setTrackingError('');
       // Foreground-only permission still works while the app is open — worth
       // saying so plainly rather than letting the courier assume otherwise.
       if (!background) Alert.alert(t('locationForegroundOnlyTitle'), t('locationForegroundOnly'));
     } catch (err) {
-      setError(apiError(err));
+      setTrackingError(apiError(err));
     }
   }
 
@@ -165,12 +177,17 @@ export default function CourierDashboardScreen() {
         </View>
         <Switch
           value={courier?.status === 'ONLINE'}
-          onValueChange={toggleOnline}
+          onValueChange={statusMutation.mutate}
+          disabled={statusMutation.isPending}
           trackColor={{ true: colors.ember }}
         />
       </View>
 
-      {error ? <Text style={[styles.error, { color: colors.ember }]}>{error}</Text> : null}
+      {error || trackingError ? (
+        <Text style={[styles.error, { color: colors.ember }]}>
+          {error ? apiError(error) : trackingError}
+        </Text>
+      ) : null}
 
       {active ? (
         <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.ember }]}>
@@ -208,12 +225,13 @@ export default function CourierDashboardScreen() {
         contentContainerStyle={styles.list}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
+            refreshing={
+              profileQuery.isRefetching ||
+              availableQuery.isRefetching ||
+              deliveriesQuery.isRefetching
+            }
             tintColor={colors.ember}
-            onRefresh={() => {
-              setRefreshing(true);
-              load().finally(() => setRefreshing(false));
-            }}
+            onRefresh={reload}
           />
         }
         ListEmptyComponent={
@@ -227,7 +245,7 @@ export default function CourierDashboardScreen() {
             <Text style={[styles.meta, { color: colors.muted }]}>{item.addressText ?? ''}</Text>
             <Text style={[styles.total, { color: colors.fg }]}>{item.total} ₴</Text>
             <Pressable
-              onPress={() => onClaim(item)}
+              onPress={() => claimMutation.mutate(item)}
               disabled={busyId === item.id || !!active}
               style={[
                 styles.claim,

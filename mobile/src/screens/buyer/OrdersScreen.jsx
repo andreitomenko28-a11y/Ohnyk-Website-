@@ -1,11 +1,13 @@
-// The buyer's order history. Live tracking on the map arrives in Module 8.6.
+// The buyer's order history — cached, so "where is my order" still answers
+// something when the connection drops mid-delivery.
 
-import { useCallback, useState } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useQuery } from '@tanstack/react-query';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import Screen from '../../components/Screen.jsx';
 import { apiError } from '../../api/client.js';
 import { fetchMyOrders } from '../../api/buyer.js';
+import { qk } from '../../offline/queryKeys.js';
+import useRefreshOnFocus from '../../offline/useRefreshOnFocus.js';
 import { useI18n } from '../../i18n/index.jsx';
 import { useTheme } from '../../theme/ThemeContext.jsx';
 import { radius, spacing } from '../../theme/tokens.js';
@@ -17,34 +19,19 @@ export default function OrdersScreen({ navigation }) {
   const { t, lang } = useI18n();
   const { colors } = useTheme();
 
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState('');
+  const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
+    queryKey: qk.myOrders,
+    queryFn: () => fetchMyOrders(),
+  });
+  useRefreshOnFocus(refetch);
 
-  const load = useCallback(async () => {
-    try {
-      const data = await fetchMyOrders();
-      setOrders(data.orders ?? []);
-      setError('');
-    } catch (err) {
-      setError(apiError(err));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
+  const orders = data?.orders ?? [];
 
   return (
     <Screen title={t('navOrders')}>
-      {error ? <Text style={[styles.error, { color: colors.ember }]}>{error}</Text> : null}
+      {isError ? <Text style={[styles.error, { color: colors.ember }]}>{apiError(error)}</Text> : null}
 
-      {loading ? (
+      {isLoading ? (
         <ActivityIndicator color={colors.ember} style={styles.loader} />
       ) : (
         <FlatList
@@ -53,12 +40,12 @@ export default function OrdersScreen({ navigation }) {
           contentContainerStyle={styles.list}
           refreshControl={
             <RefreshControl
-              refreshing={refreshing}
+              // The query's own fetch state, not a local flag: a refetch
+              // while offline is paused and never settles, so a hand-rolled
+              // flag would leave the spinner turning forever.
+              refreshing={isRefetching}
               tintColor={colors.ember}
-              onRefresh={() => {
-                setRefreshing(true);
-                load().finally(() => setRefreshing(false));
-              }}
+              onRefresh={refetch}
             />
           }
           ListEmptyComponent={

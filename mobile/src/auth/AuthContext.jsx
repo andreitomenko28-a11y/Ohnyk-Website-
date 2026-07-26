@@ -15,6 +15,7 @@ import api, { apiError, setAuthFailureHandler, setTokenStore } from '../api/clie
 import { secureTokenStore } from './tokenStorage.js';
 import { disconnectSocket } from '../realtime/socket.js';
 import { registerForPush, unregisterFromPush } from '../push/register.js';
+import { clearOfflineCache } from '../offline/queryClient.js';
 
 // Persist tokens securely from here on (replaces the in-memory default).
 setTokenStore(secureTokenStore);
@@ -28,7 +29,12 @@ export function AuthProvider({ children }) {
   // Drop to the auth stack when a refresh finally fails (expired or revoked
   // session, or a token family revoked by reuse detection).
   useEffect(() => {
-    setAuthFailureHandler(() => setUser(null));
+    setAuthFailureHandler(() => {
+      setUser(null);
+      // The offline cache holds this account's orders and addresses; a dead
+      // session must not leave them readable to whoever logs in next.
+      clearOfflineCache().catch(() => {});
+    });
   }, []);
 
   // Autologin on cold start.
@@ -50,6 +56,7 @@ export function AuthProvider({ children }) {
         // stale is left behind.
         await secureTokenStore.clear();
         disconnectSocket();
+        await clearOfflineCache().catch(() => {});
       } finally {
         if (active) setLoading(false);
       }
@@ -99,6 +106,9 @@ export function AuthProvider({ children }) {
     // Drop the realtime connection so it cannot stay authenticated as the
     // user who just left (the same guard the web build applies).
     disconnectSocket();
+    // Same reasoning for the persisted cache: AsyncStorage is not encrypted
+    // and it holds this account's orders and delivery addresses.
+    await clearOfflineCache().catch(() => {});
     setUser(null);
   }, []);
 

@@ -3,13 +3,14 @@
 // Editing opens DishFormScreen; this screen owns the list and reloads on focus
 // so a change made there is reflected on the way back.
 
-import { useCallback, useState } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ActivityIndicator, Alert, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import Screen from '../../components/Screen.jsx';
 import Button from '../../components/Button.jsx';
 import { apiError } from '../../api/client.js';
 import { deleteDish, fetchMyDishes } from '../../api/cook.js';
+import { qk } from '../../offline/queryKeys.js';
+import useRefreshOnFocus from '../../offline/useRefreshOnFocus.js';
 import { mediaUrl } from './CookProfileScreen.jsx';
 import { useI18n } from '../../i18n/index.jsx';
 import { useTheme } from '../../theme/ThemeContext.jsx';
@@ -50,53 +51,40 @@ export default function CookMenuScreen({ navigation }) {
   const { t } = useI18n();
   const { colors } = useTheme();
 
-  const [dishes, setDishes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
+  const { data: dishes = [], isLoading, isError, error, refetch } = useQuery({
+    queryKey: qk.myDishes,
+    queryFn: fetchMyDishes,
+  });
+  // Refresh on focus, e.g. on the way back from the dish form.
+  useRefreshOnFocus(refetch);
 
-  const load = useCallback(async () => {
-    try {
-      setDishes(await fetchMyDishes());
-      setError('');
-    } catch (err) {
-      setError(apiError(err));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Reload whenever the screen regains focus (e.g. returning from the form).
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
+  const deleteMutation = useMutation({
+    mutationFn: (dish) => deleteDish(dish.id),
+    // The endpoint returns no body, so the row is dropped from the cached list
+    // instead of refetching it.
+    onSuccess: (_data, dish) =>
+      queryClient.setQueryData(qk.myDishes, (list = []) => list.filter((d) => d.id !== dish.id)),
+  });
 
   function confirmDelete(dish) {
     Alert.alert(t('deleteDishTitle'), dish.name, [
       { text: t('cancel'), style: 'cancel' },
-      {
-        text: t('delete'),
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteDish(dish.id);
-            setDishes((list) => list.filter((d) => d.id !== dish.id));
-          } catch (err) {
-            setError(apiError(err));
-          }
-        },
-      },
+      { text: t('delete'), style: 'destructive', onPress: () => deleteMutation.mutate(dish) },
     ]);
   }
+
+  const message = deleteMutation.error ?? (isError ? error : null);
 
   return (
     <Screen title={t('navCookMenu')}>
       <Button title={t('addDish')} onPress={() => navigation.navigate('DishForm', {})} />
 
-      {error ? <Text style={[styles.error, { color: colors.ember }]}>{error}</Text> : null}
+      {message ? (
+        <Text style={[styles.error, { color: colors.ember }]}>{apiError(message)}</Text>
+      ) : null}
 
-      {loading ? (
+      {isLoading ? (
         <ActivityIndicator color={colors.ember} style={styles.loader} />
       ) : (
         <FlatList

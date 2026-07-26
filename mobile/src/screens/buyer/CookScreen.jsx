@@ -4,11 +4,13 @@
 // different cook replaces the cart — the API surfaces that as a 409, which is
 // shown to the buyer rather than swallowed.
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import Screen from '../../components/Screen.jsx';
 import { apiError } from '../../api/client.js';
 import { addToCart, fetchCookMenu } from '../../api/buyer.js';
+import { qk } from '../../offline/queryKeys.js';
 import { mediaUrl } from '../cook/CookProfileScreen.jsx';
 import { useI18n } from '../../i18n/index.jsx';
 import { useTheme } from '../../theme/ThemeContext.jsx';
@@ -60,40 +62,36 @@ export default function CookScreen({ route, navigation }) {
   const { t } = useI18n();
   const { colors } = useTheme();
 
-  const [menu, setMenu] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState(null);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
   const [added, setAdded] = useState(0);
 
-  useEffect(() => {
-    fetchCookMenu(cookId)
-      .then(setMenu)
-      .catch((err) => setError(apiError(err)))
-      .finally(() => setLoading(false));
-  }, [cookId]);
+  const { data: menu, isLoading, isError, error } = useQuery({
+    queryKey: qk.cookMenu(cookId),
+    queryFn: () => fetchCookMenu(cookId),
+  });
 
-  async function onAdd(dish) {
-    setBusyId(dish.id);
-    setError('');
-    try {
-      await addToCart(dish.id, 1);
+  const addMutation = useMutation({
+    mutationFn: (dish) => addToCart(dish.id, 1),
+    onSuccess: (cart) => {
       setAdded((n) => n + 1);
-    } catch (err) {
-      // A 409 here means the cart already holds another cook's dishes.
-      setError(apiError(err));
-    } finally {
-      setBusyId(null);
-    }
-  }
+      // The endpoint answers with the whole cart, so the Cart tab is already
+      // correct by the time the buyer walks over to it.
+      queryClient.setQueryData(qk.cart, cart);
+    },
+    // A 409 here means the cart already holds another cook's dishes; it is
+    // rendered below rather than swallowed.
+  });
 
   const dishes = menu?.dishes ?? menu?.menu?.flatMap((g) => g.dishes ?? []) ?? [];
+  const message = addMutation.error ?? (isError ? error : null);
 
   return (
     <Screen title={name || menu?.cook?.name || ''}>
-      {error ? <Text style={[styles.error, { color: colors.ember }]}>{error}</Text> : null}
+      {message ? (
+        <Text style={[styles.error, { color: colors.ember }]}>{apiError(message)}</Text>
+      ) : null}
 
-      {loading ? (
+      {isLoading ? (
         <ActivityIndicator color={colors.ember} style={styles.loader} />
       ) : (
         <FlatList
@@ -104,7 +102,13 @@ export default function CookScreen({ route, navigation }) {
             <Text style={[styles.empty, { color: colors.muted }]}>{t('noDishesYet')}</Text>
           }
           renderItem={({ item }) => (
-            <DishRow dish={item} onAdd={onAdd} busy={busyId === item.id} colors={colors} t={t} />
+            <DishRow
+              dish={item}
+              onAdd={addMutation.mutate}
+              busy={addMutation.isPending && addMutation.variables?.id === item.id}
+              colors={colors}
+              t={t}
+            />
           )}
         />
       )}

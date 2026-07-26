@@ -6,11 +6,11 @@
 // needs and grows per module, rather than copying all ~690 web strings up
 // front — most of them belong to screens that don't exist here yet.
 //
-// The chosen language lives in memory for now. It is not a credential, so it
-// belongs in AsyncStorage rather than SecureStore — persisting it lands with
-// the offline-cache work in Module 8.8.
+// The chosen language is remembered in AsyncStorage (offline/lang.js): it is a
+// preference, not a credential, so it does not belong in SecureStore.
 
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { loadLang, saveLang } from '../offline/lang.js';
 
 export const dict = {
   uk: {
@@ -193,6 +193,9 @@ export const dict = {
     // Courier
     navCourier: 'Доставка',
 
+    // Offline (Module 8.8)
+    offlineNotice: 'Немає звʼязку — показані збережені дані',
+
     // Placeholder copy for the shell (removed as real screens land)
     comingSoon: 'Екран зʼявиться в наступному модулі',
   },
@@ -365,6 +368,8 @@ export const dict = {
 
     navCourier: 'Delivery',
 
+    offlineNotice: 'No connection — showing saved data',
+
     comingSoon: 'This screen arrives in the next module',
   },
 };
@@ -372,11 +377,29 @@ export const dict = {
 const I18nContext = createContext(null);
 
 export function I18nProvider({ children, initialLang = 'uk' }) {
-  const [lang, setLang] = useState(initialLang);
+  const [lang, setLangState] = useState(initialLang);
+
+  // Adopt the remembered choice once storage answers. Rendering starts on the
+  // default rather than waiting: a blank first frame costs more than a label
+  // that settles a moment later, and nothing below depends on the value.
+  useEffect(() => {
+    let active = true;
+    loadLang().then((stored) => {
+      if (active && stored) setLangState(stored);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const setLang = useCallback((next) => {
+    setLangState(next);
+    saveLang(next); // best-effort; failing to remember must not block the switch
+  }, []);
 
   const t = useCallback((key) => dict[lang]?.[key] ?? dict.uk[key] ?? key, [lang]);
 
-  const value = useMemo(() => ({ lang, setLang, t }), [lang, t]);
+  const value = useMemo(() => ({ lang, setLang, t }), [lang, setLang, t]);
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
 
