@@ -1,13 +1,14 @@
 // Cart: quantity stepper per line, plus the pricing breakdown the server
 // computes (subtotal, service fee, total) — the app never recalculates money.
 
-import { useCallback, useState } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import Screen from '../../components/Screen.jsx';
 import Button from '../../components/Button.jsx';
 import { apiError } from '../../api/client.js';
 import { clearCart, fetchCart, setCartItemQuantity } from '../../api/buyer.js';
+import { qk } from '../../offline/queryKeys.js';
+import useRefreshOnFocus from '../../offline/useRefreshOnFocus.js';
 import { mediaUrl } from '../cook/CookProfileScreen.jsx';
 import { useI18n } from '../../i18n/index.jsx';
 import { useTheme } from '../../theme/ThemeContext.jsx';
@@ -33,45 +34,35 @@ export default function CartScreen({ navigation }) {
   const { t } = useI18n();
   const { colors } = useTheme();
 
-  const [cart, setCart] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState(null);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
+  const { data: cart, isLoading, isError, error, refetch } = useQuery({
+    queryKey: qk.cart,
+    queryFn: fetchCart,
+  });
+  useRefreshOnFocus(refetch);
 
-  const load = useCallback(async () => {
-    try {
-      setCart(await fetchCart());
-      setError('');
-    } catch (err) {
-      setError(apiError(err));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Both writes answer with the whole cart, so the cache is replaced outright
+  // rather than invalidated — no second round-trip for a body we already have.
+  const writeCart = (updated) => queryClient.setQueryData(qk.cart, updated);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
+  const quantityMutation = useMutation({
+    // Quantity 0 is how the server removes a line.
+    mutationFn: ({ item, quantity }) => setCartItemQuantity(item.id, Math.max(0, quantity)),
+    onSuccess: writeCart,
+  });
 
-  async function changeQuantity(item, quantity) {
+  const clearMutation = useMutation({ mutationFn: clearCart, onSuccess: writeCart });
+
+  function changeQuantity(item, quantity) {
     if (quantity > 99) return;
-    setBusyId(item.id);
-    setError('');
-    try {
-      // Quantity 0 is how the server removes a line.
-      setCart(await setCartItemQuantity(item.id, Math.max(0, quantity)));
-    } catch (err) {
-      setError(apiError(err));
-    } finally {
-      setBusyId(null);
-    }
+    quantityMutation.mutate({ item, quantity });
   }
 
   const items = cart?.items ?? [];
+  // Any of the three can be the reason the screen is out of date.
+  const message = quantityMutation.error ?? clearMutation.error ?? (isError ? error : null);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Screen title={t('navCart')}>
         <ActivityIndicator color={colors.ember} style={styles.loader} />
@@ -81,7 +72,9 @@ export default function CartScreen({ navigation }) {
 
   return (
     <Screen title={t('navCart')}>
-      {error ? <Text style={[styles.error, { color: colors.ember }]}>{error}</Text> : null}
+      {message ? (
+        <Text style={[styles.error, { color: colors.ember }]}>{apiError(message)}</Text>
+      ) : null}
 
       <FlatList
         data={items}
@@ -107,7 +100,7 @@ export default function CartScreen({ navigation }) {
               </View>
               <Stepper
                 quantity={item.quantity}
-                busy={busyId === item.id}
+                busy={quantityMutation.isPending && quantityMutation.variables?.item?.id === item.id}
                 colors={colors}
                 onChange={(q) => changeQuantity(item, q)}
               />
@@ -126,13 +119,8 @@ export default function CartScreen({ navigation }) {
 
           <Button title={t('checkout')} onPress={() => navigation.navigate('Checkout')} />
           <Pressable
-            onPress={async () => {
-              try {
-                setCart(await clearCart());
-              } catch (err) {
-                setError(apiError(err));
-              }
-            }}
+            onPress={() => clearMutation.mutate()}
+            disabled={clearMutation.isPending}
             style={styles.clear}
           >
             <Text style={{ color: colors.muted, fontSize: 13 }}>{t('clearCart')}</Text>

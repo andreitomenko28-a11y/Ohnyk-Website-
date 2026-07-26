@@ -4,14 +4,16 @@
 // transition table — offering a button the server would reject is worse than
 // offering none.
 
-import { useCallback, useState } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import Screen from '../../components/Screen.jsx';
 import Button from '../../components/Button.jsx';
 import { apiError } from '../../api/client.js';
 import { advanceOrderStatus, fetchCookOrders } from '../../api/cook.js';
 import { canCancel, isActive, nextCookStatus } from '../../api/orderStatus.js';
+import { qk } from '../../offline/queryKeys.js';
+import useRefreshOnFocus from '../../offline/useRefreshOnFocus.js';
 import { useI18n } from '../../i18n/index.jsx';
 import { useTheme } from '../../theme/ThemeContext.jsx';
 import { radius, spacing } from '../../theme/tokens.js';
@@ -67,43 +69,27 @@ export default function CookOrdersScreen() {
   const { t } = useI18n();
   const { colors } = useTheme();
 
-  const [orders, setOrders] = useState([]);
+  const queryClient = useQueryClient();
   const [filter, setFilter] = useState('active');
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [busyId, setBusyId] = useState(null);
-  const [error, setError] = useState('');
 
-  const load = useCallback(async () => {
-    try {
-      const data = await fetchCookOrders();
-      setOrders(data.orders ?? []);
-      setError('');
-    } catch (err) {
-      setError(apiError(err));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
+    queryKey: qk.cookOrders,
+    queryFn: () => fetchCookOrders(),
+  });
+  useRefreshOnFocus(refetch);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
+  const advanceMutation = useMutation({
+    mutationFn: ({ order, status }) => advanceOrderStatus(order.id, status),
+    // The response is the updated order, so the one row is swapped in place —
+    // refetching the whole list would scroll-jump for a single status change.
+    onSuccess: (updated) =>
+      queryClient.setQueryData(qk.cookOrders, (previous) => ({
+        ...previous,
+        orders: (previous?.orders ?? []).map((o) => (o.id === updated.id ? updated : o)),
+      })),
+  });
 
-  async function apply(order, status) {
-    setBusyId(order.id);
-    setError('');
-    try {
-      const updated = await advanceOrderStatus(order.id, status);
-      setOrders((list) => list.map((o) => (o.id === updated.id ? updated : o)));
-    } catch (err) {
-      setError(apiError(err));
-    } finally {
-      setBusyId(null);
-    }
-  }
+  const apply = (order, status) => advanceMutation.mutate({ order, status });
 
   function confirmCancel(order) {
     Alert.alert(t('cancelOrderTitle'), `#${order.id.slice(0, 8)}`, [
@@ -112,7 +98,9 @@ export default function CookOrdersScreen() {
     ]);
   }
 
+  const orders = data?.orders ?? [];
   const visible = filter === 'active' ? orders.filter(isActive) : orders;
+  const message = advanceMutation.error ?? (isError ? error : null);
 
   return (
     <Screen title={t('navCookOrders')}>
@@ -139,9 +127,11 @@ export default function CookOrdersScreen() {
         })}
       </View>
 
-      {error ? <Text style={[styles.error, { color: colors.ember }]}>{error}</Text> : null}
+      {message ? (
+        <Text style={[styles.error, { color: colors.ember }]}>{apiError(message)}</Text>
+      ) : null}
 
-      {loading ? (
+      {isLoading ? (
         <ActivityIndicator color={colors.ember} style={styles.loader} />
       ) : (
         <FlatList
@@ -150,12 +140,12 @@ export default function CookOrdersScreen() {
           contentContainerStyle={styles.list}
           refreshControl={
             <RefreshControl
-              refreshing={refreshing}
+              // The query's own fetch state, not a local flag: a refetch
+              // while offline is paused and never settles, so a hand-rolled
+              // flag would leave the spinner turning forever.
+              refreshing={isRefetching}
               tintColor={colors.ember}
-              onRefresh={() => {
-                setRefreshing(true);
-                load().finally(() => setRefreshing(false));
-              }}
+              onRefresh={refetch}
             />
           }
           ListEmptyComponent={
@@ -166,7 +156,7 @@ export default function CookOrdersScreen() {
               order={item}
               colors={colors}
               t={t}
-              busy={busyId === item.id}
+              busy={advanceMutation.isPending && advanceMutation.variables?.order?.id === item.id}
               onAdvance={apply}
               onCancel={confirmCancel}
             />

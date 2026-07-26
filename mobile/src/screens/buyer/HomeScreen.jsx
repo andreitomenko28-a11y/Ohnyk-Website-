@@ -1,12 +1,17 @@
 // Catalogue of cooks. Doubles as the search screen — the same list, filtered
 // by a query when one is typed.
+//
+// Cached per query string, so going back to a term already typed shows its
+// results instantly, and the catalogue still renders with no connection.
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import Screen from '../../components/Screen.jsx';
 import Field from '../../components/Field.jsx';
 import { apiError } from '../../api/client.js';
 import { fetchCooks, searchCooks } from '../../api/buyer.js';
+import { qk } from '../../offline/queryKeys.js';
 import { mediaUrl } from '../cook/CookProfileScreen.jsx';
 import { useI18n } from '../../i18n/index.jsx';
 import { useTheme } from '../../theme/ThemeContext.jsx';
@@ -55,28 +60,23 @@ export default function HomeScreen({ navigation }) {
   const { colors } = useTheme();
 
   const [query, setQuery] = useState('');
-  const [cooks, setCooks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState('');
+  const [term, setTerm] = useState('');
 
-  const load = useCallback(async (q) => {
-    try {
-      const data = q?.trim() ? await searchCooks(q.trim()) : await fetchCooks({ limit: 50 });
-      setCooks(data.cooks ?? []);
-      setError('');
-    } catch (err) {
-      setError(apiError(err));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Debounce so typing doesn't fire a request per keystroke.
+  // Debounce so typing doesn't fire a request — or a cache entry — per keystroke.
   useEffect(() => {
-    const id = setTimeout(() => load(query), query ? 300 : 0);
+    const id = setTimeout(() => setTerm(query.trim()), query ? 300 : 0);
     return () => clearTimeout(id);
-  }, [query, load]);
+  }, [query]);
+
+  const { data, isLoading, isError, error, refetch, isRefetching, isPlaceholderData } = useQuery({
+    queryKey: qk.cooks(term),
+    queryFn: () => (term ? searchCooks(term) : fetchCooks({ limit: 50 })),
+    // Keep the previous term's results on screen while the new ones load,
+    // instead of flashing an empty list on every debounce tick.
+    placeholderData: keepPreviousData,
+  });
+
+  const cooks = data?.cooks ?? [];
 
   return (
     <Screen title={t('popularCooks')}>
@@ -88,9 +88,9 @@ export default function HomeScreen({ navigation }) {
         autoCorrect={false}
       />
 
-      {error ? <Text style={[styles.error, { color: colors.ember }]}>{error}</Text> : null}
+      {isError ? <Text style={[styles.error, { color: colors.ember }]}>{apiError(error)}</Text> : null}
 
-      {loading ? (
+      {isLoading ? (
         <ActivityIndicator color={colors.ember} style={styles.loader} />
       ) : (
         <FlatList
@@ -99,12 +99,14 @@ export default function HomeScreen({ navigation }) {
           contentContainerStyle={styles.list}
           refreshControl={
             <RefreshControl
-              refreshing={refreshing}
+              // The query's own fetch state, not a local flag: a refetch
+              // while offline is paused and never settles, so a hand-rolled
+              // flag would leave the spinner turning forever. The
+              // placeholder check keeps a debounced search from flashing the
+              // pull-to-refresh spinner while the buyer is still typing.
+              refreshing={isRefetching && !isPlaceholderData}
               tintColor={colors.ember}
-              onRefresh={() => {
-                setRefreshing(true);
-                load(query).finally(() => setRefreshing(false));
-              }}
+              onRefresh={refetch}
             />
           }
           ListEmptyComponent={

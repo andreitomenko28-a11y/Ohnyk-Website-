@@ -1,7 +1,7 @@
 // Reviews left on the cook, with reply / edit reply / delete reply.
 
-import { useCallback, useState } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import Screen from '../../components/Screen.jsx';
 import Field from '../../components/Field.jsx';
@@ -11,6 +11,8 @@ import { deleteReviewReply, fetchCookReviews, replyToReview } from '../../api/co
 import { mediaUrl } from './CookProfileScreen.jsx';
 import { useI18n } from '../../i18n/index.jsx';
 import { useTheme } from '../../theme/ThemeContext.jsx';
+import { qk } from '../../offline/queryKeys.js';
+import useRefreshOnFocus from '../../offline/useRefreshOnFocus.js';
 import { radius, spacing } from '../../theme/tokens.js';
 
 function Stars({ rating, color }) {
@@ -28,6 +30,9 @@ function ReviewCard({ review, onReply, onDeleteReply, colors, t }) {
     try {
       await onReply(review.id, text.trim());
       setEditing(false);
+    } catch {
+      // The screen renders the failure; keep the draft open so the cook can
+      // retry without retyping it.
     } finally {
       setBusy(false);
     }
@@ -86,56 +91,41 @@ export default function CookReviewsScreen() {
   const { t } = useI18n();
   const { colors } = useTheme();
 
-  const [reviews, setReviews] = useState([]);
-  const [average, setAverage] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
 
-  const load = useCallback(async () => {
-    try {
-      const data = await fetchCookReviews();
-      setReviews(data.reviews ?? []);
-      setAverage(data.average ?? 0);
-      setTotal(data.total ?? 0);
-      setError('');
-    } catch (err) {
-      setError(apiError(err));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
+    queryKey: qk.cookReviews,
+    queryFn: () => fetchCookReviews(),
+  });
+  useRefreshOnFocus(refetch);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load]),
-  );
+  // Rewrites one review inside the cached page, leaving `average` and `total`
+  // as the server reported them — a reply changes neither.
+  const patchReview = (id, patch) =>
+    queryClient.setQueryData(qk.cookReviews, (previous) => ({
+      ...previous,
+      reviews: (previous?.reviews ?? []).map((r) => (r.id === id ? { ...r, ...patch } : r)),
+    }));
 
-  const replace = (updated) =>
-    setReviews((list) => list.map((r) => (r.id === updated.id ? updated : r)));
+  const replyMutation = useMutation({
+    mutationFn: ({ id, text }) => replyToReview(id, text),
+    onSuccess: (updated) => patchReview(updated.id, updated),
+  });
 
-  async function onReply(id, text) {
-    try {
-      replace(await replyToReview(id, text));
-    } catch (err) {
-      setError(apiError(err));
-    }
-  }
+  const deleteReplyMutation = useMutation({
+    mutationFn: (id) => deleteReviewReply(id),
+    // The endpoint answers 204 with no body, so the reply is cleared locally
+    // rather than read back off a response that has none.
+    onSuccess: (_data, id) => patchReview(id, { reply: null, repliedAt: null }),
+  });
 
-  async function onDeleteReply(id) {
-    try {
-      // The endpoint answers 204 with no body, so clear the reply locally
-      // rather than expecting an updated review back.
-      await deleteReviewReply(id);
-      setReviews((list) =>
-        list.map((r) => (r.id === id ? { ...r, reply: null, repliedAt: null } : r)),
-      );
-    } catch (err) {
-      setError(apiError(err));
-    }
-  }
+  const onReply = (id, text) => replyMutation.mutateAsync({ id, text });
+  const onDeleteReply = (id) => deleteReplyMutation.mutate(id);
+
+  const reviews = data?.reviews ?? [];
+  const average = data?.average ?? 0;
+  const total = data?.total ?? 0;
+  const message = replyMutation.error ?? deleteReplyMutation.error ?? (isError ? error : null);
 
   return (
     <Screen title={t('navCookReviews')}>
@@ -147,9 +137,11 @@ export default function CookReviewsScreen() {
         </Text>
       ) : null}
 
-      {error ? <Text style={[styles.error, { color: colors.ember }]}>{error}</Text> : null}
+      {message ? (
+        <Text style={[styles.error, { color: colors.ember }]}>{apiError(message)}</Text>
+      ) : null}
 
-      {loading ? (
+      {isLoading ? (
         <ActivityIndicator color={colors.ember} style={styles.loader} />
       ) : (
         <FlatList
@@ -158,12 +150,12 @@ export default function CookReviewsScreen() {
           contentContainerStyle={styles.list}
           refreshControl={
             <RefreshControl
-              refreshing={refreshing}
+              // The query's own fetch state, not a local flag: a refetch
+              // while offline is paused and never settles, so a hand-rolled
+              // flag would leave the spinner turning forever.
+              refreshing={isRefetching}
               tintColor={colors.ember}
-              onRefresh={() => {
-                setRefreshing(true);
-                load().finally(() => setRefreshing(false));
-              }}
+              onRefresh={refetch}
             />
           }
           ListEmptyComponent={

@@ -4,6 +4,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeContext.jsx';
+import OfflineBanner from './OfflineBanner.jsx';
 import { spacing } from '../theme/tokens.js';
 
 export default function Screen({ children, title, edges = ['top'] }) {
@@ -22,6 +23,7 @@ export default function Screen({ children, title, edges = ['top'] }) {
       ]}
     >
       {title ? <Text style={[styles.title, { color: colors.fg }]}>{title}</Text> : null}
+      <OfflineBanner />
       {children}
     </View>
   );
