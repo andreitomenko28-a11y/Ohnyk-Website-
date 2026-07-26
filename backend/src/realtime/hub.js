@@ -23,6 +23,17 @@ export function isUserOnline(userId) {
   return !!room && room.size > 0;
 }
 
+// Drops every live socket a user holds.
+//
+// Called when an account is blocked. The handshake check only guards NEW
+// connections; a socket opened a moment earlier is never re-authorized, so
+// without this a blocked user keeps receiving chat and notifications until they
+// happen to disconnect.
+export function disconnectUser(userId) {
+  if (!userId) return;
+  io?.in(`user:${userId}`).disconnectSockets(true);
+}
+
 // Broadcast a courier position to an order's tracking room. Lives here so
 // lib/tracking.js can emit without importing the socket server wiring.
 export function emitCourierLocation(orderId, payload) {

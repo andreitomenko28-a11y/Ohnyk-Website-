@@ -48,6 +48,15 @@ export async function updateStatus(req, res, next) {
     if (data.status === undefined && data.transport === undefined) {
       throw httpError(400, 'Нема що оновлювати');
     }
+
+    // Going offline mid-delivery would strand the buyer: the order stays
+    // assigned, the map goes quiet, and no other courier can pick it up.
+    if (data.status === 'OFFLINE') {
+      const active = await prisma.order.count({
+        where: { courierId: req.courier.id, status: { in: ACTIVE } },
+      });
+      if (active > 0) throw httpError(409, 'Спершу заверши поточну доставку');
+    }
     const courier = await prisma.courierProfile.update({
       where: { id: req.courier.id },
       data: {
@@ -99,6 +108,17 @@ export async function claimOrder(req, res, next) {
   try {
     if (req.courier.status !== 'ONLINE') {
       throw httpError(409, 'Перейдіть онлайн, щоб брати замовлення');
+    }
+
+    // One delivery at a time. Both clients hide the button while a delivery is
+    // running, but the rule belongs here: a courier holding several orders at
+    // once means every one of them is late, and the buyer's live map shows a
+    // courier driving away from them.
+    const active = await prisma.order.count({
+      where: { courierId: req.courier.id, status: { in: ACTIVE } },
+    });
+    if (active > 0) {
+      throw httpError(409, 'Спершу заверши поточну доставку');
     }
 
     // Atomic claim: only succeeds if the order is still READY, unclaimed, and

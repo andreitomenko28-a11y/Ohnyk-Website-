@@ -15,13 +15,26 @@ export function initRealtime(httpServer, corsOrigins) {
   });
 
   // Handshake auth: a valid access token is required to connect at all.
+  //
+  // The account is re-read from the database for the same reason authGuard does
+  // it on every REST call — a token proves who is calling, not what they are
+  // still allowed to do. Without this a blocked user kept a working realtime
+  // channel for the rest of the token's life while every REST call 403'd.
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token;
       if (!token) return next(new Error('unauthorized'));
       const payload = verifyAccessToken(token);
-      socket.data.user = { id: payload.sub, role: payload.role };
-      if (payload.role === 'COURIER') {
+
+      const user = await prisma.user.findUnique({
+        where: { id: payload.sub },
+        select: { isBlocked: true, role: true },
+      });
+      if (!user) return next(new Error('unauthorized'));
+      if (user.isBlocked) return next(new Error('blocked'));
+
+      socket.data.user = { id: payload.sub, role: user.role };
+      if (user.role === 'COURIER') {
         const profile = await prisma.courierProfile.findUnique({ where: { userId: payload.sub } });
         socket.data.courierId = profile?.id || null;
       }

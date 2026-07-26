@@ -1,6 +1,7 @@
 import { prisma } from '../lib/prisma.js';
 import { httpError } from '../middleware/errorHandler.js';
 import { notifyNewOrder } from '../lib/notify.js';
+import { mockPaymentSchema } from '../validation/schemas.js';
 import {
   isStub,
   createInvoice,
@@ -134,7 +135,9 @@ export async function getPaymentStatus(req, res, next) {
 export async function mockComplete(req, res, next) {
   try {
     if (!isStub()) throw httpError(404, 'Not found');
-    const result = req.body?.result === 'failure' ? 'failure' : 'success';
+    // Validated rather than coerced: silently reading an undeclared field as
+    // "success" is how a client asking for a failure got a paid order.
+    const { result } = mockPaymentSchema.parse(req.body ?? {});
 
     const order = await prisma.order.findUnique({
       where: { id: req.params.id },

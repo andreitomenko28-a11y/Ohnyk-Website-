@@ -300,6 +300,15 @@ export const listRefundsSchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 });
 
+// Dev-only stub payment. Declared so the two clients cannot drift apart: the
+// web sent `result`, the mobile app sent `status`, and the controller read
+// `result` — so asking for a failure from mobile silently succeeded.
+export const mockPaymentSchema = z
+  .object({
+    result: z.enum(['success', 'failure']),
+  })
+  .strict();
+
 export const completeRefundSchema = z
   .object({
     // Free-text reference for the transfer the admin actually made (bank
