@@ -14,6 +14,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import api, { apiError, setAuthFailureHandler, setTokenStore } from '../api/client.js';
 import { secureTokenStore } from './tokenStorage.js';
 import { disconnectSocket } from '../realtime/socket.js';
+import { registerForPush, unregisterFromPush } from '../push/register.js';
 
 // Persist tokens securely from here on (replaces the in-memory default).
 setTokenStore(secureTokenStore);
@@ -38,7 +39,12 @@ export function AuthProvider({ children }) {
         const stored = await secureTokenStore.getAccess();
         if (!stored) return; // never logged in — go straight to the auth stack
         const { data } = await api.get('/auth/me');
-        if (active) setUser(data.user);
+        if (active) {
+          setUser(data.user);
+          // The token can change between launches (reinstall, OS refresh), so
+          // re-register on every cold start rather than only on login.
+          registerForPush().catch(() => {});
+        }
       } catch {
         // Refresh already ran and failed inside the client; make sure nothing
         // stale is left behind.
@@ -57,6 +63,8 @@ export function AuthProvider({ children }) {
   const adoptSession = useCallback(async (data) => {
     await secureTokenStore.set(data.accessToken, data.refreshToken);
     setUser(data.user);
+    // Best-effort: a declined permission or a simulator must not fail login.
+    registerForPush().catch(() => {});
     return data.user;
   }, []);
 
@@ -80,6 +88,9 @@ export function AuthProvider({ children }) {
   );
 
   const logout = useCallback(async () => {
+    // Drop this device first, so the next person to use the handset does not
+    // receive the previous account's notifications.
+    await unregisterFromPush().catch(() => {});
     const refreshToken = await secureTokenStore.getRefresh();
     // Best-effort server-side revocation of the token family; never block the
     // UI on it (the user may well be offline).
