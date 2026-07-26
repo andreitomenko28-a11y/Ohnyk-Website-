@@ -6,9 +6,13 @@ import {
   listUsersSchema,
   listAdminCooksSchema,
   blockUserSchema,
+  listRefundsSchema,
+  completeRefundSchema,
 } from '../validation/schemas.js';
 import { writeAdminLog } from '../lib/adminLog.js';
 import { sendEmail } from '../lib/email.js';
+import { completeRefund } from '../lib/refunds.js';
+import { createNotification } from '../lib/notify.js';
 
 // Shape a user row for the admin users table.
 function adminUser(u) {
@@ -212,6 +216,100 @@ export async function unblockUser(req, res, next) {
     });
     await writeAdminLog({ adminId: req.user.id, action: 'user.unblock', targetType: 'user', targetId: target.id });
     res.json({ user: adminUser(updated) });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// --- Manual refunds ---------------------------------------------------------
+// There is no automatic reversal yet: a cancelled paid order parks its payment
+// in REFUND_PENDING (see lib/refunds.js) and an admin sends the money back by
+// hand, then marks it settled here.
+
+function adminRefund(p) {
+  return {
+    paymentId: p.id,
+    orderId: p.orderId,
+    amount: p.amount,
+    status: p.status,
+    reason: p.refundReason,
+    refundedAt: p.refundedAt,
+    cancelledAt: p.updatedAt,
+    buyer: p.order?.buyer
+      ? { id: p.order.buyer.id, name: p.order.buyer.fullName, email: p.order.buyer.email, phone: p.order.buyer.phone }
+      : null,
+    cook: p.order?.cook ? { id: p.order.cook.id, name: p.order.cook.displayName || p.order.cook.user?.fullName || '' } : null,
+  };
+}
+
+const refundInclude = {
+  order: {
+    include: {
+      buyer: { select: { id: true, fullName: true, email: true, phone: true } },
+      cook: { include: { user: { select: { fullName: true } } } },
+    },
+  },
+};
+
+// GET /api/admin/refunds?status=&limit=&offset= — the refund queue.
+export async function listRefunds(req, res, next) {
+  try {
+    const { status, limit, offset } = listRefundsSchema.parse(req.query);
+    const where = { status };
+    const [payments, total, pendingTotal] = await Promise.all([
+      prisma.payment.findMany({ where, include: refundInclude, orderBy: { updatedAt: 'asc' }, take: limit, skip: offset }),
+      prisma.payment.count({ where }),
+      // Total money owed right now — the number that matters on the dashboard.
+      prisma.payment.aggregate({ where: { status: 'REFUND_PENDING' }, _sum: { amount: true } }),
+    ]);
+    res.json({
+      refunds: payments.map(adminRefund),
+      total,
+      owed: Number((pendingTotal._sum.amount || 0).toFixed(2)),
+      limit,
+      offset,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// POST /api/admin/refunds/:paymentId/complete — record that the money was sent.
+export async function markRefundComplete(req, res, next) {
+  try {
+    const { note } = completeRefundSchema.parse(req.body ?? {});
+    const result = await completeRefund({ paymentId: req.params.paymentId, adminId: req.user.id });
+
+    if (!result.ok) {
+      if (result.reason === 'not_found') throw httpError(404, 'Платіж не знайдено');
+      if (result.reason === 'already_refunded') throw httpError(409, 'Повернення вже виконано');
+      throw httpError(409, 'Цей платіж не очікує на повернення');
+    }
+
+    await writeAdminLog({
+      adminId: req.user.id,
+      action: 'payment.refund',
+      targetType: 'payment',
+      targetId: result.payment.id,
+      meta: { amount: result.payment.amount, orderId: result.payment.orderId, ...(note ? { note } : {}) },
+    });
+
+    // Tell the buyer their money is on the way back.
+    const order = await prisma.order.findUnique({
+      where: { id: result.payment.orderId },
+      select: { buyerId: true },
+    });
+    await createNotification({
+      userId: order?.buyerId,
+      type: 'ORDER_STATUS',
+      payload: {
+        orderId: result.payment.orderId,
+        title: 'Кошти повернено',
+        body: `Повернення ${result.payment.amount} ₴ за скасоване замовлення виконано.`,
+      },
+    }).catch(() => {});
+
+    res.json({ refund: adminRefund(result.payment) });
   } catch (err) {
     next(err);
   }

@@ -293,6 +293,21 @@ export const blockUserSchema = z.object({
   reason: z.string().trim().max(300).optional(),
 });
 
+// Manual refund queue: payments owed back to a buyer after a cancellation.
+export const listRefundsSchema = z.object({
+  status: z.enum(['REFUND_PENDING', 'REFUNDED']).default('REFUND_PENDING'),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+export const completeRefundSchema = z
+  .object({
+    // Free-text reference for the transfer the admin actually made (bank
+    // receipt, ticket id) — kept so a settled refund can be traced later.
+    note: z.string().trim().max(300).optional(),
+  })
+  .strict();
+
 // --- Phase 7.2: admin analytics ---------------------------------------------
 export const analyticsSchema = z.object({
   period: z.enum(['7d', '30d', '90d', 'all']).optional(),

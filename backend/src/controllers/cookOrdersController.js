@@ -4,6 +4,7 @@ import { listOrdersSchema, updateOrderStatusSchema } from '../validation/schemas
 import { serializeOrder } from './orderController.js';
 import { notifyOrderStatus } from '../lib/notify.js';
 import { recordOrderEvent } from '../lib/orderEvents.js';
+import { markRefundDue } from '../lib/refunds.js';
 
 const orderInclude = {
   items: true,
@@ -73,14 +74,25 @@ export async function updateOrderStatus(req, res, next) {
       throw httpError(400, `Неможливий перехід статусу: ${order.status} → ${status}`);
     }
 
-    const updated = await prisma.order.update({
-      where: { id: order.id },
-      data: { status },
-      include: orderInclude,
+    // Cancelling an order the buyer already paid for leaves their money with
+    // us. Both writes go in one transaction, so a cancelled order can never
+    // exist without the refund it owes.
+    const { updated, refund } = await prisma.$transaction(async (tx) => {
+      const next = await tx.order.update({
+        where: { id: order.id },
+        data: { status },
+        include: orderInclude,
+      });
+      const owed =
+        status === 'CANCELLED'
+          ? await markRefundDue(order.id, 'Замовлення скасував кухар', tx)
+          : null;
+      return { updated: next, refund: owed };
     });
+
     await recordOrderEvent(order.id, status);
     await notifyOrderStatus({ order: updated });
-    res.json({ order: serializeOrder(updated) });
+    res.json({ order: serializeOrder(updated), refundPending: !!refund });
   } catch (err) {
     next(err);
   }
