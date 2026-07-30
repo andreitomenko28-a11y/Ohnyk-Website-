@@ -2,7 +2,12 @@ import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../lib/prisma.js';
 import { verifyRefreshToken } from '../lib/jwt.js';
-import { issueSession, rotateSession, revokeSession } from '../lib/refreshTokens.js';
+import {
+  issueSession,
+  rotateSession,
+  revokeSession,
+  revokeAllSessions,
+} from '../lib/refreshTokens.js';
 import { httpError } from '../middleware/errorHandler.js';
 import { normalizeDocUrl } from '../lib/storage.js';
 import {
@@ -185,6 +190,15 @@ export async function me(req, res, next) {
   }
 }
 
+// Reset tokens are stored hashed, like refresh tokens: the row is a
+// verifier, not the credential. A leaked database dump then buys nothing —
+// without this, every unexpired row is a ready-made account takeover. Plain
+// SHA-256 is enough here (unlike the HMAC used for six-digit SMS codes) because
+// the token is 24 random bytes and cannot be brute-forced from its hash.
+function hashResetToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
 // POST /api/auth/password-reset
 // Always responds 200 (never reveals whether the email exists). In a real
 // deployment the token is emailed; here we return it in the response so the
@@ -195,12 +209,16 @@ export async function passwordReset(req, res, next) {
     const user = await prisma.user.findUnique({ where: { email } });
 
     let devToken;
-    if (user) {
+    // A blocked account gets no token — the same silence an unknown address
+    // gets, so the response still says nothing about which case it is.
+    if (user && !user.isBlocked) {
       const token = crypto.randomBytes(24).toString('hex');
       const expiresAt = new Date(Date.now() + RESET_TTL_MS);
       // One active token per user: clear any previous ones first.
       await prisma.passwordReset.deleteMany({ where: { userId: user.id } });
-      await prisma.passwordReset.create({ data: { userId: user.id, token, expiresAt } });
+      await prisma.passwordReset.create({
+        data: { userId: user.id, token: hashResetToken(token), expiresAt },
+      });
       devToken = token;
     }
 
@@ -219,16 +237,29 @@ export async function passwordResetConfirm(req, res, next) {
   try {
     const { token, password } = passwordResetConfirmSchema.parse(req.body);
 
-    const record = await prisma.passwordReset.findUnique({ where: { token } });
+    const record = await prisma.passwordReset.findUnique({
+      where: { token: hashResetToken(token) },
+    });
     if (!record || record.expiresAt < new Date()) {
       throw httpError(400, 'Недійсний або прострочений код скидання');
     }
 
+    const owner = await prisma.user.findUnique({
+      where: { id: record.userId },
+      select: { isBlocked: true },
+    });
+    if (!owner || owner.isBlocked) throw httpError(403, 'Ваш акаунт заблоковано');
+
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-    await prisma.$transaction([
-      prisma.user.update({ where: { id: record.userId }, data: { passwordHash } }),
-      prisma.passwordReset.deleteMany({ where: { userId: record.userId } }),
-    ]);
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: record.userId }, data: { passwordHash } });
+      await tx.passwordReset.deleteMany({ where: { userId: record.userId } });
+      // The reason people reset a password is that someone else may be in the
+      // account. Changing the hash does not reach a refresh family already in
+      // that person's hands — it keeps rotating itself for its remaining days —
+      // so every session is revoked in the same commit.
+      await revokeAllSessions(record.userId, tx);
+    });
 
     res.json({ message: 'Пароль успішно змінено. Тепер можна увійти.' });
   } catch (err) {
