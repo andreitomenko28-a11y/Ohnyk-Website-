@@ -15,6 +15,30 @@ function splitProfileData(data) {
   return { userData, cookData };
 }
 
+// Update a user's profile, nesting the cook-only fields (bio/city) only when
+// the target actually has a Cook row. Without the existence check, a CUSTOMER
+// sending `bio` or `city` triggered a nested update against a relation that
+// isn't there and the whole request 500'd; those fields simply have nowhere to
+// live for a non-cook, so they are dropped rather than crashing the update.
+async function applyProfileUpdate(userId, data) {
+  const { userData, cookData } = splitProfileData(data);
+
+  let nestCook = false;
+  if (Object.keys(cookData).length) {
+    const cook = await prisma.cook.findUnique({ where: { userId }, select: { id: true } });
+    nestCook = !!cook;
+  }
+
+  return prisma.user.update({
+    where: { id: userId },
+    data: {
+      ...userData,
+      ...(nestCook ? { cookProfile: { update: cookData } } : {}),
+    },
+    include: { cookProfile: true, courierProfile: true },
+  });
+}
+
 // GET /api/users/profile  (protected — current user)
 export async function getProfile(req, res, next) {
   try {
@@ -33,19 +57,7 @@ export async function getProfile(req, res, next) {
 export async function updateProfile(req, res, next) {
   try {
     const data = updateUserSchema.parse(req.body);
-    const { userData, cookData } = splitProfileData(data);
-
-    const user = await prisma.user.update({
-      where: { id: req.user.id },
-      data: {
-        ...userData,
-        ...(Object.keys(cookData).length && {
-          cookProfile: { update: cookData },
-        }),
-      },
-      include: { cookProfile: true, courierProfile: true },
-    });
-
+    const user = await applyProfileUpdate(req.user.id, data);
     res.json({ user: publicUser(user) });
   } catch (err) {
     next(err);
@@ -143,19 +155,7 @@ export async function updateUser(req, res, next) {
     }
 
     const data = updateUserSchema.parse(req.body);
-    const { userData, cookData } = splitProfileData(data);
-
-    const user = await prisma.user.update({
-      where: { id },
-      data: {
-        ...userData,
-        ...(Object.keys(cookData).length && {
-          cookProfile: { update: cookData },
-        }),
-      },
-      include: { cookProfile: true, courierProfile: true },
-    });
-
+    const user = await applyProfileUpdate(id, data);
     res.json({ user: publicUser(user) });
   } catch (err) {
     next(err);

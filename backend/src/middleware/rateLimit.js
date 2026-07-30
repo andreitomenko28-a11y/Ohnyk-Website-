@@ -60,6 +60,20 @@ export const authLimiter = guard(
   }),
 );
 
+// Password-reset requests. Deliberately NOT authLimiter: that one skips
+// successful requests, and this endpoint answers 200 to every call by design
+// (revealing whether an address is registered is the thing it must not do), so
+// under authLimiter nothing ever counted and the endpoint was effectively
+// unlimited — a free mail-bomb aimed at any address, and an unbounded supply of
+// live reset tokens if a mailbox is already compromised. Every request counts
+// here.
+export const passwordResetLimiter = guard(
+  makeRateLimiter({
+    windowMs: num('RATE_RESET_WINDOW_MS', 60 * MIN),
+    max: num('RATE_RESET_MAX', 5),
+  }),
+);
+
 // Registration — cheaper to abuse for mass account creation than login.
 export const registerLimiter = guard(
   makeRateLimiter({

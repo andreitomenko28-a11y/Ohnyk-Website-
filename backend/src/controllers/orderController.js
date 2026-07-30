@@ -152,7 +152,19 @@ export async function checkout(req, res, next) {
     // Create the order (awaiting payment) and empty the cart atomically.
     // The order becomes NEW — and the cook is notified — only after a
     // confirmed payment (Module 4.2).
+    //
+    // Emptying the cart comes FIRST and doubles as the claim on it. A
+    // double-submitted checkout (two taps, a retry, a flaky connection) runs
+    // two of these concurrently; both read the same cart items outside the
+    // transaction and would each write an order for them, leaving the buyer
+    // with two orders and two invoices for one meal. The delete takes row locks
+    // on the items, so the second attempt waits, finds them already gone, and
+    // is refused instead of duplicating the order.
     const order = await prisma.$transaction(async (tx) => {
+      const cleared = await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+      if (cleared.count === 0) throw httpError(409, 'Кошик уже оформлено');
+      await tx.cart.update({ where: { id: cart.id }, data: { cookId: null } });
+
       const created = await tx.order.create({
         data: {
           buyerId: req.user.id,
@@ -173,8 +185,6 @@ export async function checkout(req, res, next) {
       });
       const ev = await tx.orderEvent.create({ data: { orderId: created.id, status: 'AWAITING_PAYMENT' } });
       created.events = [ev]; // include the just-created event in the response
-      await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
-      await tx.cart.update({ where: { id: cart.id }, data: { cookId: null } });
       return created;
     });
 

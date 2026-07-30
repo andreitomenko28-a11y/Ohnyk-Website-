@@ -114,20 +114,35 @@ export async function claimOrder(req, res, next) {
     // running, but the rule belongs here: a courier holding several orders at
     // once means every one of them is late, and the buyer's live map shows a
     // courier driving away from them.
-    const active = await prisma.order.count({
-      where: { courierId: req.courier.id, status: { in: ACTIVE } },
-    });
-    if (active > 0) {
-      throw httpError(409, 'Спершу заверши поточну доставку');
-    }
+    //
+    // Counting and then claiming is not enough on its own — two taps on two
+    // different orders both count zero active deliveries under READ COMMITTED
+    // and both claims then succeed, since they touch different Order rows and
+    // never contend. The transaction therefore opens by writing the courier's
+    // own row: that lock is what the two attempts contend on, and the loser
+    // only gets to run its count after the winner has committed its claim.
+    const outcome = await prisma.$transaction(async (tx) => {
+      await tx.courierProfile.update({
+        where: { id: req.courier.id },
+        data: { updatedAt: new Date() },
+      });
 
-    // Atomic claim: only succeeds if the order is still READY, unclaimed, and
-    // actually opted in for third-party courier delivery.
-    const result = await prisma.order.updateMany({
-      where: { id: req.params.id, status: 'READY', courierId: null, deliveryMethod: 'COURIER' },
-      data: { status: 'COURIER_ASSIGNED', courierId: req.courier.id },
+      const active = await tx.order.count({
+        where: { courierId: req.courier.id, status: { in: ACTIVE } },
+      });
+      if (active > 0) return 'busy';
+
+      // Only succeeds if the order is still READY, unclaimed, and actually
+      // opted in for third-party courier delivery.
+      const result = await tx.order.updateMany({
+        where: { id: req.params.id, status: 'READY', courierId: null, deliveryMethod: 'COURIER' },
+        data: { status: 'COURIER_ASSIGNED', courierId: req.courier.id },
+      });
+      return result.count === 0 ? 'taken' : 'claimed';
     });
-    if (result.count === 0) {
+
+    if (outcome === 'busy') throw httpError(409, 'Спершу заверши поточну доставку');
+    if (outcome === 'taken') {
       throw httpError(409, 'Замовлення вже взяв інший кур’єр або воно недоступне');
     }
 

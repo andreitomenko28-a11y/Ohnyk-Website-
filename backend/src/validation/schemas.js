@@ -257,19 +257,29 @@ export const reviewReplySchema = z.object({
 });
 
 
+// A pagination cursor is an ISO timestamp that goes straight into a Prisma
+// date comparison. Declared as a plain string it accepted anything, and
+// `new Date('junk')` reached the query as an Invalid Date — a 500 on a value
+// any client can send. Validating it here answers 400 instead, once, for every
+// cursor-paginated endpoint.
+const isoCursor = z
+  .string()
+  .refine((v) => !Number.isNaN(new Date(v).getTime()), { message: 'Некоректний курсор' })
+  .optional();
+
 // --- Phase 6.1: in-app chat -------------------------------------------------
 export const sendMessageSchema = z.object({
   text: z.string().trim().min(1, 'Повідомлення порожнє').max(2000, 'Повідомлення задовге'),
 });
 
 export const listMessagesSchema = z.object({
-  cursor: z.string().optional(), // ISO date of the oldest loaded message
+  cursor: isoCursor, // ISO date of the oldest loaded message
   limit: z.coerce.number().int().min(1).max(50).default(30),
 });
 
 // --- Phase 6.3: notifications -----------------------------------------------
 export const listNotificationsSchema = z.object({
-  cursor: z.string().optional(), // ISO date of the oldest loaded notification
+  cursor: isoCursor, // ISO date of the oldest loaded notification
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 
