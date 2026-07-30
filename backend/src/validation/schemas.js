@@ -257,15 +257,17 @@ export const reviewReplySchema = z.object({
 });
 
 
-// A pagination cursor is an ISO timestamp that goes straight into a Prisma
-// date comparison. Declared as a plain string it accepted anything, and
-// `new Date('junk')` reached the query as an Invalid Date — a 500 on a value
-// any client can send. Validating it here answers 400 instead, once, for every
-// cursor-paginated endpoint.
-const isoCursor = z
-  .string()
-  .refine((v) => !Number.isNaN(new Date(v).getTime()), { message: 'Некоректний курсор' })
-  .optional();
+// A string that actually parses to a date.
+//
+// Pagination cursors and the analytics range both go straight into Prisma date
+// comparisons, where an Invalid Date is not a validation error but a 500 — and
+// both were reachable with a value any client can send: `?cursor=junk`, or
+// `?dateFrom=2026-13-45`, which passed a YYYY-MM-DD regex while being no date
+// at all. A shape check is not enough; the value has to parse.
+const parsableDate = (message) =>
+  z.string().refine((v) => !Number.isNaN(new Date(v).getTime()), { message });
+
+const isoCursor = parsableDate('Некоректний курсор').optional();
 
 // --- Phase 6.1: in-app chat -------------------------------------------------
 export const sendMessageSchema = z.object({
@@ -330,8 +332,10 @@ export const completeRefundSchema = z
 // --- Phase 7.2: admin analytics ---------------------------------------------
 export const analyticsSchema = z.object({
   period: z.enum(['7d', '30d', '90d', 'all']).optional(),
-  dateFrom: z.string().datetime().optional().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
-  dateTo: z.string().datetime().optional().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)).optional(),
+  // Accepts a full ISO timestamp or a plain YYYY-MM-DD, and rejects anything
+  // that only looks like one (see parsableDate).
+  dateFrom: parsableDate('Некоректна дата').optional(),
+  dateTo: parsableDate('Некоректна дата').optional(),
 });
 
 // --- Phase 8.5: background courier location reporting ------------------------

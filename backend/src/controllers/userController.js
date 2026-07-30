@@ -84,6 +84,38 @@ export async function listFavorites(req, res, next) {
   }
 }
 
+// Favourites live in a String[] column, so reading the array, changing it in JS
+// and writing the whole thing back loses one of two concurrent edits: both read
+// the same array and the second write overwrites the first. Tapping the heart on
+// two cooks quickly — or the same tap replayed on a flaky connection — kept only
+// one. Each change is a single conditional statement instead, so Postgres
+// serialises them on the row and both survive.
+//
+// `array_append` guarded by NOT (… = ANY(…)) keeps add idempotent: a repeat tap
+// matches nothing and changes nothing, no read needed to decide.
+function appendFavorite(userId, cookId) {
+  return prisma.$executeRaw`
+    UPDATE "User"
+    SET "favoriteCookIds" = array_append("favoriteCookIds", ${cookId})
+    WHERE "id" = ${userId} AND NOT (${cookId} = ANY("favoriteCookIds"))
+  `;
+}
+
+function dropFavorite(userId, cookId) {
+  return prisma.$executeRaw`
+    UPDATE "User"
+    SET "favoriteCookIds" = array_remove("favoriteCookIds", ${cookId})
+    WHERE "id" = ${userId}
+  `;
+}
+
+function loadUserWithProfiles(userId) {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    include: { cookProfile: true, courierProfile: true },
+  });
+}
+
 // PUT /api/users/favorites/:cookId  (protected) — add to favourites (idempotent).
 export async function addFavorite(req, res, next) {
   try {
@@ -91,19 +123,8 @@ export async function addFavorite(req, res, next) {
     const cook = await prisma.cook.findUnique({ where: { id: cookId } });
     if (!cook) throw httpError(404, 'Кухаря не знайдено');
 
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      include: { cookProfile: true, courierProfile: true },
-    });
-    if (!user.favoriteCookIds.includes(cookId)) {
-      const updated = await prisma.user.update({
-        where: { id: req.user.id },
-        data: { favoriteCookIds: { set: [...user.favoriteCookIds, cookId] } },
-        include: { cookProfile: true, courierProfile: true },
-      });
-      return res.json({ user: publicUser(updated) });
-    }
-    res.json({ user: publicUser(user) });
+    await appendFavorite(req.user.id, cookId);
+    res.json({ user: publicUser(await loadUserWithProfiles(req.user.id)) });
   } catch (err) {
     next(err);
   }
@@ -112,17 +133,8 @@ export async function addFavorite(req, res, next) {
 // DELETE /api/users/favorites/:cookId  (protected) — remove from favourites.
 export async function removeFavorite(req, res, next) {
   try {
-    const { cookId } = req.params;
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      include: { cookProfile: true, courierProfile: true },
-    });
-    const updated = await prisma.user.update({
-      where: { id: req.user.id },
-      data: { favoriteCookIds: { set: user.favoriteCookIds.filter((id) => id !== cookId) } },
-      include: { cookProfile: true, courierProfile: true },
-    });
-    res.json({ user: publicUser(updated) });
+    await dropFavorite(req.user.id, req.params.cookId);
+    res.json({ user: publicUser(await loadUserWithProfiles(req.user.id)) });
   } catch (err) {
     next(err);
   }

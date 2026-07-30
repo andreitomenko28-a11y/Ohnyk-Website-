@@ -67,6 +67,19 @@ async function applyPaymentResult({ payment, monoStatus, transactionId, raw }) {
   return { payment: effective, paid: mapped.paid && effective === 'SUCCESS' };
 }
 
+// The order's Payment row, created on first use. Losing the insert to a
+// simultaneous "pay" tap is settled by reading the row the winner wrote.
+async function getOrCreatePayment(order) {
+  try {
+    return await prisma.payment.create({
+      data: { orderId: order.id, amount: order.total, status: 'PENDING', provider: 'monopay' },
+    });
+  } catch (err) {
+    if (err.code !== 'P2002') throw err; // anything else is a real failure
+    return prisma.payment.findUnique({ where: { orderId: order.id } });
+  }
+}
+
 // POST /api/orders/:id/pay — create (or reuse) a MonoPay invoice for an order.
 export async function initPayment(req, res, next) {
   try {
@@ -77,12 +90,12 @@ export async function initPayment(req, res, next) {
     if (!order || order.buyerId !== req.user.id) throw httpError(404, 'Замовлення не знайдено');
     if (order.status !== 'AWAITING_PAYMENT') throw httpError(409, 'Замовлення вже оплачено або недоступне для оплати');
 
-    // One Payment per order; reuse the row across retries.
-    const payment =
-      order.payment ??
-      (await prisma.payment.create({
-        data: { orderId: order.id, amount: order.total, status: 'PENDING', provider: 'monopay' },
-      }));
+    // One Payment per order; reuse the row across retries. Two "pay" taps at
+    // the same instant both see no payment and both insert, and orderId is
+    // unique — so the loser answered 409 "value already in use" on an order
+    // that was perfectly payable. Losing that insert just means the other tap
+    // created the row first, so it is read rather than reported.
+    const payment = order.payment ?? (await getOrCreatePayment(order));
 
     // Send the buyer back to the invoice they already have rather than minting
     // a second one. Two live invoices for one order means the buyer can pay

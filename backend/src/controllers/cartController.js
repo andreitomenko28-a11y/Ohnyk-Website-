@@ -19,10 +19,24 @@ const cartInclude = {
 };
 
 // Loads the user's cart, creating an empty one on first access.
+//
+// First access is routinely concurrent: the app opens and the cart badge, the
+// cart screen and an "add to cart" tap all fire before any of them finishes.
+// Both then find nothing and both insert, and the loser trips the unique index
+// on userId — the user's very first look at their cart answering 409.
+//
+// Losing that insert is the expected outcome, not an error: the row the caller
+// wanted exists by the time it fails, so the race is settled by reading it.
+// (Prisma's upsert is not the fix here — with an empty update it does not
+// compile to a single ON CONFLICT statement, and loses the same race.)
 async function getOrCreateCart(userId) {
   const existing = await prisma.cart.findUnique({ where: { userId }, include: cartInclude });
   if (existing) return existing;
-  await prisma.cart.create({ data: { userId } });
+  try {
+    await prisma.cart.create({ data: { userId } });
+  } catch (err) {
+    if (err.code !== 'P2002') throw err; // anything else is a real failure
+  }
   return prisma.cart.findUnique({ where: { userId }, include: cartInclude });
 }
 

@@ -70,12 +70,26 @@ export async function updateStatus(req, res, next) {
   }
 }
 
+// The open pool is visible to every online courier, none of whom is yet
+// connected to any of these orders. It therefore leaves out the buyer, whose
+// name and phone the full include carries: an order nobody has taken is not a
+// courier's business beyond deciding whether to take it, and the pool was
+// otherwise a standing directory of who ordered what, to which phone number,
+// readable by anyone who registers as a courier and goes online.
+//
+// The delivery address stays — distance is the whole basis of that decision,
+// and it is what the courier is being asked to accept.
+const poolInclude = {
+  items: true,
+  cook: { include: { user: { select: { fullName: true } } } },
+};
+
 // GET /api/courier/orders/available — READY orders no courier has claimed yet.
 export async function listAvailable(req, res, next) {
   try {
     const orders = await prisma.order.findMany({
       where: { status: 'READY', courierId: null, deliveryMethod: 'COURIER' },
-      include: orderInclude,
+      include: poolInclude,
       orderBy: { scheduledFor: { sort: 'asc', nulls: 'first' } },
       take: 50,
     });
