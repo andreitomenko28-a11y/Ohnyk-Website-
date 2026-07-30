@@ -64,12 +64,16 @@ export default function OrderDetailPage() {
                 {t('trackOrder')}
               </button>
             )}
-            <button
-              onClick={() => setChatOpen(true)}
-              className="rounded-xl border-[1.5px] border-[color:var(--line)] px-5 py-3 text-sm font-semibold hover:border-ember hover:text-ember"
-            >
-              {t('chatOpen')}
-            </button>
+            {/* The chat opens on payment (the server refuses to create one for
+                an unpaid order), so the button is not offered before then. */}
+            {order.status !== 'AWAITING_PAYMENT' && (
+              <button
+                onClick={() => setChatOpen(true)}
+                className="rounded-xl border-[1.5px] border-[color:var(--line)] px-5 py-3 text-sm font-semibold hover:border-ember hover:text-ember"
+              >
+                {t('chatOpen')}
+              </button>
+            )}
           </div>
         </section>
 
