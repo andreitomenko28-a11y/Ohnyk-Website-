@@ -87,6 +87,23 @@ export async function rotateSession(oldToken, user) {
   return tokens;
 }
 
+// Revoke every live session a user holds, on every device.
+//
+// This is what a password reset needs: someone resets precisely because they
+// think another person is in the account, and changing the password alone does
+// not touch a refresh family already in that person's hands — it keeps rotating
+// itself for the rest of its seven days.
+//
+// Takes a transaction client so the revocation commits together with the new
+// password hash.
+export async function revokeAllSessions(userId, db = prisma) {
+  const { count } = await db.refreshToken.updateMany({
+    where: { userId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+  return count;
+}
+
 // Logout — revoke the presented token's whole family. Best-effort (unknown
 // tokens are a no-op) so logout never errors.
 export async function revokeSession(token) {

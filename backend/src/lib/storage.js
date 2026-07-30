@@ -67,17 +67,27 @@ export function normalizeDocUrl(url) {
   return PRIVATE_FOLDERS.some((f) => rel.startsWith(`${f}/`)) ? `${PRIVATE_PREFIX}${rel}` : url;
 }
 
+// Resolve a path under UPLOAD_ROOT, or null if it would escape it.
+// The single traversal guard for this module — every path built from a URL goes
+// through it, so reading and deleting cannot disagree about what is in bounds.
+function resolveUnderRoot(...segments) {
+  if (segments.some((s) => !s)) return null;
+  const abs = path.resolve(UPLOAD_ROOT, ...segments);
+  return abs.startsWith(UPLOAD_ROOT + path.sep) ? abs : null;
+}
+
 // Resolve a private document URL to a safe absolute path under UPLOAD_ROOT.
-// Returns null if the URL is malformed or would escape the upload root
-// (path-traversal guard).
+// Returns null if the URL is malformed or would escape the upload root.
 export function privateDocPath(folder, name) {
-  if (!folder || !name || name.includes('/') || name.includes('\\') || name.includes('..')) return null;
-  const abs = path.join(UPLOAD_ROOT, folder, name);
-  if (!abs.startsWith(UPLOAD_ROOT + path.sep)) return null;
-  return abs;
+  if (!name || name.includes('/') || name.includes('\\') || name.includes('..')) return null;
+  return resolveUnderRoot(folder, name);
 }
 
 // Best-effort delete of a previously stored file by its public or private URL.
+//
+// Guarded like privateDocPath: today every caller passes a URL this module
+// produced, but an unguarded delete a few lines below a guarded read is a trap
+// for whoever wires up the next caller.
 export async function deleteByUrl(url) {
   if (!url) return;
   const rel = url.startsWith(PUBLIC_PREFIX)
@@ -85,9 +95,10 @@ export async function deleteByUrl(url) {
     : url.startsWith(PRIVATE_PREFIX)
       ? url.slice(PRIVATE_PREFIX.length)
       : null;
-  if (!rel) return;
+  const abs = rel ? resolveUnderRoot(rel) : null;
+  if (!abs) return;
   try {
-    await fs.unlink(path.join(UPLOAD_ROOT, rel));
+    await fs.unlink(abs);
   } catch {
     // ignore — file may already be gone
   }

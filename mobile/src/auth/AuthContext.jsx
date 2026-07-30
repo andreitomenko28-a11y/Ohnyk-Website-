@@ -68,6 +68,10 @@ export function AuthProvider({ children }) {
 
   // Shared tail of login/register: persist the pair, then adopt the session.
   const adoptSession = useCallback(async (data) => {
+    // Start the session on an empty cache. Logout and a failed autologin both
+    // clear it already, but neither runs if the previous session ended some
+    // other way — and whatever is left belongs to a different account.
+    await clearOfflineCache().catch(() => {});
     await secureTokenStore.set(data.accessToken, data.refreshToken);
     setUser(data.user);
     // Best-effort: a declined permission or a simulator must not fail login.
