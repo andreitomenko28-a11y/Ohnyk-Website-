@@ -40,6 +40,15 @@ async function participantConversationOrThrow(conversationId, userId) {
 }
 
 // GET /api/orders/:orderId/conversation — get or lazily create the order's chat.
+//
+// The chat opens on payment, not on checkout. A conversation is a channel into
+// the cook's inbox, and an unpaid order costs nothing to create: fill a cart,
+// hit checkout, never pay, and repeat — that is a free line to any cook in the
+// city, as many times as you like. Paying is what makes the buyer a customer.
+//
+// An existing conversation is always returned, whatever the order's status now:
+// chats opened before this rule, and orders cancelled after payment (where the
+// refund still needs discussing), must keep working.
 export async function getOrderConversation(req, res, next) {
   try {
     const order = await prisma.order.findUnique({
@@ -50,6 +59,13 @@ export async function getOrderConversation(req, res, next) {
     const isBuyer = order.buyerId === req.user.id;
     const isCook = order.cook?.userId === req.user.id;
     if (!isBuyer && !isCook) throw httpError(404, 'Замовлення не знайдено');
+
+    const existing = await prisma.conversation.findUnique({ where: { orderId: order.id } });
+    if (existing) return res.json({ conversation: serializeConversation(existing) });
+
+    if (order.status === 'AWAITING_PAYMENT') {
+      throw httpError(409, 'Чат із кухарем відкриється після оплати замовлення');
+    }
 
     // Upsert avoids a race between two participants opening the chat at once.
     const conv = await prisma.conversation.upsert({
