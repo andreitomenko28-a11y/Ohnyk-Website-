@@ -19,7 +19,7 @@ import courierRoutes from './routes/courier.js';
 import conversationRoutes from './routes/conversations.js';
 import notificationRoutes from './routes/notifications.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
-import { UPLOAD_ROOT } from './lib/storage.js';
+import { UPLOAD_ROOT, isPrivateUploadPath } from './lib/storage.js';
 
 // Builds the Express app. Kept separate from server.js so tests can import
 // the app (via supertest) without binding a port.
@@ -70,14 +70,18 @@ export function createApp() {
     }),
   );
 
-  // Private PII (ID scans, medical books) must never be served statically —
-  // block those folders and force access through the authenticated
-  // /api/documents route below.
-  app.use(['/uploads/identity', '/uploads/verification'], (req, res) => {
-    res.status(404).json({ error: 'Not found' });
+  // Private PII (ID scans, medical books) is not stored under UPLOAD_ROOT at
+  // all (see lib/storage.js) — that, not this block, is what keeps it out of
+  // the static mount. The block stays as a second line for anything left in the
+  // old location before the startup migration runs, but it cannot be the only
+  // one: it matches the raw path while express.static decodes it, so
+  // `/uploads/%69dentity/x` and `/uploads//identity/x` walked past it.
+  app.use('/uploads', (req, res, next) => {
+    if (isPrivateUploadPath(req.path)) return res.status(404).json({ error: 'Not found' });
+    next();
   });
   // Serve public uploaded media (cook/dish/kitchen photos & videos).
-  app.use('/uploads', express.static(UPLOAD_ROOT));
+  app.use('/uploads', express.static(UPLOAD_ROOT, { dotfiles: 'deny', index: false }));
 
   // Health check.
   app.get('/api/health', (req, res) => {

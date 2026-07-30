@@ -3,9 +3,18 @@ import http from 'node:http';
 import { createApp } from './app.js';
 import { initRealtime } from './realtime/index.js';
 import { assertSecureEnv } from './config/env.js';
+import { migratePrivateUploads } from './lib/storage.js';
 
 // Fail fast on insecure secrets before binding the port (throws in production).
 assertSecureEnv();
+
+// Relocate any ID scans still sitting inside the statically-served uploads dir.
+// Best-effort and idempotent — it must not keep the server from starting.
+migratePrivateUploads()
+  .then((moved) => {
+    if (moved.length) console.log(`🔒 Moved ${moved.length} private document(s) out of the static uploads dir`);
+  })
+  .catch(() => {});
 
 const app = createApp();
 const PORT = process.env.PORT || 4000;

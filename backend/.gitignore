@@ -5,3 +5,4 @@ dist/
 
 # Uploaded media (Phase 3) — not durable in ephemeral containers
 uploads/
+uploads-private/
